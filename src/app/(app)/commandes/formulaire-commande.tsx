@@ -93,23 +93,10 @@ export function FormulaireCommande({
       onSubmit={(e) => {
         e.preventDefault();
         demarrer(async () => {
-          const r = await enregistrerCommande({ clientId: clientId ?? "", date: date ?? "", quantites, notes }, id);
-          setResultat(r);
-          if (!r.ok) window.scrollTo({ top: 0, behavior: "smooth" });
+          setResultat(await enregistrerCommande({ clientId: clientId ?? "", date: date ?? "", quantites, notes }, id));
         });
       }}
     >
-      {resultat && !resultat.ok && (
-        <MessageErreur>
-          {resultat.erreur}
-          {resultat.lien && (
-            <Link href={resultat.lien.href} className="mt-2 block font-bold underline">
-              {resultat.lien.libelle} ›
-            </Link>
-          )}
-        </MessageErreur>
-      )}
-
       <Carte className="space-y-3">
         {clientFixe && client ? (
           <div>
@@ -186,6 +173,18 @@ export function FormulaireCommande({
       </Carte>
 
       <div className="sticky bottom-[calc(4.5rem+env(safe-area-inset-bottom))] z-10 rounded-2xl bg-white p-3 shadow-lg ring-1 ring-stone-200">
+        {resultat && !resultat.ok && (
+          <div className="mb-3">
+            <MessageErreur>
+              {resultat.erreur}
+              {resultat.lien && (
+                <Link href={resultat.lien.href} className="mt-2 block font-bold underline">
+                  {resultat.lien.libelle} ›
+                </Link>
+              )}
+            </MessageErreur>
+          </div>
+        )}
         <div className="mb-2 flex items-baseline justify-between">
           <span className="text-stone-600">Total</span>
           <span className="text-2xl font-bold tabular-nums">{formaterPrix(total)}</span>

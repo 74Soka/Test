@@ -15,6 +15,8 @@ type Props<T> = {
   /** Vider le champ après un choix (utile pour ajouter plusieurs communes) */
   viderApresChoix?: boolean;
   valeurInitiale?: string;
+  /** Proposé dans la liste quand rien n'est trouvé ou que le service ne répond pas */
+  secours?: { libelle: string; onClick: () => void };
 };
 
 /**
@@ -31,6 +33,7 @@ export function RechercheAdresse<T extends AdresseTrouvee | CommuneTrouvee>({
   onChoix,
   viderApresChoix,
   valeurInitiale = "",
+  secours,
 }: Props<T>) {
   const id = useId();
   const [texte, setTexte] = useState(valeurInitiale);
@@ -83,7 +86,16 @@ export function RechercheAdresse<T extends AdresseTrouvee | CommuneTrouvee>({
   const afficherListe = ouvert && texte.trim().length >= 3;
 
   return (
-    <div className="relative">
+    <div
+      className="relative"
+      onBlur={(e) => {
+        // Ferme la liste quand le focus quitte le composant
+        if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setOuvert(false);
+      }}
+      onKeyDown={(e) => {
+        if (e.key === "Escape") setOuvert(false);
+      }}
+    >
       <label htmlFor={id} className="mb-1.5 block font-medium text-stone-800">
         {label}
       </label>
@@ -118,6 +130,19 @@ export function RechercheAdresse<T extends AdresseTrouvee | CommuneTrouvee>({
             <p className="px-4 py-3 text-red-700">Le service d&apos;adresses ne répond pas. Réessayez ou saisissez à la main.</p>
           )}
           {etat === "vide" && <p className="px-4 py-3 text-stone-500">Aucun résultat.</p>}
+          {secours && (etat === "erreur" || etat === "vide") && (
+            <button
+              type="button"
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => {
+                setOuvert(false);
+                secours.onClick();
+              }}
+              className="block min-h-12 w-full border-t border-stone-100 px-4 py-3 text-left font-semibold text-marque-800 hover:bg-marque-50"
+            >
+              {secours.libelle}
+            </button>
+          )}
           <ul role="listbox">
             {resultats.map((r) => {
               const cle = "libelle" in r ? `${r.libelle}-${r.lat}` : r.codeInsee;
@@ -125,6 +150,7 @@ export function RechercheAdresse<T extends AdresseTrouvee | CommuneTrouvee>({
                 <li key={cle} role="option" aria-selected={false}>
                   <button
                     type="button"
+                    onMouseDown={(e) => e.preventDefault()}
                     onClick={() => choisir(r)}
                     className={cx("block w-full px-4 py-3 text-left hover:bg-marque-50", "border-t border-stone-100")}
                   >

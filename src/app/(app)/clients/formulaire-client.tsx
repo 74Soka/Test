@@ -170,6 +170,7 @@ export function FormulaireClient({
               proche={centreCarte}
               erreur={champs.adresse ?? champs["adresse.ligne"]}
               onChoix={choisirAdresse}
+              secours={{ libelle: "Saisir l'adresse à la main ›", onClick: () => setModeManuel(true) }}
             />
             <div className="flex flex-wrap gap-2">
               <Bouton variante="discret" taille="petit" onClick={() => setModeManuel(true)}>
@@ -243,7 +244,9 @@ export function FormulaireClient({
           <div className="space-y-1">
             <CarteOsm position={position} centre={centreCarte} onDeplacer={deplacerRepere} />
             <p className={cx("text-sm", champs["adresse.position"] ? "font-medium text-red-700" : "text-stone-600")}>
-              {position
+              {champs["adresse.position"] && !position
+                ? champs["adresse.position"]
+                : position
                 ? adresse?.source === "manuelle"
                   ? "Position placée à la main. Faites glisser le repère pour l'ajuster."
                   : "Faites glisser le repère si la maison est ailleurs (chemin, portail…)."

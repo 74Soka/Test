@@ -48,7 +48,15 @@ const schemaClient = z.object({
       source: z.enum(["adresse", "manuelle"]).nullable(),
     },
     { error: "Recherchez l'adresse du client." },
-  ),
+  ).superRefine((a, ctx) => {
+    if (a.lat === null || a.lng === null) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["position"],
+        message: "Position manquante : touchez la carte à l'endroit de la livraison.",
+      });
+    }
+  }),
   complementAdresse: texteFacultatif,
   notesLivraison: texteFacultatif,
   secteurId: z.uuid("Choisissez un secteur."),
@@ -65,13 +73,6 @@ export async function enregistrerClient(donnees: DonneesClient, id?: string): Pr
     return { ok: false, erreur: "Vérifiez les champs signalés.", champs: erreursParChamp(saisie.error.issues) };
   }
   const d = saisie.data;
-  if (d.adresse.lat === null || d.adresse.lng === null) {
-    return {
-      ok: false,
-      erreur: "Position inconnue : choisissez l'adresse dans la liste ou placez le repère sur la carte.",
-      champs: { "adresse.position": "Placez le repère sur la carte." },
-    };
-  }
   if (id && d.parrainId === id) {
     return { ok: false, erreur: "Un client ne peut pas être son propre parrain.", champs: { parrainId: "Choix impossible." } };
   }
