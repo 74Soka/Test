@@ -1,0 +1,54 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [5.930103, 43.125087] },
+      "properties": {
+        "label": "12 Rue Démo 83000 Toulon",
+        "score": 0.92,
+        "housenumber": "12",
+        "id": "83137_0000_00012",
+        "banId": "00000000-0000-0000-0000-000000000000",
+        "name": "12 Rue Démo",
+        "postcode": "83000",
+        "citycode": "83137",
+        "x": 939000.1,
+        "y": 6224000.2,
+        "city": "Toulon",
+        "context": "83, Var, Provence-Alpes-Côte d'Azur",
+        "type": "housenumber",
+        "importance": 0.7,
+        "street": "Rue Démo",
+        "_type": "address"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [6.0745, 43.1497] },
+      "properties": {
+        "label": "Chemin Démo 83260 La Crau",
+        "score": 0.61,
+        "id": "83047_0001",
+        "name": "Chemin Démo",
+        "postcode": "83260",
+        "citycode": "83047",
+        "city": "La Crau",
+        "context": "83, Var, Provence-Alpes-Côte d'Azur",
+        "type": "street",
+        "importance": 0.5,
+        "_type": "address"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [6.0, 43.0] },
+      "properties": {
+        "label": "Entrée incomplète sans commune",
+        "score": 0.3,
+        "type": "street"
+      }
+    }
+  ],
+  "query": "12 rue demo toulon"
+}
