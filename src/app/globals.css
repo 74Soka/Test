@@ -1,0 +1,53 @@
+@import "tailwindcss";
+
+/*
+ * Application utilisée surtout dehors, sur téléphone : thème clair à fort
+ * contraste, textes un peu plus grands, cibles tactiles d'au moins 48 px.
+ */
+@theme {
+  --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --color-marque-50: #f0fdf4;
+  --color-marque-100: #dcfce7;
+  --color-marque-600: #16a34a;
+  --color-marque-700: #15803d;
+  --color-marque-800: #166534;
+  --color-marque-900: #14532d;
+}
+
+:root {
+  color-scheme: light;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html {
+  font-size: 106.25%; /* 17 px */
+}
+
+body {
+  background: var(--color-stone-100);
+  color: var(--color-stone-900);
+}
+
+/* Évite le zoom automatique d'iOS sur les champs */
+input,
+select,
+textarea {
+  font-size: max(16px, 1rem);
+}
+
+/* Leaflet : la carte ne doit pas passer au-dessus de la barre de navigation */
+.leaflet-container {
+  z-index: 0;
+  font: inherit;
+}
+
+/* Repère de position sur la carte */
+.repere-carte {
+  width: 32px;
+  height: 32px;
+  border-radius: 50% 50% 50% 0;
+  background: var(--color-red-600);
+  border: 3px solid white;
+  box-shadow: 0 2px 6px rgb(0 0 0 / 0.35);
+  transform: rotate(-45deg);
+}
