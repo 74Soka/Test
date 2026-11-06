@@ -25,7 +25,7 @@ export function urlServeur(): string {
   return url;
 }
 
-function urlAvecBase(url: string, base: string): string {
+export function urlAvecBase(url: string, base: string): string {
   const u = new URL(url);
   u.pathname = `/${base}`;
   return u.toString();
@@ -45,9 +45,11 @@ export type BaseDeTest = {
   detruire: () => Promise<void>;
 };
 
-export async function creerBaseDeTest(options: { avecDemo?: boolean } = {}): Promise<BaseDeTest> {
+export async function creerBaseDeTest(
+  options: { avecDemo?: boolean; prefixe?: string } = {},
+): Promise<BaseDeTest> {
   const serveur = urlServeur();
-  const nom = `paniers_test_${randomUUID().replaceAll("-", "").slice(0, 12)}`;
+  const nom = `${options.prefixe ?? "paniers_test"}_${randomUUID().replaceAll("-", "").slice(0, 12)}`;
 
   const admin = new Client({ connectionString: serveur });
   await admin.connect();
@@ -82,6 +84,19 @@ export async function creerBaseDeTest(options: { avecDemo?: boolean } = {}): Pro
       await a.end();
     },
   };
+}
+
+/** Supprime les bases jetables laissées par une exécution interrompue. */
+export async function supprimerBasesOrphelines(prefixe: string): Promise<void> {
+  if (!/^[a-z0-9_]+$/.test(prefixe)) throw new Error("Préfixe invalide");
+  const admin = new Client({ connectionString: urlServeur() });
+  await admin.connect();
+  const { rows } = await admin.query<{ datname: string }>(
+    "select datname from pg_database where datname like $1",
+    [`${prefixe}\\_%`],
+  );
+  for (const { datname } of rows) await admin.query(`drop database if exists ${datname} with (force)`);
+  await admin.end();
 }
 
 export type Identite =
