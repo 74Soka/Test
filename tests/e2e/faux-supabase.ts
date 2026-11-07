@@ -203,8 +203,21 @@ async function rest(req: http.IncomingMessage, res: http.ServerResponse, url: UR
     const fn = url.pathname.split("/")[4];
     const args = (await lireCorps(req)) || {};
     const noms = Object.keys(args);
+    // Types des paramètres : un tableau Postgres (uuid[]) ne se passe pas comme du JSON
+    const { rows: types } = await db.query(
+      `select a.nom, a.type from pg_proc p,
+         unnest(p.proargnames, (p.proargtypes::oid[])::regtype[]::text[]) as a(nom, type)
+       where p.proname = $1`,
+      [fn],
+    );
+    const typeDe = (nom: string) => types.find((t: { nom: string }) => t.nom === nom)?.type ?? "";
+    const valeur = (nom: string) => {
+      const v = args[nom];
+      if (Array.isArray(v) && typeDe(nom).endsWith("[]")) return v;
+      return typeof v === "object" && v !== null ? JSON.stringify(v) : v;
+    };
     const sql = `select public.${ident(fn)}(${noms.map((n, i) => `${n} => $${i + 1}`).join(", ")}) as r`;
-    const r = await db.query(sql, noms.map((n) => (typeof args[n] === "object" && args[n] !== null ? JSON.stringify(args[n]) : args[n])));
+    const r = await db.query(sql, noms.map(valeur));
     return repondre(res, 200, r.rows[0].r);
   }
 
@@ -262,8 +275,22 @@ async function rest(req: http.IncomingMessage, res: http.ServerResponse, url: UR
 async function demarrer() {
   await supprimerBasesOrphelines("paniers_e2e");
   const base = await creerBaseDeTest({ avecDemo: true, prefixe: "paniers_e2e" });
-  // Pool : l'application envoie plusieurs requêtes en parallèle
+  // Le compte de démo existe et est administrateur (les fonctions de tournée le vérifient)
+  await base.client.query("insert into auth.users (id, email) values ($1, $2) on conflict do nothing", [
+    UTILISATEUR.id,
+    UTILISATEUR.email,
+  ]);
+  await base.client.query("insert into public.profils (id, role) values ($1, 'admin') on conflict do nothing", [
+    UTILISATEUR.id,
+  ]);
+  // Pool : l'application envoie plusieurs requêtes en parallèle. Chaque
+  // connexion porte l'identité du compte de démo (auth.uid()).
   db = new Pool({ connectionString: urlAvecBase(urlServeur(), base.nom), max: 5 });
+  db.on("connect", (connexion: { query: (sql: string, valeurs: unknown[]) => Promise<unknown> }) =>
+    connexion.query("select set_config('request.jwt.claims', $1, false)", [
+      JSON.stringify({ sub: UTILISATEUR.id, role: "authenticated" }),
+    ]),
+  );
   const serveur = http.createServer(async (req, res) => {
     const url = new URL(req.url ?? "/", `http://localhost:${PORT}`);
     try {

@@ -33,6 +33,15 @@ export const utilisateurCourant = cache(async (): Promise<Utilisateur | null> =>
 export async function exigerAdmin(): Promise<Utilisateur> {
   const utilisateur = await utilisateurCourant();
   if (!utilisateur) redirect("/connexion");
+  if (utilisateur.role === "livreur") redirect("/tournee");
   if (utilisateur.role !== "admin") redirect("/acces-refuse");
   return utilisateur;
+}
+
+/** Écrans de terrain (tournée) : administrateur ou livreur. */
+export async function exigerEquipe(): Promise<Utilisateur & { role: "admin" | "livreur" }> {
+  const utilisateur = await utilisateurCourant();
+  if (!utilisateur) redirect("/connexion");
+  if (utilisateur.role !== "admin" && utilisateur.role !== "livreur") redirect("/acces-refuse");
+  return utilisateur as Utilisateur & { role: "admin" | "livreur" };
 }

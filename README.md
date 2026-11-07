@@ -9,9 +9,8 @@ téléphone : gros boutons, textes lisibles dehors, et on peut l'installer sur l
 | Phase | Contenu | État |
 |---|---|---|
 | **1** | Clients, secteurs, catalogue, commandes, vue Livraisons | ✅ livrée, à valider |
-| 2 | Tournées optimisées (carte, ordre de passage, Google Maps / Waze) | à venir |
-| 3 | Fidélité et parrainage (tampons, récompenses, VIP / Ultra) | ✅ livrée, à valider |
-| 3 bis | Bouton « Livré » dans l'écran de tournée | avec la Phase 2 |
+| 2 | Tournées optimisées (carte, ordre de passage, Google Maps / Waze, bouton « Livré » hors connexion) | ✅ livrée, à valider |
+| 3 | Fidélité et parrainage (tampons, récompenses, VIP / Ultra, cadeaux de parrainage) | ✅ livrée, à valider |
 
 ### Ce que fait la Phase 1
 
@@ -70,6 +69,36 @@ Tout se règle dans *Réglages → Fidélité et parrainage* (et le nombre de ta
   comme sur une carte papier (7 tampons − 5 = 2), et rendus si la commande est annulée. Ce qui est offert apparaît dans
   la commande et dans le récapitulatif à préparer. Les articles offerts ne rapportent pas de tampons.
 - Si un filleul est supprimé (RGPD), son parrain garde les tampons gagnés grâce à lui.
+- **Cadeaux de parrainage**, en plus des tampons, à partir du 1er janvier 2027 (date réglable) :
+  - **le filleul** reçoit 6 œufs BIO offerts dans sa première commande, ajoutés d'office ;
+  - **le parrain** reçoit une confiture offerte, une par filleul, dès que celui-ci a commandé.
+    Elle est signalée sur sa fiche et dans sa prochaine commande (bouton *Offrir*).
+
+### Tournées (Phase 2)
+
+Onglet **Tournée**, pour un jour et un secteur :
+
+- **carte** avec le point de départ et les arrêts numérotés (en vert une fois livrés), et **liste** dans l'ordre de
+  passage ;
+- **Optimiser l'ordre** : calcule le meilleur ordre depuis le point de départ, retour compris. En cours de tournée, les
+  arrêts déjà livrés restent en tête et le reste repart du dernier arrêt livré ;
+- **Réorganiser** : flèches ↑ ↓, puis *Enregistrer l'ordre* ;
+- **Prochain arrêt** mis en avant, avec **Google Maps** et **Waze** en un geste. On peut aussi ouvrir les prochains
+  arrêts d'un coup dans Google Maps, qui limite à 10 arrêts ;
+- sur chaque arrêt : notes de livraison (code portail…), contenu, cadeaux à remettre, montant à encaisser, appel ;
+- **bouton « Livré »** : statut, heure de livraison et tampons de fidélité. Il marche **sans réseau** : l'appui est
+  gardé dans le téléphone, avec son heure, et envoyé dès que la connexion revient. Laissez alors la page ouverte.
+
+**Calcul de l'ordre** (module `src/lib/tournees/`, fournisseur interchangeable) :
+
+- sans réglage : calcul local à vol d'oiseau, correct mais qui ignore les routes ;
+- avec une **clé OpenRouteService** (gratuite sur [openrouteservice.org](https://openrouteservice.org), environ 500
+  calculs par jour) : ordre calculé sur les vraies routes, avec la durée. Ajoutez la clé dans la variable
+  d'environnement `ORS_API_KEY` (dans Netlify : *Project configuration → Environment variables*), puis redéployez. Si
+  le service ne répond pas, l'application revient au calcul local et le signale.
+
+**Livreurs** : un compte au rôle `livreur` ne voit que l'onglet Tournée. Il peut marquer les livraisons et changer
+l'ordre, mais ne touche ni aux clients ni aux commandes.
 
 ## Technologies
 

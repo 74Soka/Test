@@ -1,0 +1,373 @@
+"use client";
+
+import Link from "next/link";
+import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
+import { enregistrerOrdre, marquerLivraison, optimiserTournee } from "./actions";
+import { CarteTournee } from "@/components/carte-tournee";
+import { Bouton, Carte, LienExterneBouton, MessageErreur, MessageInfo, cx } from "@/components/ui";
+import { formaterPrix } from "@/lib/domaine/argent";
+import { formaterTelephone } from "@/lib/domaine/telephone";
+import {
+  ajouterALaFile,
+  ecrireFile,
+  lireFile,
+  viderFile,
+  type ActionLivraison,
+} from "@/lib/tournees/file-attente";
+import { longueurTrajet } from "@/lib/tournees/geo";
+import {
+  formaterDistance,
+  formaterDuree,
+  lienGoogleMaps,
+  lienTourneeGoogleMaps,
+  lienWaze,
+} from "@/lib/tournees/navigation";
+
+export type ArretTournee = {
+  id: string;
+  nom: string;
+  adresse: string;
+  complement: string | null;
+  commune: string;
+  telephone: string | null;
+  notesLivraison: string | null;
+  notesCommande: string | null;
+  position: { lat: number; lng: number } | null;
+  contenu: string;
+  offert: string | null;
+  totalCentimes: number;
+  livree: boolean;
+  livreeLe: string | null;
+};
+
+type EtatLivraison = { livree: boolean; heure: string | null };
+
+const HEURE = new Intl.DateTimeFormat("fr-FR", { timeZone: "Europe/Paris", hour: "2-digit", minute: "2-digit" });
+
+export function Tournee({
+  date,
+  secteur,
+  arrets,
+  estAdmin,
+}: {
+  date: string;
+  secteur: { id: string; nom: string; couleur: string; depart: { lat: number; lng: number; adresse: string } };
+  arrets: ArretTournee[];
+  estAdmin: boolean;
+}) {
+  const parId = useMemo(() => new Map(arrets.map((a) => [a.id, a])), [arrets]);
+  const [ordre, setOrdre] = useState(() => arrets.map((a) => a.id));
+  const [etats, setEtats] = useState<Record<string, EtatLivraison>>(() =>
+    Object.fromEntries(arrets.map((a) => [a.id, { livree: a.livree, heure: a.livreeLe }])),
+  );
+  const [file, setFile] = useState<ActionLivraison[]>([]);
+  const [reorganiser, setReorganiser] = useState(false);
+  const [infos, setInfos] = useState<{ texte: string; avertissement?: string } | null>(null);
+  const [erreur, setErreur] = useState<string | null>(null);
+  const [enCours, demarrer] = useTransition();
+  const envoiEnCours = useRef(false);
+
+  // Envoie les appuis en attente ; s'arrête à la première coupure réseau
+  const vider = useCallback(async (aEnvoyer: ActionLivraison[]) => {
+    if (envoiEnCours.current || aEnvoyer.length === 0) return;
+    envoiEnCours.current = true;
+    try {
+      const { restantes, refus } = await viderFile(aEnvoyer, (a) => marquerLivraison(a.commandeId, a.livree, a.horodatage));
+      // Des appuis ont pu arriver pendant l'envoi : on garde ceux qui ne sont pas partis
+      setFile((actuelle) => {
+        const envoyees = aEnvoyer.filter((a) => !restantes.includes(a));
+        const suite = actuelle.filter((a) => !envoyees.includes(a));
+        ecrireFile(window.localStorage, suite);
+        return suite;
+      });
+      if (refus.length) setErreur(refus.map((r) => r.erreur).join(" "));
+    } finally {
+      envoiEnCours.current = false;
+    }
+  }, []);
+
+  // Au chargement (après le premier affichage) : on reprend les appuis restés dans le téléphone
+  useEffect(() => {
+    const minuteur = window.setTimeout(() => {
+      const enAttente = lireFile(window.localStorage).filter((a) => parId.has(a.commandeId));
+      if (enAttente.length === 0) return;
+      setFile(enAttente);
+      setEtats((e) => {
+        const copie = { ...e };
+        for (const a of enAttente) copie[a.commandeId] = { livree: a.livree, heure: a.livree ? a.horodatage : null };
+        return copie;
+      });
+      void vider(enAttente);
+    }, 0);
+    return () => window.clearTimeout(minuteur);
+  }, [parId, vider]);
+
+  // Retour du réseau, et nouvel essai régulier tant qu'il reste des appuis
+  useEffect(() => {
+    if (file.length === 0) return;
+    const essayer = () => void vider(file);
+    window.addEventListener("online", essayer);
+    const minuteur = window.setInterval(essayer, 30_000);
+    return () => {
+      window.removeEventListener("online", essayer);
+      window.clearInterval(minuteur);
+    };
+  }, [file, vider]);
+
+  function basculer(id: string) {
+    const livree = !etats[id]?.livree;
+    const action: ActionLivraison = { commandeId: id, livree, horodatage: new Date().toISOString() };
+    setEtats((e) => ({ ...e, [id]: { livree, heure: livree ? action.horodatage : null } }));
+    const suite = ajouterALaFile(file, action);
+    setFile(suite);
+    ecrireFile(window.localStorage, suite);
+    void vider(suite);
+  }
+
+  function deplacer(index: number, sens: -1 | 1) {
+    const cible = index + sens;
+    if (cible < 0 || cible >= ordre.length) return;
+    const copie = [...ordre];
+    [copie[index], copie[cible]] = [copie[cible], copie[index]];
+    setOrdre(copie);
+  }
+
+  const arretsOrdonnes = ordre.map((id) => parId.get(id)!).filter(Boolean);
+  const restants = arretsOrdonnes.filter((a) => !etats[a.id]?.livree);
+  const prochain = restants[0];
+  const nbLivres = arretsOrdonnes.length - restants.length;
+  const positions = arretsOrdonnes.flatMap((a) => (a.position ? [a.position] : []));
+  const distanceEstimee = longueurTrajet([secteur.depart, ...positions, secteur.depart]);
+  const departRestant =
+    [...arretsOrdonnes].reverse().find((a) => etats[a.id]?.livree && a.position)?.position ?? secteur.depart;
+  const lienComplet = lienTourneeGoogleMaps(
+    departRestant,
+    restants.flatMap((a) => (a.position ? [a.position] : [])),
+  );
+
+  function defilerVers(id: string) {
+    document.getElementById(`arret-${id}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
+  }
+
+  return (
+    <div className="space-y-4">
+      {file.length > 0 && (
+        <MessageInfo>
+          📶 Hors connexion ? {file.length} livraison{file.length > 1 ? "s" : ""} en attente d&apos;envoi : elles
+          partiront dès que le réseau revient. Gardez cette page ouverte.
+        </MessageInfo>
+      )}
+      {erreur && <MessageErreur>{erreur}</MessageErreur>}
+
+      <Carte className="space-y-3">
+        <div className="flex items-baseline justify-between gap-2">
+          <p className="text-lg font-bold">
+            {nbLivres} / {arretsOrdonnes.length} livré{nbLivres > 1 ? "s" : ""}
+          </p>
+          {positions.length > 0 && (
+            <p className="text-sm text-stone-600">≈ {formaterDistance(distanceEstimee)} à vol d&apos;oiseau</p>
+          )}
+        </div>
+        <div className="h-2 overflow-hidden rounded-full bg-stone-200">
+          <div
+            className="h-full bg-marque-600 transition-all"
+            style={{ width: `${arretsOrdonnes.length ? (100 * nbLivres) / arretsOrdonnes.length : 0}%` }}
+          />
+        </div>
+
+        {prochain ? (
+          <div className="rounded-xl bg-stone-50 p-3 ring-1 ring-stone-200">
+            <p className="text-sm text-stone-600">Prochain arrêt</p>
+            <button type="button" className="text-left" onClick={() => defilerVers(prochain.id)}>
+              <span className="block text-lg font-bold">
+                {ordre.indexOf(prochain.id) + 1}. {prochain.nom}
+              </span>
+              <span className="block text-stone-700">
+                {prochain.adresse}, {prochain.commune}
+              </span>
+            </button>
+            {prochain.position && (
+              <div className="mt-2 grid grid-cols-2 gap-2">
+                <LienExterneBouton href={lienGoogleMaps(prochain.position)} target="_blank" rel="noopener noreferrer" variante="principal">
+                  Google Maps
+                </LienExterneBouton>
+                <LienExterneBouton href={lienWaze(prochain.position)} target="_blank" rel="noopener noreferrer" variante="principal">
+                  Waze
+                </LienExterneBouton>
+              </div>
+            )}
+          </div>
+        ) : (
+          arretsOrdonnes.length > 0 && <p className="font-semibold text-marque-800">🎉 Tournée terminée !</p>
+        )}
+
+        <div className="flex flex-wrap gap-2">
+          <Bouton
+            variante="secondaire"
+            taille="petit"
+            disabled={enCours || reorganiser}
+            onClick={() =>
+              demarrer(async () => {
+                setErreur(null);
+                const r = await optimiserTournee(date, secteur.id);
+                if (!r.ok) return setErreur(r.erreur);
+                setOrdre(r.ordre.filter((id) => parId.has(id)));
+                setInfos({
+                  texte:
+                    r.methode === "openrouteservice"
+                      ? `Ordre optimisé par les routes${r.distanceMetres ? ` : ${formaterDistance(r.distanceMetres)}` : ""}${r.dureeSecondes ? `, ${formaterDuree(r.dureeSecondes)} de route` : ""}.`
+                      : "Ordre optimisé à vol d'oiseau (sans tenir compte des routes).",
+                  avertissement: r.avertissement,
+                });
+              })
+            }
+          >
+            {enCours && !reorganiser ? "Calcul…" : "Optimiser l'ordre"}
+          </Bouton>
+          {reorganiser ? (
+            <Bouton
+              taille="petit"
+              disabled={enCours}
+              onClick={() =>
+                demarrer(async () => {
+                  const r = await enregistrerOrdre(ordre);
+                  if (!r.ok) return setErreur(r.erreur);
+                  setReorganiser(false);
+                  setInfos({ texte: "Ordre enregistré." });
+                })
+              }
+            >
+              Enregistrer l&apos;ordre
+            </Bouton>
+          ) : (
+            <Bouton variante="secondaire" taille="petit" onClick={() => setReorganiser(true)}>
+              Réorganiser
+            </Bouton>
+          )}
+          {lienComplet && (
+            <LienExterneBouton href={lienComplet.url} target="_blank" rel="noopener noreferrer" taille="petit">
+              {lienComplet.arrets < restants.length ? `Google Maps (${lienComplet.arrets} prochains)` : "Tout dans Google Maps"}
+            </LienExterneBouton>
+          )}
+        </div>
+        {infos && (
+          <p className="text-sm text-stone-700">
+            {infos.texte} {infos.avertissement && <span className="text-amber-800">{infos.avertissement}</span>}
+          </p>
+        )}
+      </Carte>
+
+      {positions.length > 0 && (
+        <CarteTournee
+          depart={secteur.depart}
+          couleur={secteur.couleur}
+          onChoisir={defilerVers}
+          points={arretsOrdonnes.flatMap((a, i) =>
+            a.position ? [{ id: a.id, ...a.position, numero: i + 1, livre: Boolean(etats[a.id]?.livree) }] : [],
+          )}
+        />
+      )}
+      <p className="text-sm text-stone-600">Départ : {secteur.depart.adresse}</p>
+
+      <ol className="space-y-3">
+        {arretsOrdonnes.map((a, i) => {
+          const etat = etats[a.id];
+          return (
+            <li key={a.id} id={`arret-${a.id}`}>
+              <section
+                aria-label={`Arrêt ${i + 1} : ${a.nom}`}
+                className={cx(
+                  "rounded-2xl bg-white p-4 shadow-sm ring-1",
+                  etat?.livree ? "ring-marque-600/40" : "ring-stone-200",
+                )}
+              >
+                <div className="flex items-start gap-3">
+                  <span
+                    className="flex size-9 shrink-0 items-center justify-center rounded-full font-bold text-white"
+                    style={{ backgroundColor: etat?.livree ? "#15803d" : secteur.couleur }}
+                  >
+                    {i + 1}
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-lg font-bold">{a.nom}</p>
+                    <p className="text-stone-700">
+                      {a.adresse}
+                      {a.complement && `, ${a.complement}`}, {a.commune}
+                    </p>
+                  </div>
+                  {reorganiser && (
+                    <div className="flex flex-col gap-1">
+                      <Bouton variante="secondaire" taille="petit" aria-label={`Monter ${a.nom}`} disabled={i === 0} onClick={() => deplacer(i, -1)}>
+                        ↑
+                      </Bouton>
+                      <Bouton
+                        variante="secondaire"
+                        taille="petit"
+                        aria-label={`Descendre ${a.nom}`}
+                        disabled={i === arretsOrdonnes.length - 1}
+                        onClick={() => deplacer(i, 1)}
+                      >
+                        ↓
+                      </Bouton>
+                    </div>
+                  )}
+                </div>
+
+                {a.notesLivraison && (
+                  <p className="mt-2 rounded-lg bg-amber-50 px-3 py-1.5 font-medium text-amber-900 ring-1 ring-amber-200">
+                    {a.notesLivraison}
+                  </p>
+                )}
+                <p className="mt-2">{a.contenu}</p>
+                {a.offert && <p className="font-medium text-marque-800">🎁 À remettre : {a.offert}</p>}
+                {a.notesCommande && <p className="text-sm text-amber-800">« {a.notesCommande} »</p>}
+                <p className="mt-1 text-sm text-stone-600">À encaisser : {formaterPrix(a.totalCentimes)}</p>
+
+                {!reorganiser && (
+                  <>
+                    <div className="mt-3 grid grid-cols-3 gap-2">
+                      {a.telephone ? (
+                        <LienExterneBouton href={`tel:${a.telephone}`} taille="petit" aria-label={`Appeler ${a.nom} au ${formaterTelephone(a.telephone)}`}>
+                          Appeler
+                        </LienExterneBouton>
+                      ) : (
+                        <span />
+                      )}
+                      {a.position ? (
+                        <>
+                          <LienExterneBouton href={lienGoogleMaps(a.position)} target="_blank" rel="noopener noreferrer" taille="petit">
+                            Maps
+                          </LienExterneBouton>
+                          <LienExterneBouton href={lienWaze(a.position)} target="_blank" rel="noopener noreferrer" taille="petit">
+                            Waze
+                          </LienExterneBouton>
+                        </>
+                      ) : (
+                        <span className="col-span-2 self-center text-sm text-stone-500">Position inconnue</span>
+                      )}
+                    </div>
+                    <Bouton
+                      taille="grand"
+                      variante={etat?.livree ? "secondaire" : "principal"}
+                      className="mt-2 w-full"
+                      onClick={() => basculer(a.id)}
+                    >
+                      {etat?.livree
+                        ? `✓ Livré${etat.heure ? ` à ${HEURE.format(new Date(etat.heure))}` : ""} · annuler`
+                        : "Livré"}
+                    </Bouton>
+                    {estAdmin && (
+                      <Link href={`/commandes/${a.id}`} className="mt-2 block text-center text-sm font-semibold text-marque-800 underline">
+                        Voir la commande
+                      </Link>
+                    )}
+                  </>
+                )}
+              </section>
+            </li>
+          );
+        })}
+      </ol>
+    </div>
+  );
+}

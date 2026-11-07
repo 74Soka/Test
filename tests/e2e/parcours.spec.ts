@@ -215,6 +215,59 @@ test("vue Livraisons : récapitulatif et regroupement par secteur", async ({ pag
   await expect(page.getByRole("heading", { name: "À préparer" })).toBeVisible();
 });
 
+test("tournée : carte, ordre optimisé, réorganisation, bouton Livré", async ({ page }) => {
+  await seConnecter(page);
+  await page.goto("/tournee");
+  await expect(page.getByRole("heading", { name: "Tournée" })).toBeVisible();
+  const arrets = page.getByRole("region", { name: /^Arrêt \d+ :/ });
+  await expect(arrets.first()).toBeVisible();
+  const total = await arrets.count();
+  expect(total).toBeGreaterThan(1);
+  await expect(page.locator(".leaflet-container")).toBeVisible();
+  await expect(page.getByText(/Prochain arrêt/)).toBeVisible();
+
+  // Optimisation (calcul local, sans clé OpenRouteService)
+  await page.getByRole("button", { name: "Optimiser l'ordre" }).click();
+  await expect(page.getByText("Ordre optimisé à vol d'oiseau")).toBeVisible();
+
+  // Réorganisation : le 2e arrêt passe en tête, et l'ordre est enregistré
+  const deuxieme = (await arrets.nth(1).getAttribute("aria-label"))!.replace(/^Arrêt 2 : /, "");
+  await page.getByRole("button", { name: "Réorganiser" }).click();
+  await page.getByRole("button", { name: `Monter ${deuxieme}` }).click();
+  await page.getByRole("button", { name: "Enregistrer l'ordre" }).click();
+  await expect(page.getByText("Ordre enregistré.")).toBeVisible();
+  await page.reload();
+  await expect(arrets.first()).toHaveAttribute("aria-label", `Arrêt 1 : ${deuxieme}`);
+
+  // Livré : bouton puis annulation
+  const premier = arrets.first();
+  await premier.getByRole("button", { name: "Livré", exact: true }).click();
+  await expect(premier.getByRole("button", { name: /✓ Livré à \d{2}:\d{2} · annuler/ })).toBeVisible();
+  await expect(page.getByText(`1 / ${total} livré`)).toBeVisible();
+  await page.reload();
+  await expect(arrets.first().getByRole("button", { name: /✓ Livré/ })).toBeVisible();
+  await arrets.first().getByRole("button", { name: /✓ Livré/ }).click();
+  await expect(arrets.first().getByRole("button", { name: "Livré", exact: true })).toBeVisible();
+});
+
+test("tournée hors connexion : l'appui « Livré » attend le réseau puis part tout seul", async ({ page, context }) => {
+  await seConnecter(page);
+  await page.goto("/tournee");
+  const arrets = page.getByRole("region", { name: /^Arrêt \d+ :/ });
+  const dernier = arrets.last();
+  await expect(dernier).toBeVisible();
+
+  await context.setOffline(true);
+  await dernier.getByRole("button", { name: "Livré", exact: true }).click();
+  await expect(dernier.getByRole("button", { name: /✓ Livré/ })).toBeVisible();
+  await expect(page.getByText(/1 livraison en attente d'envoi/)).toBeVisible();
+
+  await context.setOffline(false);
+  await expect(page.getByText(/en attente d'envoi/)).toHaveCount(0, { timeout: 40_000 });
+  await page.reload();
+  await expect(arrets.last().getByRole("button", { name: /✓ Livré/ })).toBeVisible();
+});
+
 test("adresse introuvable : saisie manuelle et repère placé sur la carte", async ({ page }) => {
   await seConnecter(page);
   await page.goto("/clients/nouveau");

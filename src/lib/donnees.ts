@@ -229,3 +229,22 @@ export async function compterCommandesClient(clientId: string): Promise<number> 
   if (error) throw new Error(error.message);
   return count ?? 0;
 }
+
+const CHAMPS_TOURNEE = `id, date_livraison, statut, livree_le, notes, ordre_tournee,
+  client:clients(id, nom, prenom, adresse, complement_adresse, code_postal, commune, telephone, secteur_id, notes_livraison, lat, lng),
+  lignes:lignes_commande(article_id, libelle, categorie, quantite, prix_unitaire_centimes),
+  recompenses:recompenses_utilisees(id, nom, cadeaux(article_id, libelle, categorie, quantite))` as const;
+
+/** Commandes (non annulées) d'un jour de livraison, pour les tournées. */
+export async function listerCommandesDuJour(date: DateIso) {
+  const supabase = await clientSupabase();
+  return verifier(
+    await supabase
+      .from("commandes")
+      .select(CHAMPS_TOURNEE)
+      .eq("date_livraison", date)
+      .neq("statut", "annulee")
+      .order("ordre_tournee", { ascending: true, nullsFirst: false }),
+  );
+}
+export type CommandeTournee = Awaited<ReturnType<typeof listerCommandesDuJour>>[number];

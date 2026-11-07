@@ -10,6 +10,7 @@ export default async function PageAccesRefuse() {
   const utilisateur = await utilisateurCourant();
   if (!utilisateur) redirect("/connexion");
   if (utilisateur.role === "admin") redirect("/livraisons");
+  if (utilisateur.role === "livreur") redirect("/tournee");
 
   const message =
     utilisateur.role === "livreur"
