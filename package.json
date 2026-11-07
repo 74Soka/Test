@@ -25,6 +25,7 @@
     "zod": "^4.6.7"
   },
   "devDependencies": {
+    "@netlify/plugin-nextjs": "5.16.6",
     "@playwright/test": "1.63.0",
     "@tailwindcss/turbopack": "^4",
     "@types/leaflet": "^1.9.22",
