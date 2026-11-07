@@ -194,7 +194,14 @@ Tout se fait depuis un navigateur, même sur téléphone :
    construction : si on les ajoute après, il faut relancer un déploiement.
 4. *Deploy*. Les réglages de construction sont dans `netlify.toml`. Chaque nouveau commit sur la branche est ensuite
    publié automatiquement.
-5. Sur le téléphone, ouvrez l'adresse du site, connectez-vous, puis *Ajouter à l'écran d'accueil*.
+5. Rendez le projet **public** (bouton *Make public*, ou *Project configuration → Access & security*). Sinon, Netlify
+   demande une connexion Netlify avant même d'afficher l'application. L'application garde sa propre connexion : rendre
+   le projet public n'expose aucune donnée.
+6. Sur le téléphone, ouvrez l'adresse du site, connectez-vous, puis *Ajouter à l'écran d'accueil*.
+
+**En cas de page « Page not found » de Netlify partout** : le module Next.js de Netlify n'a pas tourné, et le
+dossier `.next` brut a été publié. Ce module est déclaré dans `netlify.toml`, avec sa version fixée dans
+`package.json` (`@netlify/plugin-nextjs`) : vérifiez que ces deux fichiers sont à jour, puis relancez un déploiement.
 
 Ne mettez jamais `SUPABASE_SECRET_KEY` dans l'hébergeur : elle ne sert qu'au script `creer-admin`.
 
