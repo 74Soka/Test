@@ -2,7 +2,21 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { creerBaseDeTest, creerCompte, en, codeErreur, type BaseDeTest } from "./outils";
 import { creerArticle, creerClient, creerSecteur, enregistrerCommande } from "./fabrique";
 
-const TABLES = ["profils", "secteurs", "secteur_communes", "clients", "articles", "commandes", "lignes_commande"];
+const TABLES = [
+  "profils",
+  "secteurs",
+  "secteur_communes",
+  "clients",
+  "articles",
+  "commandes",
+  "lignes_commande",
+  "parametres_fidelite",
+  "recompenses",
+  "tampons",
+  "recompenses_utilisees",
+  "cadeaux",
+  "fidelite_clients",
+];
 
 let base: BaseDeTest;
 let admin: string;
@@ -34,7 +48,7 @@ describe("RLS activée partout", () => {
       `select relname, relrowsecurity from pg_class
        where relnamespace = 'public'::regnamespace and relkind = 'r'`,
     );
-    for (const t of TABLES) {
+    for (const t of TABLES.filter((t) => t !== "fidelite_clients")) {
       const ligne = rows.find((r) => r.relname === t);
       expect(ligne, t).toBeDefined();
       expect(ligne!.relrowsecurity, t).toBe(true);
@@ -141,9 +155,18 @@ describe("livreur", () => {
   });
 
   it("ne peut pas créer de commande", async () => {
+    // Refus par la RLS (42501) ou client invisible en écriture (PN011)
     await expect(
       en(base.client, { role: "authenticated", userId: livreur }, (c) =>
         enregistrerCommande(c, { clientId, date: "2026-11-21", lignes: [{ article_id: panier, quantite: 1 }] }),
+      ),
+    ).rejects.toSatisfy((e) => ["42501", "PN011"].includes(codeErreur(e)!));
+  });
+
+  it("ne peut pas s'ajouter de tampons", async () => {
+    await expect(
+      en(base.client, { role: "authenticated", userId: livreur }, (c) =>
+        c.query("insert into public.tampons (client_id, quantite, motif) values ($1, 50, 'ajustement')", [clientId]),
       ),
     ).rejects.toSatisfy((e) => codeErreur(e) === "42501");
   });

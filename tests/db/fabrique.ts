@@ -39,27 +39,68 @@ export async function creerClient(
 
 export async function creerArticle(
   client: ClientBase,
-  valeurs: { categorie: "panier" | "supplement"; prix: number; actif?: boolean },
+  valeurs: { categorie: "panier" | "supplement"; prix: number; actif?: boolean; tampons?: number },
 ) {
   const n = suivant();
   const { rows } = await client.query<{ id: string }>(
-    `insert into public.articles (nom, categorie, prix_centimes, actif)
-     values ($1, $2, $3, $4) returning id`,
-    [`Article ${n}`, valeurs.categorie, valeurs.prix, valeurs.actif ?? true],
+    `insert into public.articles (nom, categorie, prix_centimes, actif, tampons)
+     values ($1, $2, $3, $4, $5) returning id`,
+    [`Article ${n}`, valeurs.categorie, valeurs.prix, valeurs.actif ?? true, valeurs.tampons ?? 0],
   );
   return rows[0].id;
 }
 
 export type Ligne = { article_id: string; quantite: number };
+export type RecompenseDemandee = { id?: string | null; recompense_id: string; articles: Ligne[] };
 
 /** Appelle la fonction enregistrer_commande. */
 export async function enregistrerCommande(
   client: ClientBase,
-  p: { clientId: string; date: string; lignes: Ligne[]; notes?: string | null; commandeId?: string | null },
+  p: {
+    clientId: string;
+    date: string;
+    lignes: Ligne[];
+    notes?: string | null;
+    commandeId?: string | null;
+    recompenses?: RecompenseDemandee[];
+  },
 ) {
   const { rows } = await client.query<{ id: string }>(
-    "select public.enregistrer_commande($1, $2, $3::jsonb, $4, $5) as id",
-    [p.clientId, p.date, JSON.stringify(p.lignes), p.notes ?? null, p.commandeId ?? null],
+    "select public.enregistrer_commande($1, $2, $3::jsonb, $4, $5, $6::jsonb) as id",
+    [
+      p.clientId,
+      p.date,
+      JSON.stringify(p.lignes),
+      p.notes ?? null,
+      p.commandeId ?? null,
+      JSON.stringify(p.recompenses ?? []),
+    ],
   );
   return rows[0].id;
+}
+
+/** Solde, filleuls et niveau d'un client (vue fidelite_clients). */
+export async function fidelite(client: ClientBase, clientId: string) {
+  const { rows } = await client.query<{
+    solde: number;
+    tampons_gagnes: number;
+    filleuls: number;
+    filleuls_comptes: number;
+    niveau: "standard" | "vip" | "ultra";
+  }>(
+    "select solde, tampons_gagnes, filleuls, filleuls_comptes, niveau from public.fidelite_clients where client_id = $1",
+    [clientId],
+  );
+  return rows[0];
+}
+
+/** Id d'une récompense par son nom. */
+export async function recompense(client: ClientBase, nom: string): Promise<string> {
+  const { rows } = await client.query<{ id: string }>("select id from public.recompenses where nom = $1", [nom]);
+  return rows[0].id;
+}
+
+/** Livre une commande (comme le bouton « Livrée »). */
+export async function livrer(client: ClientBase, commandeId: string) {
+  await client.query("select public.changer_statut_commande($1, 'livree')", [commandeId]);
 }

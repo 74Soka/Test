@@ -62,8 +62,11 @@ begin
   ---------------------------------------------------------------------------
   -- Catalogue
   ---------------------------------------------------------------------------
-  insert into public.articles (nom, categorie, prix_centimes, ordre) values ('Panier 30 €', 'panier', 3000, 1) returning id into a_p30;
-  insert into public.articles (nom, categorie, prix_centimes, ordre) values ('Panier 50 €', 'panier', 5000, 2) returning id into a_p50;
+  insert into public.articles (nom, categorie, prix_centimes, ordre, tampons) values ('Panier 30 €', 'panier', 3000, 1, 1) returning id into a_p30;
+  insert into public.articles (nom, categorie, prix_centimes, ordre, tampons) values ('Panier 50 €', 'panier', 5000, 2, 2) returning id into a_p50;
+  -- Récompenses « panier offert » : article proposé par défaut
+  update public.recompenses set article_id = a_p30 where nom = 'Panier 30 € offert';
+  update public.recompenses set article_id = a_p50 where nom = 'Panier 50 € offert';
   insert into public.articles (nom, categorie, prix_centimes, ordre) values
     ('Haricots verts BIO (500 g)', 'supplement', 500, 10),
     ('Kakis BIO (1 barquette)', 'supplement', 500, 11),
