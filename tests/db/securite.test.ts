@@ -44,6 +44,34 @@ describe("RLS activée partout", () => {
   });
 });
 
+describe("fonctions d'autorisation", () => {
+  it("ne sont pas dans le schéma public (exposé par l'API)", async () => {
+    const { rows } = await base.client.query(
+      `select proname from pg_proc
+       where pronamespace = 'public'::regnamespace and proname in ('est_admin', 'est_equipe')`,
+    );
+    expect(rows).toEqual([]);
+  });
+
+  it("ne sont pas utilisables par un visiteur anonyme", async () => {
+    await expect(
+      en(base.client, { role: "anon" }, (c) => c.query("select prive.est_admin()")),
+    ).rejects.toSatisfy((e) => codeErreur(e) === "42501");
+  });
+
+  it("répondent pour l'utilisateur connecté uniquement", async () => {
+    const reponse = async (userId: string) =>
+      (
+        await en(base.client, { role: "authenticated", userId }, (c) =>
+          c.query<{ admin: boolean; equipe: boolean }>("select prive.est_admin() as admin, prive.est_equipe() as equipe"),
+        )
+      ).rows[0];
+    expect(await reponse(admin)).toEqual({ admin: true, equipe: true });
+    expect(await reponse(livreur)).toEqual({ admin: false, equipe: true });
+    expect(await reponse(sansProfil)).toEqual({ admin: false, equipe: false });
+  });
+});
+
 describe("visiteur anonyme", () => {
   it.each(TABLES)("n'a aucun accès à %s", async (table) => {
     await expect(

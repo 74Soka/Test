@@ -47,8 +47,15 @@ comment on table public.profils is
   'Comptes autorisés à utiliser l''application. Un compte sans profil n''a accès à rien.';
 
 -- Fonctions d'autorisation utilisées par les règles RLS.
--- SECURITY DEFINER : elles lisent `profils` sans dépendre de ses propres règles.
-create function public.est_admin()
+-- Rangées dans un schéma privé, non exposé par l'API de Supabase : on ne peut
+-- pas les appeler directement depuis l'extérieur.
+-- SECURITY DEFINER : elles lisent `profils` sans dépendre de ses propres règles,
+-- et ne renseignent que sur l'utilisateur qui fait la requête (auth.uid()).
+create schema if not exists prive;
+revoke all on schema prive from public;
+grant usage on schema prive to authenticated;
+
+create function prive.est_admin()
 returns boolean
 language sql
 stable
@@ -57,11 +64,11 @@ set search_path = ''
 as $$
   select exists (
     select 1 from public.profils
-    where id = auth.uid() and role = 'admin'
+    where id = (select auth.uid()) and role = 'admin'
   );
 $$;
 
-create function public.est_equipe()
+create function prive.est_equipe()
 returns boolean
 language sql
 stable
@@ -69,9 +76,14 @@ security definer
 set search_path = ''
 as $$
   select exists (
-    select 1 from public.profils where id = auth.uid()
+    select 1 from public.profils where id = (select auth.uid())
   );
 $$;
+
+revoke execute on function prive.est_admin() from public;
+revoke execute on function prive.est_equipe() from public;
+grant execute on function prive.est_admin() to authenticated;
+grant execute on function prive.est_equipe() to authenticated;
 
 -- -----------------------------------------------------------------------------
 -- Secteurs : une zone livrée sur un jour et un créneau donnés
@@ -468,7 +480,7 @@ alter table public.lignes_commande enable row level security;
 -- les comptes sont créés par le script `npm run creer-admin` ou dans Supabase.
 create policy "profils_lecture" on public.profils
   for select to authenticated
-  using (id = (select auth.uid()) or (select public.est_admin()));
+  using (id = (select auth.uid()) or (select prive.est_admin()));
 
 -- Données métier : lecture pour l'équipe (admin + livreurs), écriture admin.
 do $$
@@ -478,16 +490,16 @@ begin
   foreach t in array array['secteurs', 'secteur_communes', 'clients', 'articles', 'commandes', 'lignes_commande']
   loop
     execute format(
-      'create policy %I on public.%I for select to authenticated using ((select public.est_equipe()))',
+      'create policy %I on public.%I for select to authenticated using ((select prive.est_equipe()))',
       t || '_lecture_equipe', t);
     execute format(
-      'create policy %I on public.%I for insert to authenticated with check ((select public.est_admin()))',
+      'create policy %I on public.%I for insert to authenticated with check ((select prive.est_admin()))',
       t || '_ajout_admin', t);
     execute format(
-      'create policy %I on public.%I for update to authenticated using ((select public.est_admin())) with check ((select public.est_admin()))',
+      'create policy %I on public.%I for update to authenticated using ((select prive.est_admin())) with check ((select prive.est_admin()))',
       t || '_modif_admin', t);
     execute format(
-      'create policy %I on public.%I for delete to authenticated using ((select public.est_admin()))',
+      'create policy %I on public.%I for delete to authenticated using ((select prive.est_admin()))',
       t || '_suppr_admin', t);
   end loop;
 end;
@@ -498,7 +510,5 @@ revoke all on all tables in schema public from anon;
 grant select, insert, update, delete on all tables in schema public to authenticated;
 
 revoke execute on all functions in schema public from public, anon;
-grant execute on function public.est_admin() to authenticated;
-grant execute on function public.est_equipe() to authenticated;
 grant execute on function public.enregistrer_commande(uuid, date, jsonb, text, uuid) to authenticated;
 grant execute on function public.changer_statut_commande(uuid, public.statut_commande) to authenticated;

@@ -319,8 +319,6 @@ export type Database = {
         };
         Returns: string;
       };
-      est_admin: { Args: never; Returns: boolean };
-      est_equipe: { Args: never; Returns: boolean };
     };
     Enums: {
       categorie_article: "panier" | "supplement";
