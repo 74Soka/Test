@@ -176,6 +176,13 @@ export type Database = {
             foreignKeyName: "clients_parrain_id_fkey"
             columns: ["parrain_id"]
             isOneToOne: false
+            referencedRelation: "confitures_parrain_dues"
+            referencedColumns: ["filleul_id"]
+          },
+          {
+            foreignKeyName: "clients_parrain_id_fkey"
+            columns: ["parrain_id"]
+            isOneToOne: false
             referencedRelation: "fidelite_clients"
             referencedColumns: ["client_id"]
           },
@@ -232,6 +239,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "clients"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "commandes_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "confitures_parrain_dues"
+            referencedColumns: ["filleul_id"]
           },
           {
             foreignKeyName: "commandes_client_id_fkey"
@@ -441,6 +455,13 @@ export type Database = {
             foreignKeyName: "recompenses_utilisees_filleul_id_fkey"
             columns: ["filleul_id"]
             isOneToOne: false
+            referencedRelation: "confitures_parrain_dues"
+            referencedColumns: ["filleul_id"]
+          },
+          {
+            foreignKeyName: "recompenses_utilisees_filleul_id_fkey"
+            columns: ["filleul_id"]
+            isOneToOne: false
             referencedRelation: "fidelite_clients"
             referencedColumns: ["client_id"]
           },
@@ -561,6 +582,13 @@ export type Database = {
             foreignKeyName: "tampons_client_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
+            referencedRelation: "confitures_parrain_dues"
+            referencedColumns: ["filleul_id"]
+          },
+          {
+            foreignKeyName: "tampons_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
             referencedRelation: "fidelite_clients"
             referencedColumns: ["client_id"]
           },
@@ -582,6 +610,13 @@ export type Database = {
             foreignKeyName: "tampons_filleul_id_fkey"
             columns: ["filleul_id"]
             isOneToOne: false
+            referencedRelation: "confitures_parrain_dues"
+            referencedColumns: ["filleul_id"]
+          },
+          {
+            foreignKeyName: "tampons_filleul_id_fkey"
+            columns: ["filleul_id"]
+            isOneToOne: false
             referencedRelation: "fidelite_clients"
             referencedColumns: ["client_id"]
           },
@@ -597,7 +632,29 @@ export type Database = {
           filleul_prenom: string | null
           premiere_commande: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "clients_parrain_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "clients_parrain_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "confitures_parrain_dues"
+            referencedColumns: ["filleul_id"]
+          },
+          {
+            foreignKeyName: "clients_parrain_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "fidelite_clients"
+            referencedColumns: ["client_id"]
+          },
+        ]
       }
       fidelite_clients: {
         Row: {
@@ -613,7 +670,29 @@ export type Database = {
           tampons_gagnes: number | null
           tampons_utilises: number | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "clients_parrain_id_fkey"
+            columns: ["parrain_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "clients_parrain_id_fkey"
+            columns: ["parrain_id"]
+            isOneToOne: false
+            referencedRelation: "confitures_parrain_dues"
+            referencedColumns: ["filleul_id"]
+          },
+          {
+            foreignKeyName: "clients_parrain_id_fkey"
+            columns: ["parrain_id"]
+            isOneToOne: false
+            referencedRelation: "fidelite_clients"
+            referencedColumns: ["client_id"]
+          },
+        ]
       }
     }
     Functions: {
