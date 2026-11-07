@@ -1,7 +1,14 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { exigerAdmin } from "@/lib/auth";
-import { commandeDeLaSemaine, lireClient, listerSecteurs } from "@/lib/donnees";
+import {
+  commandeDeLaSemaine,
+  lireClient,
+  lireFideliteClient,
+  lireParametresFidelite,
+  listerRecompenses,
+  listerSecteurs,
+} from "@/lib/donnees";
 import { formaterPrix } from "@/lib/domaine/argent";
 import { LIBELLES_STATUT, resumeLignes, totalCommande, type Statut } from "@/lib/domaine/commandes";
 import { aujourdhui, formaterDate, formaterDateCourte, lundiDeLaSemaine } from "@/lib/domaine/dates";
@@ -20,6 +27,7 @@ import {
   TitreSection,
 } from "@/components/ui";
 import { BoutonActivite } from "./bouton-activite";
+import { CarteFidelite } from "./carte-fidelite";
 
 export const metadata: Metadata = { title: "Fiche client" };
 
@@ -32,7 +40,13 @@ const COULEUR_STATUT: Record<Statut, "orange" | "vert" | "gris"> = {
 export default async function PageClient({ params }: PageProps<"/clients/[id]">) {
   await exigerAdmin();
   const { id } = await params;
-  const [{ client, parrain, filleuls, commandes }, secteurs] = await Promise.all([lireClient(id), listerSecteurs()]);
+  const [{ client, parrain, filleuls, commandes }, secteurs, fidelite, recompenses, parametres] = await Promise.all([
+    lireClient(id),
+    listerSecteurs(),
+    lireFideliteClient(id),
+    listerRecompenses({ actifsSeulement: true }),
+    lireParametresFidelite(),
+  ]);
   const secteur = secteurs.find((s) => s.id === client.secteur_id);
   const prochaine = secteur ? prochaineLivraison(secteur, aujourdhui()) : null;
   const commandeSemaine = prochaine ? await commandeDeLaSemaine(id, lundiDeLaSemaine(prochaine)) : null;
@@ -106,6 +120,8 @@ export default async function PageClient({ params }: PageProps<"/clients/[id]">)
             )}
           </Carte>
         )}
+
+        <CarteFidelite clientId={id} fidelite={fidelite} recompenses={recompenses} parametres={parametres} />
 
         <Carte className="space-y-3">
           <TitreSection>Livraison</TitreSection>
@@ -201,7 +217,10 @@ export default async function PageClient({ params }: PageProps<"/clients/[id]">)
                 <li key={c.id}>
                   <Link href={`/commandes/${c.id}`} className="flex min-h-14 items-center gap-3 py-2">
                     <span className="w-24 shrink-0 text-sm font-semibold">{formaterDateCourte(c.date_livraison)}</span>
-                    <span className="min-w-0 flex-1 truncate text-sm text-stone-700">{resumeLignes(c.lignes)}</span>
+                    <span className="min-w-0 flex-1 truncate text-sm text-stone-700">
+                      {c.recompenses.length > 0 && "🎁 "}
+                      {resumeLignes(c.lignes) || "Récompense seule"}
+                    </span>
                     <span className="flex flex-col items-end gap-1">
                       <span className="text-sm font-semibold">{formaterPrix(totalCommande(c.lignes))}</span>
                       <Pastille couleur={COULEUR_STATUT[c.statut]}>{LIBELLES_STATUT[c.statut]}</Pastille>

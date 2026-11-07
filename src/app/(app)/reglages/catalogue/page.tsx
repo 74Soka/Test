@@ -19,6 +19,7 @@ function Liste({ articles }: { articles: Article[] }) {
             <span className={a.actif ? "block font-semibold" : "block font-semibold text-stone-400"}>{a.nom}</span>
             <span className="block text-sm text-stone-600">
               {formaterPrix(a.prix_centimes)}
+              {a.tampons > 0 && ` · ${a.tampons} tampon${a.tampons > 1 ? "s" : ""}`}
               {!a.actif && " · hors saison"}
             </span>
           </Link>

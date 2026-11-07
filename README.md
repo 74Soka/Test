@@ -10,7 +10,8 @@ téléphone : gros boutons, textes lisibles dehors, et on peut l'installer sur l
 |---|---|---|
 | **1** | Clients, secteurs, catalogue, commandes, vue Livraisons | ✅ livrée, à valider |
 | 2 | Tournées optimisées (carte, ordre de passage, Google Maps / Waze) | à venir |
-| 3 | Bouton « Livré » en tournée, tampons de fidélité, parrainage | à venir |
+| 3 | Fidélité et parrainage (tampons, récompenses, VIP / Ultra) | ✅ livrée, à valider |
+| 3 bis | Bouton « Livré » dans l'écran de tournée | avec la Phase 2 |
 
 ### Ce que fait la Phase 1
 
@@ -40,6 +41,35 @@ téléphone : gros boutons, textes lisibles dehors, et on peut l'installer sur l
       saisies.
 - **Livraisons** : vue **semaine** ou **jour**, groupée par jour puis par secteur, avec le **récapitulatif à préparer**
   (nombre de paniers de chaque sorte et de suppléments) et le total.
+
+### Fidélité et parrainage
+
+Tout se règle dans *Réglages → Fidélité et parrainage* (et le nombre de tampons par panier dans le *Catalogue*).
+
+| Événement | Tampons (réglages par défaut) |
+|---|---|
+| Création d'un client | +1 |
+| Client rattaché à un parrain | +1 pour le parrain |
+| Panier 30 € livré | +1 par panier |
+| Panier 50 € livré | +2 par panier |
+| Commande livrée d'un filleul | +1 pour le parrain |
+| Correction manuelle (fiche client) | + ou −, avec une raison |
+
+| Récompense | Coût | Pour qui |
+|---|---|---|
+| Supplément offert | 5 | tous |
+| Confiture + supplément offerts | 10 | tous |
+| Panier 30 € offert | 20 | VIP : 5 filleuls déjà livrés |
+| Panier 50 € offert | 30 | Ultra : 10 filleuls déjà livrés |
+
+- Les tampons sont un **journal** : chaque gain garde son motif, sa date et sa commande. Le solde se calcule à partir
+  de ce journal.
+- Ceux d'une commande sont posés **à la livraison**, une seule fois, même si on la marque deux fois comme livrée. Ils
+  sont retirés si la livraison est annulée.
+- Une récompense s'utilise **sur une commande** (section *Fidélité* de la saisie). Ses tampons sont retirés du solde,
+  comme sur une carte papier (7 tampons − 5 = 2), et rendus si la commande est annulée. Ce qui est offert apparaît dans
+  la commande et dans le récapitulatif à préparer. Les articles offerts ne rapportent pas de tampons.
+- Si un filleul est supprimé (RGPD), son parrain garde les tampons gagnés grâce à lui.
 
 ## Technologies
 

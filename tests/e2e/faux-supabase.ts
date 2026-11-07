@@ -26,6 +26,10 @@ const RELATIONS: Record<string, { type: "many" | "one"; fk: string }> = {
   "secteurs>secteur_communes": { type: "many", fk: "secteur_id" },
   "commandes>lignes_commande": { type: "many", fk: "commande_id" },
   "commandes>clients": { type: "one", fk: "client_id" },
+  "commandes>recompenses_utilisees": { type: "many", fk: "commande_id" },
+  "recompenses_utilisees>cadeaux": { type: "many", fk: "utilisation_id" },
+  "tampons>commandes": { type: "one", fk: "commande_id" },
+  "tampons>clients": { type: "one", fk: "filleul_id" },
 };
 
 function b64url(o: unknown) {

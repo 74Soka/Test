@@ -1,6 +1,13 @@
 import type { Metadata } from "next";
 import { exigerAdmin } from "@/lib/auth";
-import { lireCommande, listerArticles, listerClients, listerSecteurs } from "@/lib/donnees";
+import {
+  lireCommande,
+  listerArticles,
+  listerClients,
+  listerFidelite,
+  listerRecompenses,
+  listerSecteurs,
+} from "@/lib/donnees";
 import { aujourdhui } from "@/lib/domaine/dates";
 import { EnTetePage, MessageInfo } from "@/components/ui";
 import { FormulaireCommande } from "../formulaire-commande";
@@ -13,11 +20,13 @@ export default async function PageNouvelleCommande({ searchParams }: PageProps<"
   const clientId = typeof client === "string" ? client : null;
   const depuisId = typeof depuis === "string" ? depuis : null;
 
-  const [clients, secteurs, articles, modele] = await Promise.all([
+  const [clients, secteurs, articles, modele, fidelite, recompenses] = await Promise.all([
     listerClients(),
     listerSecteurs(),
     listerArticles({ actifsSeulement: true }),
     depuisId ? lireCommande(depuisId) : Promise.resolve(null),
+    listerFidelite(),
+    listerRecompenses({ actifsSeulement: true }),
   ]);
 
   // « Recommander comme la dernière fois » : on reprend les quantités des articles encore proposés
@@ -48,6 +57,8 @@ export default async function PageNouvelleCommande({ searchParams }: PageProps<"
         articles={articles}
         aujourdhui={aujourdhui()}
         initial={{ clientId: clientInitial, date: null, quantites, notes: "" }}
+        fidelite={fidelite}
+        recompenses={recompenses}
       />
     </>
   );

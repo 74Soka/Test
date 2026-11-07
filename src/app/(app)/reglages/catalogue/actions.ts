@@ -16,6 +16,11 @@ const schemaArticle = z.object({
     .transform((p) => saisieVersCentimes(p))
     .refine((p): p is number => p !== null, "Prix invalide (ex. 30 ou 4,50)."),
   ordre: z.number().int().optional(),
+  tampons: z
+    .string()
+    .optional()
+    .transform((t) => (t === undefined || t.trim() === "" ? 0 : Number(t)))
+    .refine((t) => Number.isInteger(t) && t >= 0 && t <= 100, "Nombre entier entre 0 et 100."),
 });
 
 export type DonneesArticle = z.input<typeof schemaArticle>;

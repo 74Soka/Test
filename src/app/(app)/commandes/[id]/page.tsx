@@ -1,7 +1,14 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { exigerAdmin } from "@/lib/auth";
-import { lireCommande, listerArticles, listerClients, listerSecteurs } from "@/lib/donnees";
+import {
+  lireCommande,
+  listerArticles,
+  listerClients,
+  listerFidelite,
+  listerRecompenses,
+  listerSecteurs,
+} from "@/lib/donnees";
 import { formaterPrix } from "@/lib/domaine/argent";
 import { LIBELLES_STATUT, totalCommande, type Statut } from "@/lib/domaine/commandes";
 import { aujourdhui, formaterDate } from "@/lib/domaine/dates";
@@ -24,11 +31,13 @@ export default async function PageCommande({ params, searchParams }: PageProps<"
   await exigerAdmin();
   const { id } = await params;
   const { enregistree } = await searchParams;
-  const [commande, clients, secteurs, catalogue] = await Promise.all([
+  const [commande, clients, secteurs, catalogue, fidelite, recompenses] = await Promise.all([
     lireCommande(id),
     listerClients(),
     listerSecteurs(),
     listerArticles(),
+    listerFidelite(),
+    listerRecompenses({ actifsSeulement: true }),
   ]);
   const retour = `/livraisons?du=${commande.date_livraison}`;
 
@@ -86,7 +95,16 @@ export default async function PageCommande({ params, searchParams }: PageProps<"
               date: commande.date_livraison,
               quantites,
               notes: commande.notes ?? "",
+              recompenses: commande.recompenses.map((r) => ({
+                id: r.id,
+                recompense_id: r.recompense_id ?? "",
+                nom: r.nom,
+                cout_tampons: r.cout_tampons,
+                articles: Object.fromEntries(r.cadeaux.map((c) => [c.article_id, c.quantite])),
+              })),
             }}
+            fidelite={fidelite}
+            recompenses={recompenses}
           />
         ) : (
           <Carte>
@@ -101,6 +119,12 @@ export default async function PageCommande({ params, searchParams }: PageProps<"
                 </li>
               ))}
             </ul>
+            {commande.recompenses.map((r) => (
+              <div key={r.id} className="mt-2 rounded-xl bg-marque-50 px-3 py-2 text-sm ring-1 ring-marque-600/30">
+                <p className="font-semibold">🎁 {r.nom} ({r.cout_tampons} tampons)</p>
+                <p>{r.cadeaux.map((c) => `${c.quantite} × ${c.libelle}`).join(", ")}</p>
+              </div>
+            ))}
             <p className="mt-2 flex justify-between border-t border-stone-200 pt-2 text-lg font-bold">
               <span>Total</span>
               <span className="tabular-nums">{formaterPrix(totalCommande(commande.lignes))}</span>

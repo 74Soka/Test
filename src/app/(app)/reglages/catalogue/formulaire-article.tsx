@@ -6,7 +6,7 @@ import { Bouton, Champ, MessageErreur, cx } from "@/components/ui";
 import type { Resultat } from "@/lib/erreurs";
 
 export function FormulaireArticle({ id, initial }: { id?: string; initial?: DonneesArticle }) {
-  const vide: DonneesArticle = { nom: "", categorie: "supplement", prix: "" };
+  const vide: DonneesArticle = { nom: "", categorie: "supplement", prix: "", tampons: "0" };
   const [donnees, setDonnees] = useState<DonneesArticle>(initial ?? vide);
   const [resultat, setResultat] = useState<Resultat | null>(null);
   const [enCours, demarrer] = useTransition();
@@ -68,6 +68,18 @@ export function FormulaireArticle({ id, initial }: { id?: string; initial?: Donn
         placeholder="5"
         required
         aide={id ? "Le nouveau prix s'applique aux prochaines commandes ; les commandes déjà saisies gardent leur prix." : undefined}
+      />
+      <Champ
+        label="Tampons de fidélité gagnés (par unité livrée)"
+        name="tampons"
+        type="number"
+        inputMode="numeric"
+        min={0}
+        max={100}
+        value={donnees.tampons ?? "0"}
+        onChange={(e) => setDonnees({ ...donnees, tampons: e.target.value })}
+        erreur={champs.tampons}
+        aide="Ex. 1 pour le Panier 30 €, 2 pour le Panier 50 €, 0 pour un supplément."
       />
       <Bouton type="submit" className="w-full" disabled={enCours}>
         {enCours ? "Enregistrement…" : id ? "Enregistrer" : "Ajouter au catalogue"}

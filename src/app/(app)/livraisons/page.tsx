@@ -4,6 +4,7 @@ import { exigerAdmin } from "@/lib/auth";
 import { listerCommandes, listerSecteurs, type CommandeDetaillee, type SecteurAvecCommunes } from "@/lib/donnees";
 import { formaterPrix } from "@/lib/domaine/argent";
 import {
+  articlesOfferts,
   LIBELLES_STATUT,
   nombreDePaniers,
   recapitulatif,
@@ -211,7 +212,12 @@ export default async function PageLivraisons({ searchParams }: PageProps<"/livra
                 <tbody className="divide-y divide-stone-100">
                   {recap.map((l) => (
                     <tr key={l.article_id}>
-                      <td className={cx("py-2", l.categorie === "panier" && "font-semibold")}>{l.libelle}</td>
+                      <td className={cx("py-2", l.categorie === "panier" && "font-semibold")}>
+                        {l.libelle}
+                        {l.offerts > 0 && (
+                          <span className="block text-sm font-normal text-marque-800">dont {l.offerts} offert{l.offerts > 1 ? "s" : ""} 🎁</span>
+                        )}
+                      </td>
                       <td className="py-2 text-right text-xl font-bold tabular-nums">{l.quantite}</td>
                     </tr>
                   ))}
@@ -233,7 +239,7 @@ export default async function PageLivraisons({ searchParams }: PageProps<"/livra
                   <p className="mb-2 px-1 text-sm text-stone-600">
                     {g.secteur && `${majuscule(LIBELLES_CRENEAU[g.secteur.creneau])} · `}
                     {actifsGroupe.length} arrêt{actifsGroupe.length > 1 ? "s" : ""} ·{" "}
-                    {actifsGroupe.reduce((n, c) => n + nombreDePaniers(c.lignes), 0)} panier(s)
+                    {actifsGroupe.reduce((n, c) => n + nombreDePaniers([...c.lignes, ...articlesOfferts(c.recompenses)]), 0)} panier(s)
                   </p>
                   <ul className="divide-y divide-stone-100 overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-stone-200">
                     {g.commandes.map((c) => (
@@ -254,11 +260,16 @@ export default async function PageLivraisons({ searchParams }: PageProps<"/livra
                             <Pastille couleur={COULEUR_STATUT[c.statut]}>{LIBELLES_STATUT[c.statut]}</Pastille>
                           </div>
                           <div className="mt-1 flex items-baseline justify-between gap-3">
-                            <span className="text-stone-800">{resumeLignes(c.lignes)}</span>
+                            <span className="text-stone-800">{resumeLignes(c.lignes) || "—"}</span>
                             <span className="font-semibold whitespace-nowrap tabular-nums">
                               {formaterPrix(totalCommande(c.lignes))}
                             </span>
                           </div>
+                          {c.recompenses.length > 0 && (
+                            <p className="mt-1 text-sm font-medium text-marque-800">
+                              🎁 Offert : {articlesOfferts(c.recompenses).map((a) => `${a.quantite} × ${a.libelle}`).join(", ")}
+                            </p>
+                          )}
                           {c.notes && <p className="mt-1 text-sm text-amber-800">« {c.notes} »</p>}
                         </Link>
                       </li>

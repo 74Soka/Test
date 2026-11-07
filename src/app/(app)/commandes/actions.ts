@@ -14,6 +14,16 @@ const schemaCommande = z.object({
   date: z.string().refine(estDateIso, "Choisissez une date de livraison."),
   quantites: z.record(z.uuid(), z.number().int().min(0).max(99)),
   notes: z.string().max(1000).optional(),
+  recompenses: z
+    .array(
+      z.object({
+        id: z.uuid().nullable().optional(),
+        recompense_id: z.uuid(),
+        articles: z.array(z.object({ article_id: z.uuid(), quantite: z.number().int().min(1).max(99) })),
+      }),
+    )
+    .max(20)
+    .default([]),
 });
 
 export type DonneesCommande = z.input<typeof schemaCommande>;
@@ -24,7 +34,7 @@ export async function enregistrerCommande(donnees: DonneesCommande, id?: string)
   if (!saisie.success) {
     return { ok: false, erreur: "Vérifiez les champs signalés.", champs: erreursParChamp(saisie.error.issues) };
   }
-  const { clientId, date, quantites, notes } = saisie.data;
+  const { clientId, date, quantites, notes, recompenses } = saisie.data;
   const lignes = Object.entries(quantites)
     .filter(([, q]) => q > 0)
     .map(([article_id, quantite]) => ({ article_id, quantite }));
@@ -36,6 +46,7 @@ export async function enregistrerCommande(donnees: DonneesCommande, id?: string)
     p_lignes: lignes,
     p_notes: notes || undefined,
     p_commande_id: id,
+    p_recompenses: recompenses.map((r) => ({ id: r.id ?? null, recompense_id: r.recompense_id, articles: r.articles })),
   });
 
   if (error) {

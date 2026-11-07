@@ -44,31 +44,44 @@ export type LigneRecap = {
   libelle: string;
   categorie: Categorie;
   quantite: number;
+  /** Dont offerts (récompenses de fidélité) */
+  offerts: number;
 };
 
+type ArticleCompte = Pick<LigneAvecPrix, "article_id" | "libelle" | "categorie" | "quantite">;
+
+/** Articles offerts d'une commande (récompenses de fidélité). */
+export function articlesOfferts(recompenses: { cadeaux: ArticleCompte[] }[] | null | undefined): ArticleCompte[] {
+  return (recompenses ?? []).flatMap((r) => r.cadeaux);
+}
+
 /**
- * Récapitulatif à préparer : quantités totales par article, paniers d'abord.
- * Les commandes annulées sont ignorées.
+ * Récapitulatif à préparer : quantités totales par article (achetés + offerts),
+ * paniers d'abord. Les commandes annulées sont ignorées.
  */
 export function recapitulatif(
-  commandes: { statut: Statut; lignes: Pick<LigneAvecPrix, "article_id" | "libelle" | "categorie" | "quantite">[] }[],
+  commandes: { statut: Statut; lignes: ArticleCompte[]; recompenses?: { cadeaux: ArticleCompte[] }[] | null }[],
 ): LigneRecap[] {
   const parArticle = new Map<string, LigneRecap>();
+  const ajouter = (l: ArticleCompte, offert: boolean) => {
+    const existant = parArticle.get(l.article_id);
+    if (existant) {
+      existant.quantite += l.quantite;
+      if (offert) existant.offerts += l.quantite;
+    } else {
+      parArticle.set(l.article_id, {
+        article_id: l.article_id,
+        libelle: l.libelle,
+        categorie: l.categorie,
+        quantite: l.quantite,
+        offerts: offert ? l.quantite : 0,
+      });
+    }
+  };
   for (const commande of commandes) {
     if (commande.statut === "annulee") continue;
-    for (const l of commande.lignes) {
-      const existant = parArticle.get(l.article_id);
-      if (existant) {
-        existant.quantite += l.quantite;
-      } else {
-        parArticle.set(l.article_id, {
-          article_id: l.article_id,
-          libelle: l.libelle,
-          categorie: l.categorie,
-          quantite: l.quantite,
-        });
-      }
-    }
+    commande.lignes.forEach((l) => ajouter(l, false));
+    articlesOfferts(commande.recompenses).forEach((l) => ajouter(l, true));
   }
   return [...parArticle.values()].sort(
     (a, b) =>

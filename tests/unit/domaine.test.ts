@@ -219,4 +219,23 @@ describe("commandes", () => {
       ["Œufs", 2],
     ]);
   });
+
+  it("compte aussi les articles offerts, en le signalant", () => {
+    const recap = recapitulatif([
+      {
+        statut: "a_livrer",
+        lignes: [lignes[1]],
+        recompenses: [{ cadeaux: [{ article_id: "s1", libelle: "Œufs", categorie: "supplement", quantite: 1 }] }],
+      },
+      {
+        statut: "annulee",
+        lignes: [],
+        recompenses: [{ cadeaux: [{ article_id: "p30", libelle: "Panier 30 €", categorie: "panier", quantite: 1 }] }],
+      },
+    ]);
+    expect(recap).toEqual([
+      { article_id: "p30", libelle: "Panier 30 €", categorie: "panier", quantite: 2, offerts: 0 },
+      { article_id: "s1", libelle: "Œufs", categorie: "supplement", quantite: 1, offerts: 1 },
+    ]);
+  });
 });

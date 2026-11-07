@@ -131,6 +131,51 @@ test("statut : livrée (horodatée), puis remise à livrer", async ({ page }) =>
   await expect(page.getByRole("button", { name: "Marquer comme livrée" })).toBeVisible();
 });
 
+test("fidélité : ajustement manuel, puis récompense utilisée sur une commande", async ({ page }) => {
+  await seConnecter(page);
+  await ouvrirFiche(page, "essai", /Zoé Essai/);
+  await expect(page.getByRole("heading", { name: "Carte de fidélité" })).toBeVisible();
+  await expect(page.getByText("Encore 4 tampons pour « Supplément offert ».")).toBeVisible();
+
+  // Ajustement manuel : +9 tampons
+  await page.getByRole("button", { name: /Ajouter ou retirer des tampons/ }).click();
+  await page.getByLabel("Tampons (négatif pour en retirer)").fill("9");
+  await page.getByLabel("Raison").fill("Test de bout en bout");
+  await page.getByRole("button", { name: "Enregistrer", exact: true }).click();
+  await expect(page.getByText("🎁 Récompense disponible")).toBeVisible();
+  await expect(page.getByText("Confiture + supplément offerts (10 tampons)")).toBeVisible();
+
+  // Utilisation sur la commande de la semaine
+  await page.getByRole("link", { name: "Voir la commande" }).click();
+  await page.getByRole("button", { name: "Utiliser : Confiture + supplément offerts" }).click();
+  await page.getByRole("button", { name: "Ajouter un Confiture artisanale – figue offert" }).click();
+  await page.getByRole("button", { name: "Ajouter un Haricots verts BIO (500 g) offert" }).click();
+  await page.getByRole("button", { name: "Valider" }).click();
+  await expect(page.getByText("Solde : 0 tampon après les récompenses ci-dessous")).toBeVisible();
+  await page.getByRole("button", { name: "Enregistrer les modifications" }).click();
+  await expect(page.getByText("Commande enregistrée.")).toBeVisible();
+  await expect(page.getByText("🎁 Confiture + supplément offerts")).toBeVisible();
+
+  // Le solde du client est à 0, le cadeau apparaît dans le récapitulatif à préparer
+  await ouvrirFiche(page, "essai", /Zoé Essai/);
+  await expect(page.getByText("Encore 5 tampons pour « Supplément offert ».")).toBeVisible();
+  await page.goto("/livraisons");
+  await expect(page.getByText(/dont 1 offert/).first()).toBeVisible();
+  await expect(page.getByText(/🎁 Offert : .*Confiture artisanale – figue/)).toBeVisible();
+});
+
+test("réglages de fidélité : règles et récompenses", async ({ page }) => {
+  await seConnecter(page);
+  await page.goto("/reglages/fidelite");
+  await expect(page.getByText("Panier 50 € livré : 2 tampons.")).toBeVisible();
+  await expect(page.getByRole("link", { name: /Panier 30 € offert/ })).toBeVisible();
+  await page.getByLabel("Filleuls nécessaires pour être VIP").fill("4");
+  await page.getByRole("button", { name: "Enregistrer les règles" }).click();
+  await expect(page.getByText("Règles enregistrées.")).toBeVisible();
+  await page.reload();
+  await expect(page.getByText(/VIP à 4 filleuls livrés/)).toBeVisible();
+});
+
 test("vue Livraisons : récapitulatif et regroupement par secteur", async ({ page }) => {
   await seConnecter(page);
   await page.goto("/livraisons");

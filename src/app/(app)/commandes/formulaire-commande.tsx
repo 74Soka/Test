@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useMemo, useState, useTransition } from "react";
 import { enregistrerCommande } from "./actions";
+import { RecompensesCommande, type RecompenseEnCours } from "./recompenses-commande";
 import { ChoixClient, type ClientChoisissable } from "@/components/choix-client";
 import { Compteur } from "@/components/compteur";
 import { Bouton, Carte, Champ, MessageErreur, PointCouleur, ZoneTexte } from "@/components/ui";
@@ -10,6 +11,7 @@ import { formaterPrix } from "@/lib/domaine/argent";
 import { contientUnPanier } from "@/lib/domaine/commandes";
 import { formaterDate, jourSemaine, NOMS_JOURS } from "@/lib/domaine/dates";
 import { libelleTournee, prochaineLivraison, type Creneau } from "@/lib/domaine/secteurs";
+import type { Niveau, RecompenseProposee } from "@/lib/domaine/fidelite";
 import { nomComplet } from "@/lib/domaine/texte";
 import type { Resultat } from "@/lib/erreurs";
 
@@ -33,6 +35,8 @@ export function FormulaireCommande({
   aujourdhui,
   initial,
   clientFixe,
+  fidelite,
+  recompenses,
 }: {
   id?: string;
   clients: ClientFormulaire[];
@@ -40,14 +44,25 @@ export function FormulaireCommande({
   /** Articles proposés (prix du catalogue, ou prix figés pour une commande existante) */
   articles: ArticleFormulaire[];
   aujourdhui: string;
-  initial: { clientId: string | null; date: string | null; quantites: Record<string, number>; notes: string };
+  initial: {
+    clientId: string | null;
+    date: string | null;
+    quantites: Record<string, number>;
+    notes: string;
+    recompenses?: (RecompenseEnCours & { id: string })[];
+  };
   clientFixe?: boolean;
+  /** Solde et niveau de fidélité par client */
+  fidelite: Record<string, { solde: number; niveau: Niveau }>;
+  /** Récompenses proposées */
+  recompenses: RecompenseProposee[];
 }) {
   const [clientId, setClientId] = useState<string | null>(initial.clientId);
   const [dateChoisie, setDateChoisie] = useState<string | null>(initial.date);
   const [modifierDate, setModifierDate] = useState(false);
   const [quantites, setQuantites] = useState<Record<string, number>>(initial.quantites);
   const [notes, setNotes] = useState(initial.notes);
+  const [recompensesEnCours, setRecompensesEnCours] = useState<RecompenseEnCours[]>(initial.recompenses ?? []);
   const [resultat, setResultat] = useState<Resultat | null>(null);
   const [enCours, demarrer] = useTransition();
   const champs = resultat && !resultat.ok ? (resultat.champs ?? {}) : {};
@@ -62,13 +77,20 @@ export function FormulaireCommande({
     () => articles.reduce((t, a) => t + (quantites[a.id] ?? 0) * a.prix_centimes, 0),
     [articles, quantites],
   );
-  const aUnPanier = contientUnPanier(quantites, articles);
+  const panierOffert = recompensesEnCours.some((r) =>
+    Object.entries(r.articles).some(([id, q]) => q > 0 && articles.find((a) => a.id === id)?.categorie === "panier"),
+  );
+  const aUnPanier = contientUnPanier(quantites, articles) || panierOffert;
+  const fideliteClient = client ? fidelite[client.id] : undefined;
   const paniers = articles.filter((a) => a.categorie === "panier");
   const supplements = articles.filter((a) => a.categorie === "supplement");
 
   function choisirClient(nouveau: string | null) {
     setClientId(nouveau);
-    if (!id) setDateChoisie(null); // la date suit le secteur du nouveau client
+    if (!id) {
+      setDateChoisie(null); // la date suit le secteur du nouveau client
+      setRecompensesEnCours([]); // les récompenses dépendent du client
+    }
   }
 
   function ligneArticle(a: ArticleFormulaire) {
@@ -93,7 +115,24 @@ export function FormulaireCommande({
       onSubmit={(e) => {
         e.preventDefault();
         demarrer(async () => {
-          setResultat(await enregistrerCommande({ clientId: clientId ?? "", date: date ?? "", quantites, notes }, id));
+          setResultat(
+            await enregistrerCommande(
+              {
+                clientId: clientId ?? "",
+                date: date ?? "",
+                quantites,
+                notes,
+                recompenses: recompensesEnCours.map((r) => ({
+                  id: r.id ?? null,
+                  recompense_id: r.recompense_id,
+                  articles: Object.entries(r.articles)
+                    .filter(([, q]) => q > 0)
+                    .map(([article_id, quantite]) => ({ article_id, quantite })),
+                })),
+              },
+              id,
+            ),
+          );
         });
       }}
     >
@@ -159,6 +198,18 @@ export function FormulaireCommande({
           <h2 className="text-lg font-bold">Suppléments</h2>
           <ul className="divide-y divide-stone-100">{supplements.map(ligneArticle)}</ul>
         </Carte>
+      )}
+
+      {client && fideliteClient && (
+        <RecompensesCommande
+          niveau={fideliteClient.niveau}
+          soldeActuel={fideliteClient.solde}
+          enregistrees={(initial.recompenses ?? []).map((r) => ({ id: r.id, cout_tampons: r.cout_tampons }))}
+          recompenses={recompenses}
+          articles={articles}
+          valeur={recompensesEnCours}
+          onChange={setRecompensesEnCours}
+        />
       )}
 
       <Carte>

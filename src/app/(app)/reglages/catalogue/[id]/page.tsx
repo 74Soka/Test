@@ -24,6 +24,7 @@ export default async function PageArticle({ params }: PageProps<"/reglages/catal
             nom: article.nom,
             categorie: article.categorie,
             prix: centimesVersSaisie(article.prix_centimes),
+            tampons: String(article.tampons),
           }}
         />
       </Carte>
