@@ -34,8 +34,8 @@ export async function enregistrerCommande(donnees: DonneesCommande, id?: string)
     p_client_id: clientId,
     p_date_livraison: date,
     p_lignes: lignes,
-    p_notes: notes ?? null,
-    p_commande_id: id ?? null,
+    p_notes: notes || undefined,
+    p_commande_id: id,
   });
 
   if (error) {

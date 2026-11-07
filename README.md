@@ -174,6 +174,10 @@ L'application ne connaît que l'interface `Geocodeur` (`src/lib/geocodage/types.
 
 ### Modifier la base
 
+> La première migration a été appliquée à la main dans l'éditeur SQL du projet. Si vous utilisez un jour la CLI
+> (`supabase db push`), marquez-la d'abord comme appliquée :
+> `npx supabase migration repair --status applied 20261106000000`.
+
 Ajoutez un **nouveau** fichier dans `supabase/migrations/` (ne modifiez pas un fichier déjà appliqué). Mettez ensuite
 à jour `src/lib/supabase/database.types.ts`, par exemple avec
 `npx supabase gen types typescript --project-id <id> > src/lib/supabase/database.types.ts`.
