@@ -182,11 +182,20 @@ Ajoutez un **nouveau** fichier dans `supabase/migrations/` (ne modifiez pas un f
 à jour `src/lib/supabase/database.types.ts`, par exemple avec
 `npx supabase gen types typescript --project-id <id> > src/lib/supabase/database.types.ts`.
 
-## Mise en ligne (à préparer en fin de Phase 1)
+## Mise en ligne (Netlify, gratuit, usage commercial autorisé)
 
-N'importe quel hébergeur qui fait tourner Next.js convient. Points d'attention :
+Tout se fait depuis un navigateur, même sur téléphone :
 
-- reprendre les mêmes variables d'environnement (sans `SUPABASE_SECRET_KEY`, inutile en ligne) ;
-- dans Supabase, *Authentication → URL Configuration* : indiquer l'adresse du site ;
-- l'offre gratuite de Vercel est réservée à un usage non commercial : préférez une offre payante, ou un hébergeur dont
-  l'offre gratuite autorise l'usage commercial.
+1. Sur [netlify.com](https://www.netlify.com), créez un compte **avec GitHub**.
+2. *Add new project → Import an existing project → GitHub*, autorisez l'accès au dépôt, puis choisissez-le avec la
+   branche à publier.
+3. **Avant de lancer le déploiement**, ajoutez les variables d'environnement (*Add environment variables*) :
+   `NEXT_PUBLIC_SUPABASE_URL` et `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`. Elles sont intégrées au moment de la
+   construction : si on les ajoute après, il faut relancer un déploiement.
+4. *Deploy*. Les réglages de construction sont dans `netlify.toml`. Chaque nouveau commit sur la branche est ensuite
+   publié automatiquement.
+5. Sur le téléphone, ouvrez l'adresse du site, connectez-vous, puis *Ajouter à l'écran d'accueil*.
+
+Ne mettez jamais `SUPABASE_SECRET_KEY` dans l'hébergeur : elle ne sert qu'au script `creer-admin`.
+
+L'offre gratuite de Vercel, l'autre hébergeur courant pour Next.js, est réservée à un usage non commercial.

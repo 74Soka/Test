@@ -1,0 +1,11 @@
+# Déploiement sur Netlify : Next.js est détecté automatiquement.
+# Les variables NEXT_PUBLIC_SUPABASE_URL et NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
+# se renseignent dans Netlify (Site configuration > Environment variables),
+# AVANT le premier déploiement : elles sont intégrées au moment de la construction.
+[build]
+  command = "npm run build"
+  publish = ".next"
+
+[build.environment]
+  NODE_VERSION = "22"
+  NEXT_TELEMETRY_DISABLED = "1"
