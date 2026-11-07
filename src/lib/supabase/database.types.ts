@@ -190,6 +190,7 @@ export type Database = {
       }
       commandes: {
         Row: {
+          ordre_tournee: number | null
           client_id: string
           created_at: string
           date_livraison: string
@@ -201,6 +202,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          ordre_tournee?: number | null
           client_id: string
           created_at?: string
           date_livraison: string
@@ -212,6 +214,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          ordre_tournee?: number | null
           client_id?: string
           created_at?: string
           date_livraison?: string
@@ -283,6 +286,7 @@ export type Database = {
       }
       parametres_fidelite: {
         Row: {
+          parrainage_cadeaux_debut: string
           filleuls_livres_seulement: boolean
           filleuls_ultra: number
           filleuls_vip: number
@@ -293,6 +297,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          parrainage_cadeaux_debut?: string
           filleuls_livres_seulement?: boolean
           filleuls_ultra?: number
           filleuls_vip?: number
@@ -303,6 +308,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          parrainage_cadeaux_debut?: string
           filleuls_livres_seulement?: boolean
           filleuls_ultra?: number
           filleuls_vip?: number
@@ -337,6 +343,7 @@ export type Database = {
       }
       recompenses: {
         Row: {
+          type: Database["public"]["Enums"]["type_recompense"]
           actif: boolean
           article_id: string | null
           cout_tampons: number
@@ -349,6 +356,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          type?: Database["public"]["Enums"]["type_recompense"]
           actif?: boolean
           article_id?: string | null
           cout_tampons: number
@@ -361,6 +369,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          type?: Database["public"]["Enums"]["type_recompense"]
           actif?: boolean
           article_id?: string | null
           cout_tampons?: number
@@ -384,6 +393,8 @@ export type Database = {
       }
       recompenses_utilisees: {
         Row: {
+          filleul_id: string | null
+          type: Database["public"]["Enums"]["type_recompense"]
           commande_id: string
           cout_tampons: number
           created_at: string
@@ -392,6 +403,8 @@ export type Database = {
           recompense_id: string | null
         }
         Insert: {
+          filleul_id?: string | null
+          type?: Database["public"]["Enums"]["type_recompense"]
           commande_id: string
           cout_tampons: number
           created_at?: string
@@ -400,6 +413,8 @@ export type Database = {
           recompense_id?: string | null
         }
         Update: {
+          filleul_id?: string | null
+          type?: Database["public"]["Enums"]["type_recompense"]
           commande_id?: string
           cout_tampons?: number
           created_at?: string
@@ -414,6 +429,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "commandes"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recompenses_utilisees_filleul_id_fkey"
+            columns: ["filleul_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recompenses_utilisees_filleul_id_fkey"
+            columns: ["filleul_id"]
+            isOneToOne: false
+            referencedRelation: "fidelite_clients"
+            referencedColumns: ["client_id"]
           },
           {
             foreignKeyName: "recompenses_utilisees_recompense_id_fkey"
@@ -560,9 +589,22 @@ export type Database = {
       }
     }
     Views: {
+      confitures_parrain_dues: {
+        Row: {
+          client_id: string | null
+          filleul_id: string | null
+          filleul_nom: string | null
+          filleul_prenom: string | null
+          premiere_commande: string | null
+        }
+        Relationships: []
+      }
       fidelite_clients: {
         Row: {
           client_id: string | null
+          commandes_non_annulees: number | null
+          confitures_dues: number | null
+          parrain_id: string | null
           filleuls: number | null
           filleuls_comptes: number | null
           filleuls_livres: number | null
@@ -580,6 +622,14 @@ export type Database = {
           p_commande_id: string
           p_statut: Database["public"]["Enums"]["statut_commande"]
         }
+        Returns: undefined
+      }
+      enregistrer_ordre_tournee: {
+        Args: { p_commandes: string[] }
+        Returns: undefined
+      }
+      marquer_livraison: {
+        Args: { p_commande_id: string; p_livree: boolean; p_livree_le?: string }
         Returns: undefined
       }
       enregistrer_commande: {
@@ -607,6 +657,7 @@ export type Database = {
       role_utilisateur: "admin" | "livreur"
       source_position: "adresse" | "manuelle"
       statut_commande: "a_livrer" | "livree" | "annulee"
+      type_recompense: "tampons" | "bienvenue_filleul" | "cadeau_parrain"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -747,6 +798,7 @@ export const Constants = {
       role_utilisateur: ["admin", "livreur"],
       source_position: ["adresse", "manuelle"],
       statut_commande: ["a_livrer", "livree", "annulee"],
+      type_recompense: ["tampons", "bienvenue_filleul", "cadeau_parrain"],
     },
   },
 } as const

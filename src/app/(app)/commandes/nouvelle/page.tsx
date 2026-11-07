@@ -4,6 +4,7 @@ import {
   lireCommande,
   listerArticles,
   listerClients,
+  lireParametresFidelite,
   listerFidelite,
   listerRecompenses,
   listerSecteurs,
@@ -20,13 +21,14 @@ export default async function PageNouvelleCommande({ searchParams }: PageProps<"
   const clientId = typeof client === "string" ? client : null;
   const depuisId = typeof depuis === "string" ? depuis : null;
 
-  const [clients, secteurs, articles, modele, fidelite, recompenses] = await Promise.all([
+  const [clients, secteurs, articles, modele, fidelite, recompenses, parametres] = await Promise.all([
     listerClients(),
     listerSecteurs(),
     listerArticles({ actifsSeulement: true }),
     depuisId ? lireCommande(depuisId) : Promise.resolve(null),
     listerFidelite(),
     listerRecompenses({ actifsSeulement: true }),
+    lireParametresFidelite(),
   ]);
 
   // « Recommander comme la dernière fois » : on reprend les quantités des articles encore proposés
@@ -59,6 +61,7 @@ export default async function PageNouvelleCommande({ searchParams }: PageProps<"
         initial={{ clientId: clientInitial, date: null, quantites, notes: "" }}
         fidelite={fidelite}
         recompenses={recompenses}
+        debutParrainage={parametres.parrainage_cadeaux_debut}
       />
     </>
   );

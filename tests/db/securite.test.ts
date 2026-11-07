@@ -16,6 +16,7 @@ const TABLES = [
   "recompenses_utilisees",
   "cadeaux",
   "fidelite_clients",
+  "confitures_parrain_dues",
 ];
 
 let base: BaseDeTest;
@@ -48,7 +49,7 @@ describe("RLS activée partout", () => {
       `select relname, relrowsecurity from pg_class
        where relnamespace = 'public'::regnamespace and relkind = 'r'`,
     );
-    for (const t of TABLES.filter((t) => t !== "fidelite_clients")) {
+    for (const t of TABLES.filter((t) => !["fidelite_clients", "confitures_parrain_dues"].includes(t))) {
       const ligne = rows.find((r) => r.relname === t);
       expect(ligne, t).toBeDefined();
       expect(ligne!.relrowsecurity, t).toBe(true);

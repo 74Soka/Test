@@ -11,7 +11,7 @@ import { formaterPrix } from "@/lib/domaine/argent";
 import { contientUnPanier } from "@/lib/domaine/commandes";
 import { formaterDate, jourSemaine, NOMS_JOURS } from "@/lib/domaine/dates";
 import { libelleTournee, prochaineLivraison, type Creneau } from "@/lib/domaine/secteurs";
-import type { Niveau, RecompenseProposee } from "@/lib/domaine/fidelite";
+import { oeufsDeBienvenue, type FideliteSaisie, type RecompenseProposee } from "@/lib/domaine/fidelite";
 import { nomComplet } from "@/lib/domaine/texte";
 import type { Resultat } from "@/lib/erreurs";
 
@@ -37,6 +37,7 @@ export function FormulaireCommande({
   clientFixe,
   fidelite,
   recompenses,
+  debutParrainage,
 }: {
   id?: string;
   clients: ClientFormulaire[];
@@ -52,17 +53,34 @@ export function FormulaireCommande({
     recompenses?: (RecompenseEnCours & { id: string })[];
   };
   clientFixe?: boolean;
-  /** Solde et niveau de fidélité par client */
-  fidelite: Record<string, { solde: number; niveau: Niveau }>;
-  /** Récompenses proposées */
+  /** Fidélité de chaque client (solde, niveau, cadeaux de parrainage) */
+  fidelite: Record<string, FideliteSaisie>;
+  /** Récompenses proposées (en tampons et cadeaux de parrainage) */
   recompenses: RecompenseProposee[];
+  /** Début de l'offre de parrainage (AAAA-MM-JJ) */
+  debutParrainage: string;
 }) {
+  /** Œufs de bienvenue ajoutés d'office à la première commande d'un filleul */
+  function cadeauxDOffice(idClient: string | null, dateLivraison: string | null): RecompenseEnCours[] {
+    const oeufs = recompenses.find((r) => r.type === "bienvenue_filleul" && r.actif);
+    if (id || !idClient || !oeufs?.article_id || !articles.some((a) => a.id === oeufs.article_id && a.actif)) return [];
+    if (!oeufsDeBienvenue(fidelite[idClient], dateLivraison, debutParrainage)) return [];
+    return [{ recompense_id: oeufs.id, nom: oeufs.nom, cout_tampons: 0, articles: { [oeufs.article_id]: 1 } }];
+  }
+  function dateProposee(idClient: string | null): string | null {
+    const c = clients.find((x) => x.id === idClient);
+    const s = c ? secteurs.find((x) => x.id === c.secteur_id) : undefined;
+    return s ? prochaineLivraison(s, aujourdhui) : null;
+  }
+
   const [clientId, setClientId] = useState<string | null>(initial.clientId);
   const [dateChoisie, setDateChoisie] = useState<string | null>(initial.date);
   const [modifierDate, setModifierDate] = useState(false);
   const [quantites, setQuantites] = useState<Record<string, number>>(initial.quantites);
   const [notes, setNotes] = useState(initial.notes);
-  const [recompensesEnCours, setRecompensesEnCours] = useState<RecompenseEnCours[]>(initial.recompenses ?? []);
+  const [recompensesEnCours, setRecompensesEnCours] = useState<RecompenseEnCours[]>(
+    () => initial.recompenses ?? cadeauxDOffice(initial.clientId, initial.date ?? dateProposee(initial.clientId)),
+  );
   const [resultat, setResultat] = useState<Resultat | null>(null);
   const [enCours, demarrer] = useTransition();
   const champs = resultat && !resultat.ok ? (resultat.champs ?? {}) : {};
@@ -89,7 +107,8 @@ export function FormulaireCommande({
     setClientId(nouveau);
     if (!id) {
       setDateChoisie(null); // la date suit le secteur du nouveau client
-      setRecompensesEnCours([]); // les récompenses dépendent du client
+      // Les récompenses dépendent du client ; œufs d'office pour la 1re commande d'un filleul
+      setRecompensesEnCours(cadeauxDOffice(nouveau, dateProposee(nouveau)));
     }
   }
 
@@ -209,6 +228,7 @@ export function FormulaireCommande({
           articles={articles}
           valeur={recompensesEnCours}
           onChange={setRecompensesEnCours}
+          confituresDues={fideliteClient.confitures}
         />
       )}
 

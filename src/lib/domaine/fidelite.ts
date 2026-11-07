@@ -26,6 +26,20 @@ export function niveauSuffisant(client: Niveau, requis: Niveau): boolean {
   return RANG[client] >= RANG[requis];
 }
 
+export type TypeRecompense = "tampons" | "bienvenue_filleul" | "cadeau_parrain";
+
+/** Fidélité d'un client, telle qu'utilisée dans la saisie des commandes. */
+export type FideliteSaisie = {
+  solde: number;
+  niveau: Niveau;
+  /** Le client a un parrain */
+  filleul: boolean;
+  /** Commandes non annulées */
+  commandes: number;
+  /** Confitures de parrainage à lui offrir */
+  confitures: number;
+};
+
 export type RecompenseProposee = {
   id: string;
   nom: string;
@@ -34,11 +48,31 @@ export type RecompenseProposee = {
   niveau: Niveau;
   article_id: string | null;
   actif: boolean;
+  type?: TypeRecompense;
 };
+
+/** Récompenses payées en tampons (hors cadeaux de parrainage). */
+export function recompensesEnTampons<T extends RecompenseProposee>(recompenses: T[]): T[] {
+  return recompenses.filter((r) => (r.type ?? "tampons") === "tampons");
+}
 
 /** Récompenses que le client peut utiliser tout de suite. */
 export function recompensesDisponibles<T extends RecompenseProposee>(solde: number, niveau: Niveau, recompenses: T[]): T[] {
-  return recompenses.filter((r) => r.actif && niveauSuffisant(niveau, r.niveau) && r.cout_tampons <= solde);
+  return recompensesEnTampons(recompenses).filter(
+    (r) => r.actif && niveauSuffisant(niveau, r.niveau) && r.cout_tampons <= solde,
+  );
+}
+
+/**
+ * Les œufs de bienvenue s'ajoutent d'office à la première commande d'un
+ * filleul (livrée à partir du début de l'offre).
+ */
+export function oeufsDeBienvenue(
+  client: { filleul: boolean; commandes: number } | undefined,
+  dateLivraison: string | null,
+  debutOffre: string,
+): boolean {
+  return Boolean(client?.filleul && client.commandes === 0 && dateLivraison && dateLivraison >= debutOffre);
 }
 
 /** Prochaine récompense à atteindre (accessible au niveau du client) et tampons manquants. */
@@ -47,7 +81,7 @@ export function prochaineRecompense<T extends RecompenseProposee>(
   niveau: Niveau,
   recompenses: T[],
 ): { recompense: T; manque: number } | null {
-  const suivante = recompenses
+  const suivante = recompensesEnTampons(recompenses)
     .filter((r) => r.actif && niveauSuffisant(niveau, r.niveau) && r.cout_tampons > solde)
     .sort((a, b) => a.cout_tampons - b.cout_tampons)[0];
   return suivante ? { recompense: suivante, manque: suivante.cout_tampons - solde } : null;

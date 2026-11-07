@@ -76,6 +76,9 @@ begin
     ('Confiture artisanale – framboise', 'supplement', 800, 30),
     ('Confiture artisanale – fraise', 'supplement', 800, 31);
   insert into public.articles (nom, categorie, prix_centimes, ordre) values ('Œufs BIO (6)', 'supplement', 300, 20) returning id into a_oeufs;
+  -- Cadeau de bienvenue du filleul : les œufs ; démo : offre de parrainage déjà ouverte
+  update public.recompenses set article_id = a_oeufs where type = 'bienvenue_filleul';
+  update public.parametres_fidelite set parrainage_cadeaux_debut = current_date - 365;
   insert into public.articles (nom, categorie, prix_centimes, ordre) values ('Confiture artisanale – figue', 'supplement', 800, 32) returning id into a_confiture;
 
   ---------------------------------------------------------------------------

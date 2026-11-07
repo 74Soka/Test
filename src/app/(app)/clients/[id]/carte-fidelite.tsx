@@ -22,6 +22,8 @@ type Mouvement = {
   detail?: string;
   lien?: string;
   barre?: boolean;
+  /** Cadeau de parrainage (ne coûte pas de tampons) */
+  offert?: boolean;
 };
 
 export function CarteFidelite({
@@ -33,7 +35,12 @@ export function CarteFidelite({
   clientId: string;
   fidelite: FideliteClient;
   recompenses: Recompense[];
-  parametres: { filleuls_vip: number; filleuls_ultra: number; filleuls_livres_seulement: boolean };
+  parametres: {
+    filleuls_vip: number;
+    filleuls_ultra: number;
+    filleuls_livres_seulement: boolean;
+    parrainage_cadeaux_debut: string;
+  };
 }) {
   const { solde, niveau } = fidelite;
   const disponibles = recompensesDisponibles(solde, niveau, recompenses);
@@ -66,6 +73,7 @@ export function CarteFidelite({
           : `commande du ${formaterDateCourte(d.date_livraison)}`,
       lien: `/commandes/${d.commande_id}`,
       barre: d.statut === "annulee",
+      offert: d.cout_tampons === 0,
     })),
   ].sort((a, b) => b.date.localeCompare(a.date));
 
@@ -104,6 +112,33 @@ export function CarteFidelite({
         </p>
       )}
 
+      {(fidelite.confituresDues.length > 0 ||
+        (fidelite.filleul && fidelite.commandesNonAnnulees === 0)) && (
+        <div className="rounded-xl bg-amber-50 px-3 py-2 text-amber-900 ring-1 ring-amber-300">
+          <p className="font-semibold">🎁 Cadeaux de parrainage</p>
+          <ul className="text-sm">
+            {fidelite.filleul && fidelite.commandesNonAnnulees === 0 && (
+              <li>
+                Œufs offerts dans sa première commande (ajoutés d&apos;office
+                {aujourdhui() < parametres.parrainage_cadeaux_debut
+                  ? `, à partir du ${formaterDateCourte(parametres.parrainage_cadeaux_debut).replace(/^\S+ /, "")}`
+                  : ""}
+                ).
+              </li>
+            )}
+            {fidelite.confituresDues.map((c) => (
+              <li key={c.filleul_id}>
+                Une confiture à lui offrir : son filleul {[c.filleul_prenom, c.filleul_nom].filter(Boolean).join(" ")} a
+                commandé.
+              </li>
+            ))}
+          </ul>
+          {fidelite.confituresDues.length > 0 && (
+            <p className="mt-1 text-sm">À ajouter à l&apos;une de ses commandes (section Fidélité).</p>
+          )}
+        </div>
+      )}
+
       <p className="text-sm text-stone-600">
         {pluriel(fidelite.filleuls, "filleul")}
         {parametres.filleuls_livres_seulement && fidelite.filleuls > 0 && ` (dont ${fidelite.filleulsComptes} déjà livré${fidelite.filleulsComptes > 1 ? "s" : ""})`}
@@ -131,7 +166,7 @@ export function CarteFidelite({
                     m.barre ? "text-stone-400 line-through" : m.quantite > 0 ? "text-marque-800" : "text-red-700",
                   )}
                 >
-                  {m.quantite > 0 ? `+${m.quantite}` : m.quantite}
+                  {m.offert ? "🎁" : m.quantite > 0 ? `+${m.quantite}` : m.quantite}
                 </span>
               </>
             );

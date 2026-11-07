@@ -84,8 +84,11 @@ test("commande : au moins un panier, total, date choisie", async ({ page }) => {
   const samedi = prochaineDate(6, aujourdhui());
   await expect(page.getByText(formaterDate(samedi), { exact: true })).toBeVisible();
 
+  // Première commande d'un filleul : œufs de bienvenue ajoutés d'office
+  await expect(page.getByText("🎁 Œufs offerts au filleul")).toBeVisible();
+
   const enregistrer = page.getByRole("button", { name: "Enregistrer la commande" });
-  await page.getByRole("button", { name: "Ajouter un Œufs BIO (6)" }).click();
+  await page.getByRole("button", { name: "Ajouter un Œufs BIO (6)", exact: true }).click();
   await expect(page.getByText("Ajoutez au moins un panier.")).toBeVisible();
   await expect(enregistrer).toBeDisabled();
 
@@ -162,6 +165,32 @@ test("fidélité : ajustement manuel, puis récompense utilisée sur une command
   await page.goto("/livraisons");
   await expect(page.getByText(/dont 1 offert/).first()).toBeVisible();
   await expect(page.getByText(/🎁 Offert : .*Confiture artisanale – figue/)).toBeVisible();
+});
+
+test("parrainage : la confiture due au parrain s'offre depuis sa commande", async ({ page }) => {
+  await seConnecter(page);
+  // Zoé (filleule de Louis Durand) a commandé : une confiture est due à Louis
+  await ouvrirFiche(page, "louis durand", /Louis Durand/);
+  await expect(page.getByText(/son filleul Zoé Essai a\s+commandé/)).toBeVisible();
+
+  const voir = page.getByRole("link", { name: "Voir la commande" });
+  if (await voir.isVisible()) await voir.click();
+  else await page.getByRole("link", { name: "Nouvelle commande" }).click();
+  await page.waitForURL(/\/commandes\//);
+  await expect(page.getByRole("button", { name: "Ajouter un Panier 30 €" })).toBeVisible();
+
+  await expect(page.getByText(/confitures? de parrainage à offrir/)).toBeVisible();
+  await page.getByRole("button", { name: "Offrir", exact: true }).click();
+  await page.getByRole("button", { name: "Ajouter un Confiture artisanale – fraise offert" }).click();
+  await page.getByRole("button", { name: "Valider" }).click();
+  await expect(page.getByText("Cadeau de parrainage")).toBeVisible();
+  const bouton = page.getByRole("button", { name: /Enregistrer (la commande|les modifications)/ });
+  if ((await page.getByRole("group", { name: "Panier 30 €" }).locator("output").textContent()) === "0") {
+    await page.getByRole("button", { name: "Ajouter un Panier 30 €" }).click();
+  }
+  await bouton.click();
+  await expect(page.getByText("Commande enregistrée.")).toBeVisible();
+  await expect(page.getByText("🎁 Confiture offerte au parrain")).toBeVisible();
 });
 
 test("réglages de fidélité : règles et récompenses", async ({ page }) => {

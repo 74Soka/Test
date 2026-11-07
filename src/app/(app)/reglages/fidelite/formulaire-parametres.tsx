@@ -5,7 +5,10 @@ import { enregistrerParametres, type DonneesParametres } from "./actions";
 import { Bouton, Champ, MessageErreur } from "@/components/ui";
 import type { Resultat } from "@/lib/erreurs";
 
-const CHAMPS: { cle: keyof Omit<DonneesParametres, "filleuls_livres_seulement">; label: string; aide?: string }[] = [
+const CHAMPS: {
+  cle: keyof Omit<DonneesParametres, "filleuls_livres_seulement" | "parrainage_cadeaux_debut">;
+  label: string;
+}[] = [
   { cle: "tampons_bienvenue", label: "Tampons offerts à la création d'un client" },
   { cle: "tampons_parrainage", label: "Tampons pour le parrain quand on lui rattache un filleul" },
   { cle: "tampons_parrain_par_commande", label: "Tampons pour le parrain à chaque commande livrée d'un filleul" },
@@ -56,6 +59,15 @@ export function FormulaireParametres({ initial }: { initial: DonneesParametres }
           </span>
         </span>
       </label>
+      <Champ
+        label="Début de l'offre de parrainage (œufs au filleul, confiture au parrain)"
+        name="parrainage_cadeaux_debut"
+        type="date"
+        value={donnees.parrainage_cadeaux_debut}
+        onChange={(e) => setDonnees({ ...donnees, parrainage_cadeaux_debut: e.target.value })}
+        erreur={champs.parrainage_cadeaux_debut}
+        aide="Seuls les filleuls dont la première commande est livrée à partir de cette date y ont droit."
+      />
       <p className="text-sm text-stone-600">
         Les changements valent pour la suite : les tampons déjà gagnés ne sont pas recalculés.
       </p>

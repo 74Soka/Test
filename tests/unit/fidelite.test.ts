@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  oeufsDeBienvenue,
   niveauSuffisant,
   niveauSuivant,
   prochaineRecompense,
@@ -45,6 +46,20 @@ describe("fidélité", () => {
     expect(niveauSuivant("standard", 2, p)).toEqual({ niveau: "vip", manque: 3 });
     expect(niveauSuivant("vip", 7, p)).toEqual({ niveau: "ultra", manque: 3 });
     expect(niveauSuivant("ultra", 12, p)).toBeNull();
+  });
+
+  it("cadeaux de parrainage : jamais proposés comme récompense en tampons", () => {
+    const avecCadeau = [...recompenses, { ...R("oeufs", 0), type: "bienvenue_filleul" as const }];
+    expect(recompensesDisponibles(100, "ultra", avecCadeau).map((r) => r.id)).not.toContain("oeufs");
+    expect(prochaineRecompense(0, "standard", avecCadeau)?.recompense.id).toBe("supplement");
+  });
+
+  it("œufs de bienvenue : filleul, première commande, à partir du début de l'offre", () => {
+    expect(oeufsDeBienvenue({ filleul: true, commandes: 0 }, "2027-01-09", "2027-01-01")).toBe(true);
+    expect(oeufsDeBienvenue({ filleul: true, commandes: 1 }, "2027-01-09", "2027-01-01")).toBe(false);
+    expect(oeufsDeBienvenue({ filleul: false, commandes: 0 }, "2027-01-09", "2027-01-01")).toBe(false);
+    expect(oeufsDeBienvenue({ filleul: true, commandes: 0 }, "2026-12-26", "2027-01-01")).toBe(false);
+    expect(oeufsDeBienvenue(undefined, "2027-01-09", "2027-01-01")).toBe(false);
   });
 
   it("solde disponible pendant la saisie : on rend les récompenses retirées, on retire les nouvelles", () => {

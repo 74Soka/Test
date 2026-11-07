@@ -21,6 +21,7 @@ export default async function PageRecompense({ params }: PageProps<"/reglages/fi
         <FormulaireRecompense
           id={r.id}
           articles={articles}
+          cadeauParrainage={r.type !== "tampons"}
           initial={{
             nom: r.nom,
             description: r.description ?? "",

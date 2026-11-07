@@ -21,6 +21,7 @@ const schemaParametres = z
     filleuls_vip: entier(1, 1000),
     filleuls_ultra: entier(1, 1000),
     filleuls_livres_seulement: z.boolean(),
+    parrainage_cadeaux_debut: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Date invalide."),
   })
   .refine((p) => p.filleuls_ultra >= p.filleuls_vip, {
     path: ["filleuls_ultra"],
@@ -55,20 +56,26 @@ export type DonneesRecompense = z.input<typeof schemaRecompense>;
 
 export async function enregistrerRecompense(donnees: DonneesRecompense, id?: string): Promise<Resultat> {
   await exigerAdmin();
-  const saisie = schemaRecompense.safeParse(donnees);
+  const supabase = await clientSupabase();
+  // Cadeau de parrainage : ni coût ni niveau (il est offert, pas acheté en tampons)
+  const existant = id ? (await supabase.from("recompenses").select("type").eq("id", id).maybeSingle()).data : null;
+  const cadeau = existant && existant.type !== "tampons";
+  const saisie = schemaRecompense.safeParse(cadeau ? { ...donnees, cout_tampons: "1", niveau: "standard" } : donnees);
   if (!saisie.success) {
     return { ok: false, erreur: "Vérifiez les champs signalés.", champs: erreursParChamp(saisie.error.issues) };
   }
-  const { article_id, description, ...reste } = saisie.data;
+  const { article_id, description, cout_tampons, niveau, ...reste } = saisie.data;
   const ligne = {
     ...reste,
+    ...(cadeau ? {} : { cout_tampons, niveau }),
     description: description || null,
     article_id: article_id && z.uuid().safeParse(article_id).success ? article_id : null,
   };
-  const supabase = await clientSupabase();
   const { error } = id
     ? await supabase.from("recompenses").update(ligne).eq("id", id)
-    : await supabase.from("recompenses").insert(ligne);
+    : await supabase
+        .from("recompenses")
+        .insert({ ...ligne, cout_tampons: cout_tampons as number, niveau: niveau ?? "standard" });
   if (error) return { ok: false, erreur: messageErreur(error, { "23505": "Une récompense porte déjà ce nom." }) };
   revalidatePath("/", "layout");
   redirect("/reglages/fidelite");

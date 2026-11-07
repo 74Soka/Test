@@ -7,6 +7,7 @@ import {
   LIBELLES_NIVEAU,
   niveauSuffisant,
   pluriel,
+  recompensesEnTampons,
   soldeDisponible,
   type Niveau,
   type RecompenseProposee,
@@ -33,6 +34,7 @@ export function RecompensesCommande({
   articles,
   valeur,
   onChange,
+  confituresDues = 0,
 }: {
   niveau: Niveau;
   /** Solde actuel en base (compte déjà les récompenses enregistrées sur cette commande) */
@@ -43,9 +45,14 @@ export function RecompensesCommande({
   articles: ArticleOffrable[];
   valeur: RecompenseEnCours[];
   onChange: (valeur: RecompenseEnCours[]) => void;
+  /** Confitures de parrainage dues à ce client */
+  confituresDues?: number;
 }) {
   const [choix, setChoix] = useState<RecompenseEnCours | null>(null);
   const solde = soldeDisponible(soldeActuel, enregistrees, valeur);
+  const cadeauParrain = recompenses.find((r) => r.type === "cadeau_parrain" && r.actif);
+  const confituresRestantes =
+    confituresDues - valeur.filter((v) => !v.id && v.recompense_id === cadeauParrain?.id).length;
   const nomArticle = (id: string) => articles.find((a) => a.id === id)?.nom ?? "Article";
 
   function commencer(r: RecompenseProposee) {
@@ -67,13 +74,18 @@ export function RecompensesCommande({
 
   const quantiteChoisie = choix ? Object.values(choix.articles).reduce((t, q) => t + q, 0) : 0;
 
-  /** Articles offrables : ceux de la catégorie attendue en premier (suppléments, sauf « panier offert »). */
+  /**
+   * Articles offrables, dans un ordre utile : la catégorie attendue d'abord
+   * (suppléments, sauf « panier offert »), et les confitures en tête quand la
+   * récompense en parle.
+   */
   function articlesProposes(c: RecompenseEnCours) {
-    const parDefaut = recompenses.find((r) => r.id === c.recompense_id)?.article_id;
-    const categorie = articles.find((a) => a.id === parDefaut)?.categorie ?? "supplement";
-    return articles
-      .filter((a) => a.actif)
-      .sort((a, b) => (a.categorie === b.categorie ? 0 : a.categorie === categorie ? -1 : 1));
+    const rec = recompenses.find((r) => r.id === c.recompense_id);
+    const categorie = articles.find((a) => a.id === rec?.article_id)?.categorie ?? "supplement";
+    const confitureDabord = /confiture/i.test(`${rec?.nom} ${rec?.description ?? ""}`);
+    const rang = (a: ArticleOffrable) =>
+      (a.categorie === categorie ? 0 : 2) + (confitureDabord && /confiture/i.test(a.nom) ? 0 : 1);
+    return articles.filter((a) => a.actif).sort((a, b) => rang(a) - rang(b));
   }
 
   return (
@@ -99,7 +111,9 @@ export function RecompensesCommande({
                       .map(([id, q]) => `${q} × ${nomArticle(id)}`)
                       .join(", ") || "Rien de choisi"}
                   </p>
-                  <p className="text-xs text-stone-500">{pluriel(v.cout_tampons, "tampon")}</p>
+                  <p className="text-xs text-stone-500">
+                    {v.cout_tampons > 0 ? pluriel(v.cout_tampons, "tampon") : "Cadeau de parrainage"}
+                  </p>
                 </div>
                 <div className="flex shrink-0 flex-col items-end">
                   <Bouton variante="discret" taille="petit" onClick={() => setChoix(v)}>
@@ -118,6 +132,17 @@ export function RecompensesCommande({
             </li>
           ))}
         </ul>
+      )}
+
+      {!choix && cadeauParrain && confituresRestantes > 0 && (
+        <div className="flex items-center justify-between gap-3 rounded-xl bg-amber-50 px-3 py-2 ring-1 ring-amber-300">
+          <p className="font-medium text-amber-900">
+            🎁 {confituresRestantes > 1 ? `${confituresRestantes} confitures` : "1 confiture"} de parrainage à offrir
+          </p>
+          <Bouton taille="petit" onClick={() => commencer(cadeauParrain)}>
+            Offrir
+          </Bouton>
+        </div>
       )}
 
       {choix ? (
@@ -149,7 +174,7 @@ export function RecompensesCommande({
         </div>
       ) : (
         <ul className="divide-y divide-stone-100">
-          {recompenses
+          {recompensesEnTampons(recompenses)
             .filter((r) => r.actif)
             .map((r) => {
               const accessible = niveauSuffisant(niveau, r.niveau);

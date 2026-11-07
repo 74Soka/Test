@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { exigerAdmin } from "@/lib/auth";
 import { lireParametresFidelite, listerArticles, listerRecompenses } from "@/lib/donnees";
+import { formaterDate } from "@/lib/domaine/dates";
 import { LIBELLES_NIVEAU, pluriel } from "@/lib/domaine/fidelite";
 import { Carte, EnTetePage, LienBouton, Pastille, TitreSection } from "@/components/ui";
 import { FormulaireParametres } from "./formulaire-parametres";
@@ -48,6 +49,10 @@ export default async function PageFidelite() {
               {filleulsLivres}.
             </li>
             <li>Une récompense utilisée retire ses tampons du solde.</li>
+            <li>
+              Parrainage, à partir du {formaterDate(parametres.parrainage_cadeaux_debut, { annee: true })} : à la première
+              commande du filleul, œufs offerts au filleul et confiture offerte au parrain.
+            </li>
           </ul>
           <p className="mt-2 text-sm text-stone-600">
             Les tampons par panier se règlent dans{" "}
@@ -83,7 +88,10 @@ export default async function PageFidelite() {
                     </span>
                   </span>
                   <span className="flex shrink-0 flex-col items-end gap-1">
-                    <span className="font-bold tabular-nums">{pluriel(r.cout_tampons, "tampon")}</span>
+                    <span className="font-bold tabular-nums">
+                      {r.type === "tampons" ? pluriel(r.cout_tampons, "tampon") : "🎁"}
+                    </span>
+                    {r.type !== "tampons" && <Pastille couleur="orange">Parrainage</Pastille>}
                     {r.niveau !== "standard" && (
                       <Pastille couleur={r.niveau === "ultra" ? "orange" : "bleu"}>{LIBELLES_NIVEAU[r.niveau]}</Pastille>
                     )}
@@ -104,6 +112,7 @@ export default async function PageFidelite() {
               filleuls_vip: String(parametres.filleuls_vip),
               filleuls_ultra: String(parametres.filleuls_ultra),
               filleuls_livres_seulement: parametres.filleuls_livres_seulement,
+              parrainage_cadeaux_debut: parametres.parrainage_cadeaux_debut,
             }}
           />
         </Carte>

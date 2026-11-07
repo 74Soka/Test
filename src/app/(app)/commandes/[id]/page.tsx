@@ -5,6 +5,7 @@ import {
   lireCommande,
   listerArticles,
   listerClients,
+  lireParametresFidelite,
   listerFidelite,
   listerRecompenses,
   listerSecteurs,
@@ -31,13 +32,14 @@ export default async function PageCommande({ params, searchParams }: PageProps<"
   await exigerAdmin();
   const { id } = await params;
   const { enregistree } = await searchParams;
-  const [commande, clients, secteurs, catalogue, fidelite, recompenses] = await Promise.all([
+  const [commande, clients, secteurs, catalogue, fidelite, recompenses, parametres] = await Promise.all([
     lireCommande(id),
     listerClients(),
     listerSecteurs(),
     listerArticles(),
     listerFidelite(),
     listerRecompenses({ actifsSeulement: true }),
+    lireParametresFidelite(),
   ]);
   const retour = `/livraisons?du=${commande.date_livraison}`;
 
@@ -105,6 +107,7 @@ export default async function PageCommande({ params, searchParams }: PageProps<"
             }}
             fidelite={fidelite}
             recompenses={recompenses}
+            debutParrainage={parametres.parrainage_cadeaux_debut}
           />
         ) : (
           <Carte>

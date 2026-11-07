@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { clientSupabase } from "@/lib/supabase/serveur";
 import { comparerSecteurs } from "@/lib/domaine/secteurs";
 import type { DateIso } from "@/lib/domaine/dates";
+import type { FideliteSaisie } from "@/lib/domaine/fidelite";
 
 /**
  * Lectures de la base, faites avec la session de l'utilisateur (RLS appliquée).
@@ -94,7 +95,7 @@ export async function lireClient(id: string) {
 /** Carte de fidélité d'un client : solde, niveau et historique complet. */
 export async function lireFideliteClient(clientId: string) {
   const supabase = await clientSupabase();
-  const [resume, gains, depenses] = await Promise.all([
+  const [resume, gains, depenses, confitures] = await Promise.all([
     supabase.from("fidelite_clients").select("*").eq("client_id", clientId).maybeSingle(),
     supabase
       .from("tampons")
@@ -105,8 +106,13 @@ export async function lireFideliteClient(clientId: string) {
       .order("created_at", { ascending: false }),
     supabase
       .from("commandes")
-      .select("id, date_livraison, statut, recompenses:recompenses_utilisees(id, nom, cout_tampons, created_at)")
+      .select("id, date_livraison, statut, recompenses:recompenses_utilisees(id, nom, cout_tampons, type, created_at)")
       .eq("client_id", clientId),
+    supabase
+      .from("confitures_parrain_dues")
+      .select("filleul_id, filleul_prenom, filleul_nom, premiere_commande")
+      .eq("client_id", clientId)
+      .order("premiere_commande"),
   ]);
 
   const r = verifierOuNull(resume);
@@ -117,6 +123,9 @@ export async function lireFideliteClient(clientId: string) {
     filleuls: r?.filleuls ?? 0,
     filleulsComptes: r?.filleuls_comptes ?? 0,
     niveau: r?.niveau ?? "standard",
+    filleul: Boolean(r?.parrain_id),
+    commandesNonAnnulees: r?.commandes_non_annulees ?? 0,
+    confituresDues: verifier(confitures),
     gains: verifier(gains),
     depenses: verifier(depenses).flatMap((c) =>
       c.recompenses.map((ru) => ({ ...ru, commande_id: c.id, date_livraison: c.date_livraison, statut: c.statut })),
@@ -125,13 +134,24 @@ export async function lireFideliteClient(clientId: string) {
 }
 export type FideliteClient = Awaited<ReturnType<typeof lireFideliteClient>>;
 
-/** Solde et niveau de tous les clients (pour la saisie des commandes). */
+/** Solde, niveau et cadeaux de parrainage de tous les clients (pour la saisie des commandes). */
 export async function listerFidelite() {
   const supabase = await clientSupabase();
-  const lignes = verifier(await supabase.from("fidelite_clients").select("client_id, solde, niveau, filleuls_comptes"));
-  const parClient: Record<string, { solde: number; niveau: "standard" | "vip" | "ultra" }> = {};
+  const lignes = verifier(
+    await supabase
+      .from("fidelite_clients")
+      .select("client_id, solde, niveau, parrain_id, commandes_non_annulees, confitures_dues"),
+  );
+  const parClient: Record<string, FideliteSaisie> = {};
   for (const l of lignes) {
-    if (l.client_id) parClient[l.client_id] = { solde: l.solde ?? 0, niveau: l.niveau ?? "standard" };
+    if (!l.client_id) continue;
+    parClient[l.client_id] = {
+      solde: l.solde ?? 0,
+      niveau: l.niveau ?? "standard",
+      filleul: Boolean(l.parrain_id),
+      commandes: l.commandes_non_annulees ?? 0,
+      confitures: l.confitures_dues ?? 0,
+    };
   }
   return parClient;
 }
