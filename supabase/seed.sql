@@ -1,5 +1,6 @@
 -- =============================================================================
--- Données de démonstration : 3 secteurs du Var, 20 clients fictifs, catalogue,
+-- Données de démonstration : 3 secteurs du Var, 20 clients fictifs, catalogue
+-- (paniers et suppléments de « Frais et Français »),
 -- parrainages et commandes sur trois week-ends (le précédent, l'actuel, le suivant).
 -- Les personnes et les numéros de rue sont fictifs ; les positions sont
 -- approximatives (centre des communes).
@@ -19,7 +20,7 @@ declare
   v_ferme_lng constant double precision := 6.0745;
 
   s_ouest uuid; s_est uuid; s_centre uuid;
-  a_p30 uuid; a_p50 uuid; a_oeufs uuid; a_fromage uuid; a_miel uuid;
+  a_p30 uuid; a_p50 uuid; a_oeufs uuid; a_confiture uuid;
   c uuid[] := '{}';
   v_id uuid;
   v_semaine int;
@@ -63,9 +64,16 @@ begin
   ---------------------------------------------------------------------------
   insert into public.articles (nom, categorie, prix_centimes, ordre) values ('Panier 30 €', 'panier', 3000, 1) returning id into a_p30;
   insert into public.articles (nom, categorie, prix_centimes, ordre) values ('Panier 50 €', 'panier', 5000, 2) returning id into a_p50;
-  insert into public.articles (nom, categorie, prix_centimes, ordre) values ('Œufs (boîte de 6)', 'supplement', 500, 10) returning id into a_oeufs;
-  insert into public.articles (nom, categorie, prix_centimes, ordre) values ('Fromage de chèvre', 'supplement', 500, 11) returning id into a_fromage;
-  insert into public.articles (nom, categorie, prix_centimes, actif, ordre) values ('Miel de lavande', 'supplement', 500, false, 12) returning id into a_miel;
+  insert into public.articles (nom, categorie, prix_centimes, ordre) values
+    ('Haricots verts BIO (500 g)', 'supplement', 500, 10),
+    ('Kakis BIO (1 barquette)', 'supplement', 500, 11),
+    ('Oranges BIO (1 kg)', 'supplement', 500, 12),
+    ('Patates douces BIO (1 kg)', 'supplement', 500, 13),
+    ('Pommes de terre grenaille BIO (1 kg)', 'supplement', 500, 14),
+    ('Confiture artisanale – framboise', 'supplement', 800, 30),
+    ('Confiture artisanale – fraise', 'supplement', 800, 31);
+  insert into public.articles (nom, categorie, prix_centimes, ordre) values ('Œufs BIO (6)', 'supplement', 300, 20) returning id into a_oeufs;
+  insert into public.articles (nom, categorie, prix_centimes, ordre) values ('Confiture artisanale – figue', 'supplement', 800, 32) returning id into a_confiture;
 
   ---------------------------------------------------------------------------
   -- Clients (fictifs)
@@ -130,7 +138,7 @@ begin
       from (values
               (case when i % 3 = 0 then a_p50 else a_p30 end, case when i % 5 = 0 then 2 else 1 end),
               (case when i % 4 = 1 then a_oeufs end, 1),
-              (case when i % 6 = 2 then a_fromage end, 2)
+              (case when i % 6 = 2 then a_confiture end, 1)
            ) as q(article_id, quantite)
       join public.articles a on a.id = q.article_id;
     end loop;

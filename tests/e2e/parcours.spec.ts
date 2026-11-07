@@ -85,13 +85,13 @@ test("commande : au moins un panier, total, date choisie", async ({ page }) => {
   await expect(page.getByText(formaterDate(samedi), { exact: true })).toBeVisible();
 
   const enregistrer = page.getByRole("button", { name: "Enregistrer la commande" });
-  await page.getByRole("button", { name: "Ajouter un Œufs (boîte de 6)" }).click();
+  await page.getByRole("button", { name: "Ajouter un Œufs BIO (6)" }).click();
   await expect(page.getByText("Ajoutez au moins un panier.")).toBeVisible();
   await expect(enregistrer).toBeDisabled();
 
   await page.getByRole("button", { name: "Ajouter un Panier 30 €" }).click();
   await page.getByRole("button", { name: "Ajouter un Panier 30 €" }).click();
-  await expect(page.getByText("65 €")).toBeVisible();
+  await expect(page.getByText("63 €")).toBeVisible();
 
   // Commande pour la semaine suivante (la semaine en cours servira à « recommander »)
   await page.getByRole("button", { name: "Changer la date" }).click();
@@ -106,7 +106,7 @@ test("recommander comme la dernière fois, puis doublon de semaine refusé", asy
   await ouvrirFiche(page, "essai", /Zoé Essai/);
   await page.getByRole("link", { name: "Recommander comme la dernière fois" }).click();
   await expect(page.getByRole("group", { name: "Panier 30 €" }).locator("output")).toHaveText("2");
-  await expect(page.getByRole("group", { name: "Œufs (boîte de 6)" }).locator("output")).toHaveText("1");
+  await expect(page.getByRole("group", { name: "Œufs BIO (6)" }).locator("output")).toHaveText("1");
   await page.getByRole("button", { name: "Enregistrer la commande" }).click();
   await expect(page.getByText("Commande enregistrée.")).toBeVisible();
 
@@ -183,18 +183,18 @@ test("suppression RGPD d'un client et de ses commandes", async ({ page }) => {
 test("catalogue : supplément hors saison retiré de la saisie, ajout d'un supplément", async ({ page }) => {
   await seConnecter(page);
   await page.goto("/reglages/catalogue");
-  await page.getByRole("switch", { name: /Fromage de chèvre/ }).click();
-  await expect(page.getByRole("switch", { name: "Fromage de chèvre : hors saison" })).toBeVisible();
+  await page.getByRole("switch", { name: /Kakis BIO/ }).click();
+  await expect(page.getByRole("switch", { name: "Kakis BIO (1 barquette) : hors saison" })).toBeVisible();
   await page.goto("/commandes/nouvelle");
-  await expect(page.getByText("Fromage de chèvre")).toHaveCount(0);
+  await expect(page.getByText("Kakis BIO (1 barquette)")).toHaveCount(0);
 
   await page.goto("/reglages/catalogue");
   await page.getByRole("radio", { name: "Supplément" }).check();
-  await page.getByLabel("Nom").fill("Confiture de figues");
+  await page.getByLabel("Nom").fill("Miel de lavande (pot)");
   await page.getByLabel("Prix (€)").fill("5");
   await page.getByRole("button", { name: "Ajouter au catalogue" }).click();
   await expect(page.getByText("Article ajouté.")).toBeVisible();
-  await expect(page.getByRole("link", { name: /Confiture de figues/ })).toBeVisible();
+  await expect(page.getByRole("link", { name: /Miel de lavande/ })).toBeVisible();
 });
 
 test("déconnexion", async ({ page }) => {
