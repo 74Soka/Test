@@ -173,6 +173,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "clients_parrain_id_fkey"
+            columns: ["parrain_id"]
+            isOneToOne: false
+            referencedRelation: "fidelite_clients"
+            referencedColumns: ["client_id"]
+          },
+          {
             foreignKeyName: "clients_secteur_id_fkey"
             columns: ["secteur_id"]
             isOneToOne: false
@@ -222,6 +229,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "clients"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "commandes_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "fidelite_clients"
+            referencedColumns: ["client_id"]
           },
         ]
       }
@@ -515,6 +529,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "tampons_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "fidelite_clients"
+            referencedColumns: ["client_id"]
+          },
+          {
             foreignKeyName: "tampons_commande_id_fkey"
             columns: ["commande_id"]
             isOneToOne: false
@@ -527,6 +548,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "clients"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tampons_filleul_id_fkey"
+            columns: ["filleul_id"]
+            isOneToOne: false
+            referencedRelation: "fidelite_clients"
+            referencedColumns: ["client_id"]
           },
         ]
       }
