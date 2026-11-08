@@ -11,7 +11,7 @@ export function GrilleTampons({ solde }: { solde: number }) {
             key={i}
             className={cx(
               "flex size-8 items-center justify-center rounded-full border-2 text-sm",
-              i < remplis ? "border-marque-700 bg-marque-700 text-white" : "border-dashed border-stone-300",
+              i < remplis ? "border-marque-700 bg-marque-700 text-white" : "border-dashed border-marque-200",
             )}
           >
             {i < remplis ? "✓" : i + 1 === 5 || i + 1 === 10 ? "🎁" : ""}

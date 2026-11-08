@@ -23,7 +23,7 @@ export function AjustementTampons({ clientId }: { clientId: string }) {
 
   return (
     <form
-      className="space-y-3 rounded-xl bg-stone-50 p-3 ring-1 ring-stone-200"
+      className="space-y-3 rounded-2xl bg-marque-50 p-3 ring-1 ring-marque-100"
       onSubmit={(e) => {
         e.preventDefault();
         demarrer(async () => {

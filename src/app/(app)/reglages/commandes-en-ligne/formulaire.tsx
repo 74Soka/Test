@@ -77,7 +77,7 @@ export function FormulaireCommandesEnLigne({ initial }: { initial: DonneesComman
         {enCours ? "Enregistrement…" : "Enregistrer"}
       </Bouton>
       {resultat?.ok && (
-        <p role="status" className="text-center font-medium text-marque-800">
+        <p role="status" className="text-center font-medium text-feuille-700">
           ✓ Enregistré
         </p>
       )}

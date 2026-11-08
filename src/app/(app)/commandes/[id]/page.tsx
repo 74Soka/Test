@@ -126,7 +126,7 @@ export default async function PageCommande({ params, searchParams }: PageProps<"
               ))}
             </ul>
             {commande.recompenses.map((r) => (
-              <div key={r.id} className="mt-2 rounded-xl bg-marque-50 px-3 py-2 text-sm ring-1 ring-marque-600/30">
+              <div key={r.id} className="mt-2 rounded-xl bg-peche-50 px-3 py-2 text-sm ring-1 ring-peche-600/30">
                 <p className="font-semibold">🎁 {r.nom} ({r.cout_tampons} tampons)</p>
                 <p>{r.cadeaux.map((c) => `${c.quantite} × ${c.libelle}`).join(", ")}</p>
               </div>

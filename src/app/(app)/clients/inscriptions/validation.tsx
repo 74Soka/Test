@@ -58,7 +58,7 @@ export function ValidationInscription({
             onClick={() => setMode(m)}
             className={
               mode === m
-                ? "min-h-11 rounded-xl bg-stone-900 px-3 font-semibold text-white"
+                ? "min-h-11 rounded-full bg-marque-800 px-3 font-semibold text-white"
                 : "min-h-11 rounded-xl bg-white px-3 font-semibold ring-1 ring-stone-300"
             }
           >

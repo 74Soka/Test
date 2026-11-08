@@ -173,7 +173,7 @@ export function FormulaireCommande({
         )}
 
         {client && date && (
-          <div className="rounded-xl bg-stone-50 p-3 ring-1 ring-stone-200">
+          <div className="rounded-2xl bg-marque-50 p-3 ring-1 ring-marque-100">
             <p className="text-sm text-stone-600">Livraison</p>
             <p className="text-lg font-bold">{formaterDate(date)}</p>
             {secteur && (

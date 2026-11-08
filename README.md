@@ -1,4 +1,4 @@
-# Paniers : commandes, tournées et fidélité
+# Frais et Français : commandes, tournées et fidélité
 
 Application web pour gérer des livraisons de paniers de fruits et légumes. Elle couvre les clients, les commandes,
 les livraisons par secteur, les tournées optimisées, la carte de fidélité et un espace où les clients commandent
@@ -175,6 +175,9 @@ e-mail part vers `EMAIL_ALERTES`, avec le détail et le lien vers la commande.
   Il a pris le relais de `api-adresse.data.gouv.fr`, avec le même format, et il est gratuit. Le module est isolé
   dans `src/lib/geocodage/`.
 - Cartes : Leaflet + OpenStreetMap
+- Identité Frais et Français : logo `public/logo.svg` (icônes de l'application tirées du logo), couleurs dans
+  `src/app/globals.css` (aubergine pour la marque, vert feuille pour ce qui est fait, pêche pour ce qui est offert),
+  polices Alfa Slab One (titres) et Nunito (texte), servies par le site lui-même : aucun appel à Google Fonts
 
 ---
 

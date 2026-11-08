@@ -55,7 +55,7 @@ export function FormulaireCoordonnees(initial: { telephone: string; notesLivrais
         {enCours ? "Enregistrement…" : "Enregistrer"}
       </Bouton>
       {enregistre && (
-        <p role="status" className="text-center font-medium text-marque-800">
+        <p role="status" className="text-center font-medium text-feuille-700">
           ✓ Enregistré
         </p>
       )}

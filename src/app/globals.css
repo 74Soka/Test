@@ -1,17 +1,42 @@
 @import "tailwindcss";
 
 /*
+ * Identité Frais et Français : aubergine (violet profond) pour la marque, vert
+ * feuille pour ce qui est fait (livré, enregistré), pêche pour ce qui est
+ * offert. Titres en Alfa Slab One, texte en Nunito.
  * Application utilisée surtout dehors, sur téléphone : thème clair à fort
  * contraste, textes un peu plus grands, cibles tactiles d'au moins 48 px.
  */
 @theme {
-  --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  --color-marque-50: #f0fdf4;
-  --color-marque-100: #dcfce7;
-  --color-marque-600: #16a34a;
-  --color-marque-700: #15803d;
-  --color-marque-800: #166534;
-  --color-marque-900: #14532d;
+  --font-sans: "Nunito Variable", "Nunito", system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  --font-titre: "Alfa Slab One", Georgia, serif;
+
+  /* Aubergine */
+  --color-marque-50: #f7f1fe;
+  --color-marque-100: #ede1fc;
+  --color-marque-200: #dcc6f7;
+  --color-marque-600: #7b35cc;
+  --color-marque-700: #4c0f9c;
+  --color-marque-800: #35037a;
+  --color-marque-900: #250157;
+
+  /* Feuille */
+  --color-feuille-50: #effaef;
+  --color-feuille-100: #d9f2da;
+  --color-feuille-600: #3a9d45;
+  --color-feuille-700: #2f7d3c;
+  --color-feuille-800: #24622f;
+  --color-feuille-900: #1b4a24;
+
+  /* Pêche */
+  --color-peche-50: #fff3f1;
+  --color-peche-100: #ffe1dd;
+  --color-peche-600: #e0594f;
+  --color-peche-700: #b93f36;
+  --color-peche-800: #96332c;
+  --color-peche-900: #772822;
+
+  --color-fond: #faf6fe;
 }
 
 :root {
@@ -24,7 +49,7 @@ html {
 }
 
 body {
-  background: var(--color-stone-100);
+  background: var(--color-fond);
   color: var(--color-stone-900);
 }
 

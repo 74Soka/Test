@@ -81,10 +81,17 @@ export default async function PageEspace({ searchParams }: PageProps<"/espace">)
 
   return (
     <>
-      <EnTetePage titre={`Bonjour ${situation.prenom || situation.nom}`} sousTitre={`Secteur ${situation.secteur}`} />
+      <EnTetePage
+        titre={`Bonjour ${situation.prenom || situation.nom}`}
+        sousTitre={`Secteur ${situation.secteur}`}
+        action={
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src="/logo.svg" alt="Frais et Français" width={48} height={48} className="shrink-0" />
+        }
+      />
       <div className="space-y-4">
         {sp.commande === "ok" && (
-          <div role="status" className="rounded-xl bg-marque-50 px-4 py-3 font-medium text-marque-900 ring-1 ring-marque-600/30">
+          <div role="status" className="rounded-2xl bg-feuille-50 px-4 py-3 font-medium text-feuille-900 ring-1 ring-feuille-600/30">
             ✅ Commande enregistrée. Merci !
           </div>
         )}
@@ -94,11 +101,12 @@ export default async function PageEspace({ searchParams }: PageProps<"/espace">)
         )}
 
         <Carte aria-label="Prochaine livraison" className="space-y-3">
-          <p className="text-sm font-semibold text-stone-600 uppercase">Prochaine livraison</p>
+          <p className="text-sm font-bold tracking-wide text-peche-700 uppercase">Prochaine livraison</p>
           {date ? (
             <>
-              <p className="text-2xl font-bold">
-                {majuscule(formaterDate(date))} <span className="font-normal text-stone-600">({LIBELLES_CRENEAU[situation.creneau]})</span>
+              <p className="font-titre text-2xl leading-tight text-marque-800">
+                {majuscule(formaterDate(date))}{" "}
+                <span className="font-sans text-lg font-semibold text-stone-600">({LIBELLES_CRENEAU[situation.creneau]})</span>
               </p>
               {situation.cloture && (
                 <p className="text-stone-700">
@@ -145,7 +153,7 @@ export default async function PageEspace({ searchParams }: PageProps<"/espace">)
 
         <Carte aria-label="Ma fidélité" className="space-y-3">
           <div className="flex items-baseline justify-between gap-2">
-            <p className="text-lg font-bold">{pluriel(fidelite.solde, "tampon")}</p>
+            <p className="font-titre text-xl text-marque-800">{pluriel(fidelite.solde, "tampon")}</p>
             <Link href="/espace/fidelite" className="text-sm font-semibold text-marque-800 underline">
               Ma carte
             </Link>

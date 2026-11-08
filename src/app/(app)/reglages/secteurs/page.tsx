@@ -32,7 +32,7 @@ export default async function PageSecteurs() {
             <li key={s.id}>
               <Link
                 href={`/reglages/secteurs/${s.id}`}
-                className="block rounded-2xl bg-white p-4 shadow-sm ring-1 ring-stone-200 hover:bg-stone-50"
+                className="block rounded-3xl bg-white p-4 shadow-[0_2px_8px_rgb(53_3_122/0.06)] ring-1 ring-marque-100 hover:bg-marque-50"
               >
                 <div className="flex items-center gap-2">
                   <PointCouleur couleur={s.couleur} />

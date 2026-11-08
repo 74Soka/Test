@@ -21,11 +21,11 @@ export default async function PageReglages() {
     <>
       <EnTetePage titre="Réglages" />
       <div className="space-y-4">
-        <nav className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-stone-200">
+        <nav className="overflow-hidden rounded-3xl bg-white shadow-[0_2px_8px_rgb(53_3_122/0.06)] ring-1 ring-marque-100">
           <ul className="divide-y divide-stone-100">
             {LIENS.map((l) => (
               <li key={l.href}>
-                <Link href={l.href} className="flex min-h-16 items-center justify-between gap-3 px-4 py-3 hover:bg-stone-50">
+                <Link href={l.href} className="flex min-h-16 items-center justify-between gap-3 px-4 py-3 hover:bg-marque-50">
                   <span>
                     <span className="block font-semibold">{l.titre}</span>
                     <span className="block text-sm text-stone-600">{l.detail}</span>

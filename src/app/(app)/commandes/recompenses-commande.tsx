@@ -102,7 +102,7 @@ export function RecompensesCommande({
       {valeur.length > 0 && (
         <ul className="space-y-2">
           {valeur.map((v, i) => (
-            <li key={v.id ?? `nouvelle-${i}`} className="rounded-xl bg-marque-50 px-3 py-2 ring-1 ring-marque-600/30">
+            <li key={v.id ?? `nouvelle-${i}`} className="rounded-xl bg-peche-50 px-3 py-2 ring-1 ring-peche-600/30">
               <div className="flex items-start justify-between gap-2">
                 <div>
                   <p className="font-semibold">🎁 {v.nom}</p>
@@ -146,7 +146,7 @@ export function RecompensesCommande({
       )}
 
       {choix ? (
-        <div className="space-y-2 rounded-xl bg-stone-50 p-3 ring-1 ring-stone-200">
+        <div className="space-y-2 rounded-2xl bg-marque-50 p-3 ring-1 ring-marque-100">
           <p className="font-semibold">Offrir : {choix.nom}</p>
           <p className="text-sm text-stone-600">
             {recompenses.find((r) => r.id === choix.recompense_id)?.description ?? "Choisissez ce qui est offert."}

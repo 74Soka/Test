@@ -94,7 +94,7 @@ export function CarteFidelite({
       <GrilleTampons solde={solde} />
 
       {disponibles.length > 0 && (
-        <div className="rounded-xl bg-marque-50 px-3 py-2 text-marque-900 ring-1 ring-marque-600/30">
+        <div className="rounded-xl bg-peche-50 px-3 py-2 text-peche-900 ring-1 ring-peche-600/30">
           <p className="font-semibold">🎁 Récompense disponible</p>
           <ul className="text-sm">
             {disponibles.map((r) => (
@@ -163,7 +163,7 @@ export function CarteFidelite({
                 <span
                   className={cx(
                     "font-bold tabular-nums",
-                    m.barre ? "text-stone-400 line-through" : m.quantite > 0 ? "text-marque-800" : "text-red-700",
+                    m.barre ? "text-stone-400 line-through" : m.quantite > 0 ? "text-feuille-700" : "text-red-700",
                   )}
                 >
                   {m.offert ? "🎁" : m.quantite > 0 ? `+${m.quantite}` : m.quantite}

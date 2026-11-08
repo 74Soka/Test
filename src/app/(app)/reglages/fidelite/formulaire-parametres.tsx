@@ -31,7 +31,7 @@ export function FormulaireParametres({ initial }: { initial: DonneesParametres }
       }}
     >
       {resultat && !resultat.ok && <MessageErreur>{resultat.erreur}</MessageErreur>}
-      {resultat?.ok && <p className="font-medium text-marque-800">Règles enregistrées.</p>}
+      {resultat?.ok && <p className="font-medium text-feuille-700">Règles enregistrées.</p>}
       {CHAMPS.map((c) => (
         <Champ
           key={c.cle}

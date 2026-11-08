@@ -64,7 +64,7 @@ export function RecapCommande({ commande }: { commande: Pick<CommandeClient, "li
         ))}
         {commande.recompenses.flatMap((r) =>
           r.cadeaux.map((c) => (
-            <li key={`${r.id}-${c.article_id}`} className="flex justify-between gap-2 text-marque-800">
+            <li key={`${r.id}-${c.article_id}`} className="flex justify-between gap-2 text-peche-700">
               <span>
                 🎁 {c.quantite} × {c.libelle}
               </span>

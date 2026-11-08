@@ -124,7 +124,7 @@ export default async function PageLivraisons({ searchParams }: PageProps<"/livra
                 aria-current={vue === v ? "page" : undefined}
                 className={cx(
                   "flex min-h-10 flex-1 items-center justify-center rounded-lg font-semibold",
-                  vue === v ? "bg-stone-900 text-white" : "text-stone-700",
+                  vue === v ? "bg-marque-800 text-white" : "text-stone-700",
                 )}
               >
                 {v === "semaine" ? "Semaine" : "Jour"}
@@ -172,7 +172,7 @@ export default async function PageLivraisons({ searchParams }: PageProps<"/livra
               aria-current={!secteurFiltre ? "page" : undefined}
               className={cx(
                 "inline-flex min-h-11 shrink-0 items-center rounded-full px-4 text-sm font-semibold ring-1",
-                !secteurFiltre ? "bg-stone-900 text-white ring-stone-900" : "bg-white ring-stone-300",
+                !secteurFiltre ? "bg-marque-800 text-white ring-marque-800" : "bg-white ring-stone-300",
               )}
             >
               Tous
@@ -184,7 +184,7 @@ export default async function PageLivraisons({ searchParams }: PageProps<"/livra
                 aria-current={secteurFiltre === s.id ? "page" : undefined}
                 className={cx(
                   "inline-flex min-h-11 shrink-0 items-center gap-2 rounded-full px-4 text-sm font-semibold whitespace-nowrap ring-1",
-                  secteurFiltre === s.id ? "bg-stone-900 text-white ring-stone-900" : "bg-white ring-stone-300",
+                  secteurFiltre === s.id ? "bg-marque-800 text-white ring-marque-800" : "bg-white ring-stone-300",
                 )}
               >
                 <PointCouleur couleur={s.couleur} />
@@ -215,7 +215,7 @@ export default async function PageLivraisons({ searchParams }: PageProps<"/livra
                       <td className={cx("py-2", l.categorie === "panier" && "font-semibold")}>
                         {l.libelle}
                         {l.offerts > 0 && (
-                          <span className="block text-sm font-normal text-marque-800">dont {l.offerts} offert{l.offerts > 1 ? "s" : ""} 🎁</span>
+                          <span className="block text-sm font-normal text-peche-700">dont {l.offerts} offert{l.offerts > 1 ? "s" : ""} 🎁</span>
                         )}
                       </td>
                       <td className="py-2 text-right text-xl font-bold tabular-nums">{l.quantite}</td>
@@ -241,12 +241,12 @@ export default async function PageLivraisons({ searchParams }: PageProps<"/livra
                     {actifsGroupe.length} arrêt{actifsGroupe.length > 1 ? "s" : ""} ·{" "}
                     {actifsGroupe.reduce((n, c) => n + nombreDePaniers([...c.lignes, ...articlesOfferts(c.recompenses)]), 0)} panier(s)
                   </p>
-                  <ul className="divide-y divide-stone-100 overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-stone-200">
+                  <ul className="divide-y divide-stone-100 overflow-hidden rounded-3xl bg-white shadow-[0_2px_8px_rgb(53_3_122/0.06)] ring-1 ring-marque-100">
                     {g.commandes.map((c) => (
                       <li key={c.id}>
                         <Link
                           href={`/commandes/${c.id}`}
-                          className={cx("block px-4 py-3 hover:bg-stone-50", c.statut === "annulee" && "opacity-60")}
+                          className={cx("block px-4 py-3 hover:bg-marque-50", c.statut === "annulee" && "opacity-60")}
                         >
                           <div className="flex items-start justify-between gap-3">
                             <span className="min-w-0">
@@ -269,7 +269,7 @@ export default async function PageLivraisons({ searchParams }: PageProps<"/livra
                             </span>
                           </div>
                           {c.recompenses.length > 0 && (
-                            <p className="mt-1 text-sm font-medium text-marque-800">
+                            <p className="mt-1 text-sm font-medium text-peche-700">
                               🎁 Offert : {articlesOfferts(c.recompenses).map((a) => `${a.quantite} × ${a.libelle}`).join(", ")}
                             </p>
                           )}

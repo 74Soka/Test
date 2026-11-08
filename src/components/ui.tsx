@@ -16,7 +16,7 @@ type Taille = "normal" | "grand" | "petit";
 const VARIANTES: Record<Variante, string> = {
   principal: "bg-marque-700 text-white hover:bg-marque-800 active:bg-marque-900 disabled:bg-stone-400",
   secondaire:
-    "bg-white text-stone-900 ring-1 ring-stone-300 hover:bg-stone-50 active:bg-stone-100 disabled:text-stone-400",
+    "bg-white text-marque-800 ring-1 ring-marque-200 hover:bg-marque-50 active:bg-marque-100 disabled:text-stone-400",
   danger: "bg-red-700 text-white hover:bg-red-800 active:bg-red-900 disabled:bg-stone-400",
   discret: "text-marque-800 hover:bg-marque-50 active:bg-marque-100 disabled:text-stone-400",
 };
@@ -29,7 +29,7 @@ const TAILLES: Record<Taille, string> = {
 
 function classesBouton(variante: Variante, taille: Taille, className?: string) {
   return cx(
-    "inline-flex items-center justify-center gap-2 rounded-xl font-semibold transition-colors",
+    "inline-flex items-center justify-center gap-2 rounded-full font-bold transition-colors",
     "focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-marque-600",
     "disabled:cursor-not-allowed",
     VARIANTES[variante],
@@ -165,13 +165,18 @@ export function Selection({
 }
 
 export function Carte({ className, ...props }: ComponentProps<"section">) {
-  return <section className={cx("rounded-2xl bg-white p-4 shadow-sm ring-1 ring-stone-200", className)} {...props} />;
+  return (
+    <section
+      className={cx("rounded-3xl bg-white p-4 shadow-[0_2px_8px_rgb(53_3_122/0.06)] ring-1 ring-marque-100", className)}
+      {...props}
+    />
+  );
 }
 
 export function TitreSection({ children, action }: { children: ReactNode; action?: ReactNode }) {
   return (
     <div className="mb-3 flex items-center justify-between gap-3">
-      <h2 className="text-lg font-bold">{children}</h2>
+      <h2 className="text-lg font-extrabold text-marque-800">{children}</h2>
       {action}
     </div>
   );
@@ -189,19 +194,19 @@ export function EnTetePage({
   sousTitre?: ReactNode;
 }) {
   return (
-    <header className="sticky top-0 z-10 -mx-4 mb-4 border-b border-stone-200 bg-stone-100/95 px-4 pt-[max(0.75rem,env(safe-area-inset-top))] pb-3 backdrop-blur">
+    <header className="sticky top-0 z-10 -mx-4 mb-4 border-b border-marque-100 bg-fond/95 px-4 pt-[max(0.75rem,env(safe-area-inset-top))] pb-3 backdrop-blur">
       <div className="flex min-h-12 items-center gap-2">
         {retour && (
           <Link
             href={retour}
             aria-label="Retour"
-            className="-ml-2 inline-flex size-12 shrink-0 items-center justify-center rounded-xl text-2xl text-stone-700 hover:bg-stone-200"
+            className="-ml-2 inline-flex size-12 shrink-0 items-center justify-center rounded-full text-2xl text-marque-800 hover:bg-marque-100"
           >
             ‹
           </Link>
         )}
         <div className="min-w-0 flex-1">
-          <h1 className="truncate text-xl font-bold">{titre}</h1>
+          <h1 className="truncate font-titre text-xl leading-tight text-marque-800">{titre}</h1>
           {sousTitre && <p className="truncate text-sm text-stone-600">{sousTitre}</p>}
         </div>
         {action}
@@ -219,7 +224,7 @@ export function Pastille({
 }) {
   const couleurs = {
     gris: "bg-stone-100 text-stone-700 ring-stone-300",
-    vert: "bg-marque-50 text-marque-800 ring-marque-600/30",
+    vert: "bg-feuille-50 text-feuille-800 ring-feuille-600/30",
     rouge: "bg-red-50 text-red-800 ring-red-600/30",
     orange: "bg-amber-50 text-amber-800 ring-amber-600/30",
     bleu: "bg-sky-50 text-sky-800 ring-sky-600/30",
@@ -260,7 +265,7 @@ export function MessageInfo({ children }: { children: ReactNode }) {
 
 export function EtatVide({ children, action }: { children: ReactNode; action?: ReactNode }) {
   return (
-    <div className="rounded-2xl border-2 border-dashed border-stone-300 px-4 py-8 text-center text-stone-600">
+    <div className="rounded-3xl border-2 border-dashed border-marque-200 px-4 py-8 text-center text-stone-600">
       <p>{children}</p>
       {action && <div className="mt-4">{action}</div>}
     </div>

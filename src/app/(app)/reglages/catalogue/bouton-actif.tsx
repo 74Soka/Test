@@ -22,7 +22,7 @@ export function BoutonActif({ id, actif, nom }: { id: string; actif: boolean; no
       }
       className={cx(
         "relative inline-flex h-8 w-14 shrink-0 items-center rounded-full transition-colors disabled:opacity-60",
-        actif ? "bg-marque-600" : "bg-stone-300",
+        actif ? "bg-feuille-600" : "bg-stone-300",
       )}
     >
       <span

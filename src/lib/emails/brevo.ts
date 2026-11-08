@@ -39,7 +39,7 @@ export function creerEnvoyeurBrevo(options: {
           method: "POST",
           headers: { "api-key": options.cle, "Content-Type": "application/json", Accept: "application/json" },
           body: JSON.stringify({
-            sender: { email: options.expediteur.email, name: options.expediteur.nom ?? "Paniers" },
+            sender: { email: options.expediteur.email, name: options.expediteur.nom ?? "Frais et Français" },
             to: email.a.map((adresse) => ({ email: adresse })),
             subject: email.sujet,
             textContent: email.texte,

@@ -25,7 +25,7 @@ export function FormulaireArticle({ id, initial }: { id?: string; initial?: Donn
       }}
     >
       {resultat && !resultat.ok && <MessageErreur>{resultat.erreur}</MessageErreur>}
-      {resultat?.ok && <p className="font-medium text-marque-800">Article ajouté.</p>}
+      {resultat?.ok && <p className="font-medium text-feuille-700">Article ajouté.</p>}
       <fieldset>
         <legend className="mb-1.5 font-medium text-stone-800">Type</legend>
         <div className="grid grid-cols-2 gap-2">

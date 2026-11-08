@@ -11,7 +11,7 @@ export default async function LayoutTerrain({ children }: { children: React.Reac
     <>
       {!admin && (
         <div className="flex items-center justify-between bg-marque-800 px-4 pt-[max(0.5rem,env(safe-area-inset-top))] pb-2 text-white">
-          <span className="font-semibold">Paniers · livreur</span>
+          <span className="font-titre">Frais et Français · livreur</span>
           <form action={seDeconnecter}>
             <button type="submit" className="min-h-10 rounded-lg px-3 text-sm font-semibold underline">
               Se déconnecter

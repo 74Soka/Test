@@ -15,12 +15,12 @@ export function Compteur({
   libelle: string;
 }) {
   const bouton =
-    "flex size-12 items-center justify-center rounded-xl text-2xl font-bold ring-1 disabled:opacity-30 active:scale-95 transition";
+    "flex size-12 items-center justify-center rounded-full text-2xl font-bold ring-1 disabled:opacity-30 active:scale-95 transition";
   return (
     <div className="flex items-center gap-1" role="group" aria-label={libelle}>
       <button
         type="button"
-        className={cx(bouton, "bg-white text-stone-800 ring-stone-300")}
+        className={cx(bouton, "bg-white text-marque-800 ring-marque-200")}
         onClick={() => onChange(Math.max(0, valeur - 1))}
         disabled={valeur <= 0}
         aria-label={`Retirer un ${libelle}`}

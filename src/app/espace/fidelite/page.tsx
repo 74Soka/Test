@@ -33,7 +33,7 @@ export default async function PageFidelite() {
       <div className="space-y-4">
         <Carte aria-label="Ma carte" className="space-y-3">
           <div className="flex items-center justify-between gap-2">
-            <p className="text-2xl font-bold">{pluriel(fidelite.solde, "tampon")}</p>
+            <p className="font-titre text-2xl text-marque-800">{pluriel(fidelite.solde, "tampon")}</p>
             <Pastille couleur={fidelite.niveau === "standard" ? "gris" : "vert"}>
               {fidelite.niveau === "standard" ? "Client" : `Client ${LIBELLES_NIVEAU[fidelite.niveau]}`}
             </Pastille>
@@ -44,7 +44,7 @@ export default async function PageFidelite() {
               Encore {pluriel(suivante.manque, "tampon")} pour « {suivante.recompense.nom} ».
             </p>
           ) : (
-            fidelite.solde > 0 && <p className="font-semibold text-marque-800">🎁 Vous pouvez utiliser une récompense à votre prochaine commande !</p>
+            fidelite.solde > 0 && <p className="font-semibold text-peche-700">🎁 Vous pouvez utiliser une récompense à votre prochaine commande !</p>
           )}
           <p className="text-sm text-stone-600">
             Un tampon par Panier 30 €, deux par Panier 50 €, à chaque livraison. Les récompenses s&apos;utilisent au moment
@@ -86,7 +86,7 @@ export default async function PageFidelite() {
                 : ` À partir du ${formaterDate(regles.parrainage_cadeaux_debut, { annee: true })}, une confiture vous est offerte à sa première commande, et 6 œufs BIO pour lui.`)}
           </p>
           {fidelite.confitures_dues > 0 && (
-            <p className="rounded-xl bg-marque-50 px-3 py-2 font-medium text-marque-900 ring-1 ring-marque-600/30">
+            <p className="rounded-xl bg-peche-50 px-3 py-2 font-medium text-peche-900 ring-1 ring-peche-600/30">
               🎁 {fidelite.confitures_dues > 1 ? `${fidelite.confitures_dues} confitures vous attendent` : "Une confiture vous attend"}{" "}
               grâce à vos filleuls : elle sera ajoutée à une prochaine livraison.
             </p>
@@ -127,7 +127,7 @@ export default async function PageFidelite() {
                       {formaterDate(t.created_at.slice(0, 10), { annee: true })}
                     </span>
                   </span>
-                  <span className={t.quantite > 0 ? "font-bold text-marque-800" : "font-bold text-red-700"}>
+                  <span className={t.quantite > 0 ? "font-bold text-feuille-700" : "font-bold text-red-700"}>
                     {t.quantite > 0 ? "+" : ""}
                     {t.quantite}
                   </span>

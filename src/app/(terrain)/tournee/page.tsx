@@ -108,7 +108,7 @@ export default async function PageTournee({ searchParams }: PageProps<"/tournee"
                 aria-current={s.id === secteur?.id ? "page" : undefined}
                 className={cx(
                   "inline-flex min-h-11 shrink-0 items-center gap-2 rounded-full px-4 text-sm font-semibold whitespace-nowrap ring-1",
-                  s.id === secteur?.id ? "bg-stone-900 text-white ring-stone-900" : "bg-white ring-stone-300",
+                  s.id === secteur?.id ? "bg-marque-800 text-white ring-marque-800" : "bg-white ring-stone-300",
                 )}
               >
                 <PointCouleur couleur={s.couleur} />

@@ -110,7 +110,7 @@ export function FormulaireBienvenue({
           />
         )}
         {adresse && !manuel && (
-          <p className="rounded-lg bg-stone-50 px-3 py-2 text-stone-700">
+          <p className="rounded-2xl bg-marque-50 px-3 py-2 text-stone-700">
             📍 {adresse.ligne}, {adresse.codePostal} {adresse.commune}
           </p>
         )}

@@ -119,7 +119,7 @@ export function FormulaireCommandeClient({
                 <Compteur libelle={p.nom} valeur={quantites[p.id] ?? 0} onChange={(v) => maj(p.id, v)} />
               </div>
               {contenus[p.id] && (
-                <p className="rounded-lg bg-stone-50 px-3 py-2 text-sm whitespace-pre-line text-stone-700">
+                <p className="rounded-2xl bg-feuille-50 px-3 py-2 text-sm whitespace-pre-line text-feuille-900">
                   {contenus[p.id]}
                 </p>
               )}
@@ -166,7 +166,7 @@ export function FormulaireCommandeClient({
         </p>
         <ul className="space-y-2">
           {cadeauxParrainage.map((r) => (
-            <li key={r.id} className="rounded-xl bg-marque-50 px-3 py-2 text-marque-900 ring-1 ring-marque-600/30">
+            <li key={r.id} className="rounded-xl bg-peche-50 px-3 py-2 text-peche-900 ring-1 ring-peche-600/30">
               🎁 {r.nom} : {r.cadeaux.map((c) => `${c.quantite} × ${c.libelle}`).join(", ")}
             </li>
           ))}
@@ -177,7 +177,7 @@ export function FormulaireCommandeClient({
                 key={r.id}
                 className={cx(
                   "flex items-center justify-between gap-2 rounded-xl px-3 py-2 ring-1",
-                  gardee ? "bg-marque-50 ring-marque-600/30" : "bg-stone-50 text-stone-500 line-through ring-stone-200",
+                  gardee ? "bg-peche-50 ring-peche-600/30" : "bg-stone-50 text-stone-500 line-through ring-stone-200",
                 )}
               >
                 <span>
@@ -196,7 +196,7 @@ export function FormulaireCommandeClient({
           {nouvelles.map((n) => (
             <li
               key={n.cle}
-              className="flex items-center justify-between gap-2 rounded-xl bg-marque-50 px-3 py-2 ring-1 ring-marque-600/30"
+              className="flex items-center justify-between gap-2 rounded-xl bg-peche-50 px-3 py-2 ring-1 ring-peche-600/30"
             >
               <span>
                 🎁 {n.recompense.nom} :{" "}
@@ -298,7 +298,7 @@ function ChoixSupplements({
   const voulu = nouvelle.recompense.nb_offerts;
   const choisis = Object.values(articles).reduce((t, q) => t + q, 0);
   return (
-    <div className="mt-3 space-y-3 rounded-xl bg-stone-50 p-3 ring-1 ring-stone-200" role="group" aria-label="Choix des cadeaux">
+    <div className="mt-3 space-y-3 rounded-2xl bg-marque-50 p-3 ring-1 ring-marque-100" role="group" aria-label="Choix des cadeaux">
       <p className="font-semibold">
         {nouvelle.recompense.nom} : choisissez {pluriel(voulu, "supplément")} ({choisis}/{voulu})
       </p>

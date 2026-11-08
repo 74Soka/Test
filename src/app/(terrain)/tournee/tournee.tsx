@@ -230,7 +230,7 @@ export function Tournee({
         </div>
         <div className="h-2 overflow-hidden rounded-full bg-stone-200">
           <div
-            className="h-full bg-marque-600 transition-all"
+            className="h-full bg-feuille-600 transition-all"
             style={{ width: `${arretsOrdonnes.length ? (100 * nbLivres) / arretsOrdonnes.length : 0}%` }}
           />
         </div>
@@ -242,7 +242,7 @@ export function Tournee({
         )}
 
         {prochain ? (
-          <div className="rounded-xl bg-stone-50 p-3 ring-1 ring-stone-200">
+          <div className="rounded-2xl bg-marque-50 p-3 ring-1 ring-marque-100">
             <p className="text-sm text-stone-600">
               Prochain arrêt
               {tempsParArret.has(prochain.id) && ` · 🚗 ${route(tempsParArret.get(prochain.id)!)}`}
@@ -267,7 +267,7 @@ export function Tournee({
             )}
           </div>
         ) : (
-          arretsOrdonnes.length > 0 && <p className="font-semibold text-marque-800">🎉 Tournée terminée !</p>
+          arretsOrdonnes.length > 0 && <p className="font-semibold text-feuille-700">🎉 Tournée terminée !</p>
         )}
 
         <div className="flex flex-wrap gap-2">
@@ -347,8 +347,8 @@ export function Tournee({
               <section
                 aria-label={`Arrêt ${i + 1} : ${a.nom}`}
                 className={cx(
-                  "rounded-2xl bg-white p-4 shadow-sm ring-1",
-                  etat?.livree ? "ring-marque-600/40" : "ring-stone-200",
+                  "rounded-3xl bg-white p-4 shadow-[0_2px_8px_rgb(53_3_122/0.06)] ring-1",
+                  etat?.livree ? "ring-feuille-600/40" : "ring-marque-100",
                 )}
               >
                 <div className="flex items-start gap-3">
@@ -394,7 +394,7 @@ export function Tournee({
                   </p>
                 )}
                 <p className="mt-2">{a.contenu}</p>
-                {a.offert && <p className="font-medium text-marque-800">🎁 À remettre : {a.offert}</p>}
+                {a.offert && <p className="font-medium text-peche-700">🎁 À remettre : {a.offert}</p>}
                 {a.notesCommande && <p className="text-sm text-amber-800">« {a.notesCommande} »</p>}
                 <p className="mt-1 text-sm text-stone-600">À encaisser : {formaterPrix(a.totalCentimes)}</p>
 

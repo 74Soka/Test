@@ -65,7 +65,7 @@ export function FormulaireComposition({
         {enCours ? "Enregistrement…" : "Enregistrer la composition"}
       </Bouton>
       {resultat?.ok && (
-        <p role="status" className="text-center font-medium text-marque-800">
+        <p role="status" className="text-center font-medium text-feuille-700">
           ✓ Composition enregistrée
         </p>
       )}

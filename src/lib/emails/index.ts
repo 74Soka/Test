@@ -20,7 +20,7 @@ export async function envoyerAlerte(email: Omit<Email, "a">): Promise<boolean> {
   try {
     await creerEnvoyeurBrevo({
       cle,
-      expediteur: { email: expediteur, nom: process.env.EMAIL_NOM_EXPEDITEUR || "Paniers" },
+      expediteur: { email: expediteur, nom: process.env.EMAIL_NOM_EXPEDITEUR || "Frais et Français" },
       baseUrl: process.env.BREVO_URL || undefined,
     }).envoyer({ ...email, a: destinataires });
     return true;

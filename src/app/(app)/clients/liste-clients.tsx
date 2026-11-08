@@ -77,12 +77,12 @@ export function ListeClients({ clients, secteurs }: { clients: ClientLigne[]; se
           Aucun client ne correspond.
         </p>
       ) : (
-        <ul className="divide-y divide-stone-100 overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-stone-200">
+        <ul className="divide-y divide-stone-100 overflow-hidden rounded-3xl bg-white shadow-[0_2px_8px_rgb(53_3_122/0.06)] ring-1 ring-marque-100">
           {filtres.map((c) => {
             const s = parId.get(c.secteur_id);
             return (
               <li key={c.id}>
-                <Link href={`/clients/${c.id}`} className="flex min-h-16 items-center gap-3 px-4 py-2.5 hover:bg-stone-50">
+                <Link href={`/clients/${c.id}`} className="flex min-h-16 items-center gap-3 px-4 py-2.5 hover:bg-marque-50">
                   {s && <PointCouleur couleur={s.couleur} />}
                   <span className="min-w-0 flex-1">
                     <span className={cx("block truncate font-semibold", !c.actif && "text-stone-400")}>
@@ -114,7 +114,7 @@ function Filtre({ actif, onClick, children }: { actif: boolean; onClick: () => v
       onClick={onClick}
       className={cx(
         "inline-flex min-h-11 shrink-0 items-center gap-2 rounded-full px-4 text-sm font-semibold whitespace-nowrap ring-1",
-        actif ? "bg-stone-900 text-white ring-stone-900" : "bg-white text-stone-800 ring-stone-300",
+        actif ? "bg-marque-800 text-white ring-marque-800" : "bg-white text-stone-800 ring-stone-300",
       )}
     >
       {children}

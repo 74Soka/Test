@@ -115,7 +115,7 @@ export function FormulaireSecteur({
                   aria-label={`Couleur ${c}`}
                 />
                 <span
-                  className="block size-11 rounded-full ring-offset-2 peer-checked:ring-3 peer-checked:ring-stone-900 peer-focus-visible:ring-3 peer-focus-visible:ring-marque-600"
+                  className="block size-11 rounded-full ring-offset-2 peer-checked:ring-3 peer-checked:ring-marque-800 peer-focus-visible:ring-3 peer-focus-visible:ring-marque-600"
                   style={{ backgroundColor: c }}
                 />
               </label>

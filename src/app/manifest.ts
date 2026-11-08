@@ -2,15 +2,15 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "Paniers – commandes et livraisons",
-    short_name: "Paniers",
-    description: "Commandes, clients et livraisons de paniers de fruits et légumes",
+    name: "Frais et Français",
+    short_name: "Frais&Français",
+    description: "Paniers de fruits et légumes frais livrés le week-end dans le Var",
     lang: "fr",
-    start_url: "/livraisons",
+    start_url: "/",
     display: "standalone",
     orientation: "portrait",
-    background_color: "#f5f5f4",
-    theme_color: "#166534",
+    background_color: "#faf6fe",
+    theme_color: "#35037a",
     icons: [
       { src: "/icone-192.png", sizes: "192x192", type: "image/png" },
       { src: "/icone-512.png", sizes: "512x512", type: "image/png" },

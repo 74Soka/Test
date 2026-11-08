@@ -25,8 +25,8 @@ export default async function PageConnexion({ searchParams }: PageProps<"/connex
 
   return (
     <CadrePublic
-      titre="Paniers"
-      sousTitre="Fruits et légumes livrés le week-end"
+      titre="Frais et Français"
+      sousTitre="Paniers de fruits et légumes livrés le week-end"
       pied={
         <>
           <p>
