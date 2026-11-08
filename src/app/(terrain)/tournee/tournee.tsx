@@ -16,6 +16,15 @@ import {
 } from "@/lib/tournees/file-attente";
 import { longueurTrajet } from "@/lib/tournees/geo";
 import {
+  cleDuTrajet,
+  lireTrajetMemorise,
+  memoriserTrajet,
+  pointsDeLaCle,
+  tempsEntreArrets,
+  type ResultatTrajet,
+} from "@/lib/tournees/trajet";
+import type { Troncon } from "@/lib/tournees/types";
+import {
   formaterDistance,
   formaterDuree,
   lienGoogleMaps,
@@ -44,6 +53,8 @@ type EtatLivraison = { livree: boolean; heure: string | null };
 
 const HEURE = new Intl.DateTimeFormat("fr-FR", { timeZone: "Europe/Paris", hour: "2-digit", minute: "2-digit" });
 
+const route = (t: Troncon) => `${formaterDuree(t.dureeSecondes)} · ${formaterDistance(t.distanceMetres)}`;
+
 export function Tournee({
   date,
   secteur,
@@ -66,6 +77,7 @@ export function Tournee({
   const [erreur, setErreur] = useState<string | null>(null);
   const [enCours, demarrer] = useTransition();
   const envoiEnCours = useRef(false);
+  const [itineraire, setItineraire] = useState<({ cle: string } & ResultatTrajet) | null>(null);
 
   // Envoie les appuis en attente ; s'arrête à la première coupure réseau
   const vider = useCallback(async (aEnvoyer: ActionLivraison[]) => {
@@ -138,12 +150,51 @@ export function Tournee({
   const nbLivres = arretsOrdonnes.length - restants.length;
   const positions = arretsOrdonnes.flatMap((a) => (a.position ? [a.position] : []));
   const distanceEstimee = longueurTrajet([secteur.depart, ...positions, secteur.depart]);
+
+  // Itinéraire par les routes : départ → arrêts dans l'ordre → retour
+  const cleTrajet = positions.length ? cleDuTrajet([secteur.depart, ...positions, secteur.depart]) : null;
+  const trajet = itineraire && itineraire.cle === cleTrajet ? itineraire.trajet : null;
+  const temps = trajet ? tempsEntreArrets(trajet, positions.length) : null;
+  const tempsParArret = new Map<string, Troncon>();
+  if (temps) arretsOrdonnes.filter((a) => a.position).forEach((a, j) => tempsParArret.set(a.id, temps.arrivees[j]));
+  const resteSecondes = temps
+    ? restants.reduce((t, a) => t + (tempsParArret.get(a.id)?.dureeSecondes ?? 0), 0) + temps.retour.dureeSecondes
+    : null;
   const departRestant =
     [...arretsOrdonnes].reverse().find((a) => etats[a.id]?.livree && a.position)?.position ?? secteur.depart;
   const lienComplet = lienTourneeGoogleMaps(
     departRestant,
     restants.flatMap((a) => (a.position ? [a.position] : [])),
   );
+
+  // Calculé quand l'ordre change (pas pendant « Réorganiser ») ; le dernier tracé
+  // reste dans le téléphone pour les zones sans réseau
+  useEffect(() => {
+    if (!cleTrajet || reorganiser) return;
+    let annule = false;
+    const minuteur = window.setTimeout(async () => {
+      const memorise = lireTrajetMemorise(window.localStorage, cleTrajet);
+      if (memorise) return setItineraire({ cle: cleTrajet, trajet: memorise });
+      try {
+        const res = await fetch("/api/trajet", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ points: pointsDeLaCle(cleTrajet) }),
+        });
+        if (!res.ok || annule) return;
+        const r = (await res.json()) as ResultatTrajet;
+        if (annule) return;
+        setItineraire({ cle: cleTrajet, ...r });
+        if (r.trajet) memoriserTrajet(window.localStorage, cleTrajet, r.trajet);
+      } catch {
+        // Hors connexion : lignes droites en attendant
+      }
+    }, 300);
+    return () => {
+      annule = true;
+      window.clearTimeout(minuteur);
+    };
+  }, [cleTrajet, reorganiser]);
 
   function defilerVers(id: string) {
     document.getElementById(`arret-${id}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
@@ -164,8 +215,14 @@ export function Tournee({
           <p className="text-lg font-bold">
             {nbLivres} / {arretsOrdonnes.length} livré{nbLivres > 1 ? "s" : ""}
           </p>
-          {positions.length > 0 && (
-            <p className="text-sm text-stone-600">≈ {formaterDistance(distanceEstimee)} à vol d&apos;oiseau</p>
+          {trajet ? (
+            <p className="text-right text-sm text-stone-600">
+              {formaterDistance(trajet.distanceMetres)} · {formaterDuree(trajet.dureeSecondes)} de route
+            </p>
+          ) : (
+            positions.length > 0 && (
+              <p className="text-sm text-stone-600">≈ {formaterDistance(distanceEstimee)} à vol d&apos;oiseau</p>
+            )
           )}
         </div>
         <div className="h-2 overflow-hidden rounded-full bg-stone-200">
@@ -174,10 +231,19 @@ export function Tournee({
             style={{ width: `${arretsOrdonnes.length ? (100 * nbLivres) / arretsOrdonnes.length : 0}%` }}
           />
         </div>
+        {nbLivres > 0 && restants.length > 0 && resteSecondes !== null && (
+          <p className="text-sm text-stone-600">Reste ≈ {formaterDuree(resteSecondes)} de route, retour compris.</p>
+        )}
+        {itineraire?.cle === cleTrajet && !itineraire?.trajet && itineraire?.raison && (
+          <p className="text-sm text-amber-800">Itinéraire par les routes indisponible : {itineraire.raison}</p>
+        )}
 
         {prochain ? (
           <div className="rounded-xl bg-stone-50 p-3 ring-1 ring-stone-200">
-            <p className="text-sm text-stone-600">Prochain arrêt</p>
+            <p className="text-sm text-stone-600">
+              Prochain arrêt
+              {tempsParArret.has(prochain.id) && ` · 🚗 ${route(tempsParArret.get(prochain.id)!)}`}
+            </p>
             <button type="button" className="text-left" onClick={() => defilerVers(prochain.id)}>
               <span className="block text-lg font-bold">
                 {ordre.indexOf(prochain.id) + 1}. {prochain.nom}
@@ -262,6 +328,7 @@ export function Tournee({
           depart={secteur.depart}
           couleur={secteur.couleur}
           onChoisir={defilerVers}
+          trace={reorganiser ? null : trajet?.geometrie}
           points={arretsOrdonnes.flatMap((a, i) =>
             a.position ? [{ id: a.id, ...a.position, numero: i + 1, livre: Boolean(etats[a.id]?.livree) }] : [],
           )}
@@ -313,6 +380,11 @@ export function Tournee({
                   )}
                 </div>
 
+                {!reorganiser && tempsParArret.has(a.id) && (
+                  <p className="mt-1 text-sm text-stone-600">
+                    🚗 {route(tempsParArret.get(a.id)!)} depuis {a.id === arretsOrdonnes.find((x) => x.position)?.id ? "le départ" : "l'arrêt précédent"}
+                  </p>
+                )}
                 {a.notesLivraison && (
                   <p className="mt-2 rounded-lg bg-amber-50 px-3 py-1.5 font-medium text-amber-900 ring-1 ring-amber-200">
                     {a.notesLivraison}
@@ -368,6 +440,9 @@ export function Tournee({
           );
         })}
       </ol>
+      {temps && !reorganiser && (
+        <p className="text-sm text-stone-600">🏠 Retour au départ : {route(temps.retour)}</p>
+      )}
     </div>
   );
 }

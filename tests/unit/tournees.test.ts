@@ -1,8 +1,17 @@
 import { describe, expect, it, vi } from "vitest";
 import { distance, longueurTrajet } from "@/lib/tournees/geo";
-import { optimiserLocalement } from "@/lib/tournees/locale";
-import { creerOptimiseurORS } from "@/lib/tournees/openrouteservice";
-import { ErreurOptimisation, type Arret, type Point } from "@/lib/tournees/types";
+import { optimiserLocalement, ordonnerSelonCouts } from "@/lib/tournees/locale";
+import { creerClientORS, creerOptimiseurORS, decouper, LIEUX_MAX_MATRICE } from "@/lib/tournees/openrouteservice";
+import {
+  CLE_STOCKAGE_TRAJET,
+  cleDuTrajet,
+  lireTrajetMemorise,
+  memoriserTrajet,
+  pointsDeLaCle,
+  simplifierTrajet,
+  tempsEntreArrets,
+} from "@/lib/tournees/trajet";
+import { ErreurOptimisation, type Arret, type Point, type Trajet } from "@/lib/tournees/types";
 import {
   ETAPES_MAX_GOOGLE,
   formaterDistance,
@@ -65,67 +74,243 @@ describe("optimisation locale", () => {
     expect(optimiserLocalement(ferme, [], true).ordre).toEqual([]);
     expect(optimiserLocalement(ferme, [{ id: "x", position: ferme }], true).ordre).toEqual(["x"]);
   });
+
+  it("tient compte des sens uniques (coûts asymétriques)", () => {
+    // Boucle : 0 → 1 → 2 → 3 → 0 coûte 4 ; l'autre sens coûte 40
+    const cout = (i: number, j: number) => ((j - i + 4) % 4 === 1 ? 1 : 10);
+    expect(ordonnerSelonCouts(3, cout, true)).toEqual([1, 2, 3]);
+    const inverse = (i: number, j: number) => cout(j, i);
+    expect(ordonnerSelonCouts(3, inverse, true)).toEqual([3, 2, 1]);
+  });
 });
 
-describe("optimisation OpenRouteService", () => {
+/** Faux service : répond selon le chemin demandé et garde les appels */
+function fauxORS(reponses: (url: string, corps: Record<string, unknown>) => Response) {
+  const appels: { url: string; init: RequestInit; corps: Record<string, unknown> }[] = [];
+  const fetch = vi.fn(async (url: string, init: RequestInit) => {
+    const corps = JSON.parse(String(init.body));
+    appels.push({ url, init, corps });
+    return reponses(url, corps);
+  });
+  return { fetch: fetch as unknown as typeof globalThis.fetch, appels };
+}
+
+describe("optimisation par les routes (OpenRouteService)", () => {
   const arrets: Arret[] = [
     { id: "cmd-a", position: { lat: 43.12, lng: 5.93 } },
     { id: "cmd-b", position: { lat: 43.1, lng: 5.88 } },
     { id: "cmd-c", position: { lat: 43.09, lng: 5.84 } },
   ];
 
-  it("envoie départ et arrêts (longitude, latitude) et suit l'ordre renvoyé", async () => {
-    const fetch = vi.fn(async (..._args: unknown[]) =>
-      Response.json({
-        routes: [
-          {
-            steps: [{ type: "start" }, { type: "job", id: 3 }, { type: "job", id: 1 }, { type: "end" }],
-            distance: 42_000,
-            duration: 3600,
-          },
-        ],
-        unassigned: [{ id: 2 }],
-      }),
-    );
-    const ors = creerOptimiseurORS({ cle: "cle-test", fetch: fetch as unknown as typeof globalThis.fetch });
+  it("demande la matrice des temps de route et choisit l'ordre le plus court en temps", async () => {
+    // Lieux : 0 = ferme, 1 = a, 2 = b, 3 = c. Le plus rapide : ferme → c → a → b → ferme
+    const durees = [
+      [0, 900, 600, 100],
+      [900, 0, 100, 600],
+      [600, 600, 0, 900],
+      [100, 100, 900, 0],
+    ];
+    const distances = durees.map((l) => l.map((d) => d * 10));
+    distances[2][0] = null as unknown as number; // case vide : estimée à vol d'oiseau
+    const { fetch, appels } = fauxORS(() => Response.json({ durations: durees, distances }));
 
-    const r = await ors.optimiser(ferme, arrets, { retour: true });
+    const r = await creerOptimiseurORS({ cle: "cle-test", fetch }).optimiser(ferme, arrets, { retour: true });
 
-    const [url, init] = fetch.mock.calls[0] as [string, RequestInit];
-    expect(url).toBe("https://api.openrouteservice.org/optimization");
-    expect((init.headers as Record<string, string>).Authorization).toBe("cle-test");
-    const corps = JSON.parse(String(init.body));
-    expect(corps.vehicles[0]).toEqual({ id: 1, profile: "driving-car", start: [6.0745, 43.1497], end: [6.0745, 43.1497] });
-    expect(corps.jobs[0]).toEqual({ id: 1, location: [5.93, 43.12] });
-    expect(r).toEqual({
-      ordre: ["cmd-c", "cmd-a", "cmd-b"],
-      distanceMetres: 42_000,
-      dureeSecondes: 3600,
-      methode: "openrouteservice",
+    expect(appels).toHaveLength(1);
+    expect(appels[0].url).toBe("https://api.heigit.org/openrouteservice/v2/matrix/driving-car");
+    expect((appels[0].init.headers as Record<string, string>).Authorization).toBe("cle-test");
+    expect(appels[0].corps).toEqual({
+      locations: [
+        [6.0745, 43.1497],
+        [5.93, 43.12],
+        [5.88, 43.1],
+        [5.84, 43.09],
+      ],
+      metrics: ["duration", "distance"],
     });
+    expect(r.ordre).toEqual(["cmd-c", "cmd-a", "cmd-b"]);
+    expect(r.methode).toBe("openrouteservice");
+    expect(r.dureeSecondes).toBe(100 + 100 + 100 + 600);
+    // Retour b → ferme inconnu : estimé (1,5 × vol d'oiseau)
+    const retourEstime = 1.5 * distance(arrets[1].position, ferme);
+    expect(r.distanceMetres).toBeCloseTo(1000 + 1000 + 1000 + retourEstime, 0);
   });
 
-  it("explique une clé refusée ou un quota dépassé", async () => {
-    for (const [statut, message] of [
-      [401, "Clé OpenRouteService refusée."],
-      [429, "Quota OpenRouteService dépassé pour aujourd'hui."],
+  it("refuse une tournée trop longue pour une seule matrice", async () => {
+    const { fetch, appels } = fauxORS(() => Response.json({}));
+    const beaucoup = Array.from({ length: LIEUX_MAX_MATRICE }, (_, i) => ({ id: `x${i}`, position: { lat: 43, lng: 6 + i / 100 } }));
+    await expect(creerOptimiseurORS({ cle: "x", fetch }).optimiser(ferme, beaucoup)).rejects.toThrow("Trop d'arrêts");
+    expect(appels).toHaveLength(0);
+  });
+
+  it("explique une clé refusée, un quota dépassé ou une adresse loin des routes", async () => {
+    for (const [statut, corps, message] of [
+      [401, {}, "Clé OpenRouteService refusée."],
+      [403, {}, "Clé OpenRouteService refusée."],
+      [429, {}, "Quota OpenRouteService dépassé pour aujourd'hui."],
+      [404, { error: { code: 2010, message: "Could not find routable point" } }, "trop loin d'une route"],
+      [500, {}, "erreur (500)"],
     ] as const) {
-      const ors = creerOptimiseurORS({
-        cle: "x",
-        fetch: (async () => new Response("{}", { status: statut })) as unknown as typeof globalThis.fetch,
-      });
-      await expect(ors.optimiser(ferme, arrets)).rejects.toThrow(message);
+      const { fetch } = fauxORS(() => Response.json(corps, { status: statut }));
+      await expect(creerOptimiseurORS({ cle: "x", fetch }).optimiser(ferme, arrets)).rejects.toThrow(message);
     }
   });
 
-  it("signale un service injoignable", async () => {
-    const ors = creerOptimiseurORS({
+  it("signale un service injoignable ou une réponse incomplète", async () => {
+    const injoignable = creerOptimiseurORS({
       cle: "x",
       fetch: (async () => {
         throw new TypeError("fetch failed");
       }) as unknown as typeof globalThis.fetch,
     });
-    await expect(ors.optimiser(ferme, arrets)).rejects.toBeInstanceOf(ErreurOptimisation);
+    await expect(injoignable.optimiser(ferme, arrets)).rejects.toBeInstanceOf(ErreurOptimisation);
+
+    const { fetch } = fauxORS(() => Response.json({ durations: [[0]], distances: [[0]] }));
+    await expect(creerOptimiseurORS({ cle: "x", fetch }).optimiser(ferme, arrets)).rejects.toThrow("Réponse inattendue");
+  });
+});
+
+describe("itinéraire par les routes (OpenRouteService)", () => {
+  /** Réponse GeoJSON : ligne droite avec un point au milieu de chaque tronçon */
+  function reponseItineraire(_url: string, corps: Record<string, unknown>) {
+    const coords = corps.coordinates as [number, number][];
+    const ligne = coords.flatMap((c, i) =>
+      i === 0 ? [c] : [[(coords[i - 1][0] + c[0]) / 2, (coords[i - 1][1] + c[1]) / 2 + 0.001], c],
+    );
+    const segments = coords.slice(1).map((_, i) => ({ distance: 1000 * (i + 1), duration: 60 * (i + 1) }));
+    return Response.json({
+      type: "FeatureCollection",
+      features: [
+        {
+          geometry: { type: "LineString", coordinates: ligne },
+          properties: {
+            segments,
+            summary: {
+              distance: segments.reduce((t, s) => t + s.distance, 0),
+              duration: segments.reduce((t, s) => t + s.duration, 0),
+            },
+          },
+        },
+      ],
+    });
+  }
+
+  it("demande l'itinéraire en voiture et renvoie le tracé et la durée de chaque tronçon", async () => {
+    const { fetch, appels } = fauxORS(reponseItineraire);
+    const points = [ferme, { lat: 43.12, lng: 5.93 }, { lat: 43.1, lng: 5.88 }, ferme];
+
+    const t = await creerClientORS({ cle: "cle-test", fetch }).trajet(points);
+
+    expect(appels[0].url).toBe("https://api.heigit.org/openrouteservice/v2/directions/driving-car/geojson");
+    expect((appels[0].init.headers as Record<string, string>).Authorization).toBe("cle-test");
+    expect(appels[0].corps).toEqual({
+      coordinates: [
+        [6.0745, 43.1497],
+        [5.93, 43.12],
+        [5.88, 43.1],
+        [6.0745, 43.1497],
+      ],
+    });
+    expect(t.geometrie).toHaveLength(7);
+    expect(t.geometrie[0]).toEqual(ferme);
+    expect(t.troncons).toEqual([
+      { distanceMetres: 1000, dureeSecondes: 60 },
+      { distanceMetres: 2000, dureeSecondes: 120 },
+      { distanceMetres: 3000, dureeSecondes: 180 },
+    ]);
+    expect(t.distanceMetres).toBe(6000);
+    expect(t.dureeSecondes).toBe(360);
+  });
+
+  it("découpe une longue tournée en plusieurs demandes qui se suivent", async () => {
+    const { fetch, appels } = fauxORS(reponseItineraire);
+    const points = Array.from({ length: 30 }, (_, i) => ({ lat: 43 + i / 100, lng: 6 }));
+
+    const t = await creerClientORS({ cle: "x", fetch, baseUrl: "http://exemple.test/ors/" }).trajet(points);
+
+    expect(appels.map((a) => a.url)).toEqual([
+      "http://exemple.test/ors/v2/directions/driving-car/geojson",
+      "http://exemple.test/ors/v2/directions/driving-car/geojson",
+    ]);
+    const premiers = appels[0].corps.coordinates as number[][];
+    const suivants = appels[1].corps.coordinates as number[][];
+    expect(premiers).toHaveLength(25);
+    expect(suivants[0]).toEqual(premiers[24]);
+    expect(t.troncons).toHaveLength(29);
+    // Le point de jonction n'est pas répété
+    expect(t.geometrie).toHaveLength(30 + 29);
+  });
+
+  it("refuse une réponse dont les tronçons ne correspondent pas aux étapes", async () => {
+    const { fetch } = fauxORS(() =>
+      Response.json({ features: [{ geometry: { coordinates: [[6, 43], [6.1, 43.1]] }, properties: { segments: [] } }] }),
+    );
+    await expect(creerClientORS({ cle: "x", fetch }).trajet([ferme, { lat: 43, lng: 6 }])).rejects.toThrow(
+      "Réponse inattendue",
+    );
+  });
+
+  it("découpe en morceaux qui se chevauchent", () => {
+    expect(decouper([1, 2, 3], 5)).toEqual([[1, 2, 3]]);
+    expect(decouper([1, 2, 3, 4, 5, 6, 7], 3)).toEqual([
+      [1, 2, 3],
+      [3, 4, 5],
+      [5, 6, 7],
+    ]);
+    expect(decouper([1, 2, 3, 4], 3)).toEqual([
+      [1, 2, 3],
+      [3, 4],
+    ]);
+  });
+});
+
+describe("itinéraire dans le téléphone", () => {
+  const trajet: Trajet = {
+    geometrie: [
+      { lat: 43.1, lng: 6 },
+      { lat: 43.2, lng: 6.1 },
+    ],
+    distanceMetres: 5000,
+    dureeSecondes: 600,
+    troncons: [
+      { distanceMetres: 2000, dureeSecondes: 200 },
+      { distanceMetres: 1000, dureeSecondes: 100 },
+      { distanceMetres: 2000, dureeSecondes: 300 },
+    ],
+  };
+
+  it("la clé d'un trajet redonne ses points (arrondis au mètre)", () => {
+    const cle = cleDuTrajet([{ lat: 43.1234567, lng: 6.7654321 }, ferme]);
+    expect(pointsDeLaCle(cle)).toEqual([{ lat: 43.12346, lng: 6.76543 }, ferme]);
+    expect(cleDuTrajet([ferme, { lat: 43.1234567, lng: 6 }])).not.toBe(cleDuTrajet([{ lat: 43.1234567, lng: 6 }, ferme]));
+  });
+
+  it("allège le tracé : coordonnées arrondies, points répétés retirés", () => {
+    const t = simplifierTrajet({
+      ...trajet,
+      geometrie: [
+        { lat: 43.1000001, lng: 6.0000001 },
+        { lat: 43.1000002, lng: 6.0000002 },
+        { lat: 43.2, lng: 6.1 },
+      ],
+    });
+    expect(t.geometrie).toEqual(trajet.geometrie);
+  });
+
+  it("garde le dernier tracé et ne le ressort que pour le même trajet", () => {
+    const memoire = new Map<string, string>();
+    const stockage = { getItem: (k: string) => memoire.get(k) ?? null, setItem: (k: string, v: string) => void memoire.set(k, v) };
+    memoriserTrajet(stockage, "cle-1", trajet);
+    expect(lireTrajetMemorise(stockage, "cle-1")).toEqual(trajet);
+    expect(lireTrajetMemorise(stockage, "cle-2")).toBeNull();
+    memoire.set(CLE_STOCKAGE_TRAJET, "{cassé");
+    expect(lireTrajetMemorise(stockage, "cle-1")).toBeNull();
+    expect(lireTrajetMemorise(undefined, "cle-1")).toBeNull();
+  });
+
+  it("temps pour rejoindre chaque arrêt et pour revenir", () => {
+    expect(tempsEntreArrets(trajet, 2)).toEqual({ arrivees: trajet.troncons.slice(0, 2), retour: trajet.troncons[2] });
+    expect(tempsEntreArrets(trajet, 3)).toBeNull();
   });
 });
 
@@ -153,6 +338,8 @@ describe("liens de navigation", () => {
     expect(formaterDistance(850)).toBe("850 m");
     expect(formaterDuree(5100)).toBe("1 h 25");
     expect(formaterDuree(2400)).toBe("40 min");
+    expect(formaterDuree(3900)).toBe("1 h 05");
+    expect(formaterDuree(20)).toBe("< 1 min");
   });
 });
 

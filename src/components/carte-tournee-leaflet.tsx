@@ -13,6 +13,8 @@ export type ProprietesCarteTournee = {
   couleur: string;
   onChoisir?: (id: string) => void;
   hauteur?: number;
+  /** Tracé par les routes (retour compris) ; sinon, lignes droites entre les arrêts */
+  trace?: { lat: number; lng: number }[] | null;
 };
 
 function icone(texte: string, fond: string) {
@@ -34,8 +36,16 @@ function Cadrer({ points }: { points: [number, number][] }) {
   return null;
 }
 
-export default function CarteTourneeLeaflet({ depart, points, couleur, onChoisir, hauteur = 280 }: ProprietesCarteTournee) {
+export default function CarteTourneeLeaflet({
+  depart,
+  points,
+  couleur,
+  onChoisir,
+  hauteur = 280,
+  trace: traceRoutier,
+}: ProprietesCarteTournee) {
   const trace: [number, number][] = [[depart.lat, depart.lng], ...points.map((p) => [p.lat, p.lng] as [number, number])];
+  const routes = traceRoutier && traceRoutier.length > 1 ? traceRoutier.map((p) => [p.lat, p.lng] as [number, number]) : null;
   return (
     <MapContainer
       center={[depart.lat, depart.lng]}
@@ -50,8 +60,17 @@ export default function CarteTourneeLeaflet({ depart, points, couleur, onChoisir
         maxZoom={19}
       />
       <Cadrer points={trace} />
-      <Polyline positions={trace} pathOptions={{ color: couleur, weight: 3, opacity: 0.7 }} />
-      {points.length > 0 && (
+      {routes ? (
+        // Clés distinctes : Leaflet n'applique la classe qu'à la création du tracé
+        <Polyline
+          key="routes"
+          positions={routes}
+          pathOptions={{ color: couleur, weight: 4, opacity: 0.75, className: "trace-routier" }}
+        />
+      ) : (
+        <Polyline key="droit" positions={trace} pathOptions={{ color: couleur, weight: 3, opacity: 0.7 }} />
+      )}
+      {!routes && points.length > 0 && (
         <Polyline
           positions={[trace[trace.length - 1], trace[0]]}
           pathOptions={{ color: couleur, weight: 2, opacity: 0.4, dashArray: "6 6" }}

@@ -40,6 +40,8 @@ export default defineConfig({
         NEXT_PUBLIC_SUPABASE_URL: `http://127.0.0.1:${PORT_FAUX}`,
         NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: "cle-de-test",
         GEOCODAGE_URL: `http://127.0.0.1:${PORT_FAUX}/geocodage`,
+        ORS_API_KEY: "cle-de-test",
+        ORS_URL: `http://127.0.0.1:${PORT_FAUX}/openrouteservice`,
         NEXT_TELEMETRY_DISABLED: "1",
       },
       reuseExistingServer: false,

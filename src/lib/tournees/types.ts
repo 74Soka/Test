@@ -7,6 +7,18 @@ export type Point = { lat: number; lng: number };
 
 export type Arret = { id: string; position: Point };
 
+export type Troncon = { distanceMetres: number; dureeSecondes: number };
+
+/** Itinéraire routier passant par des points dans l'ordre */
+export type Trajet = {
+  /** Tracé à dessiner, dans l'ordre */
+  geometrie: Point[];
+  distanceMetres: number;
+  dureeSecondes: number;
+  /** Un tronçon par étape : du point i au point i + 1 */
+  troncons: Troncon[];
+};
+
 export type ResultatOptimisation = {
   /** Identifiants des arrêts dans l'ordre de passage */
   ordre: string[];

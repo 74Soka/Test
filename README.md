@@ -89,13 +89,25 @@ Onglet **Tournée**, pour un jour et un secteur :
 - **bouton « Livré »** : statut, heure de livraison et tampons de fidélité. Il marche **sans réseau** : l'appui est
   gardé dans le téléphone, avec son heure, et envoyé dès que la connexion revient. Laissez alors la page ouverte.
 
-**Calcul de l'ordre** (module `src/lib/tournees/`, fournisseur interchangeable) :
+**En voiture, sur les routes** (module `src/lib/tournees/`, fournisseur interchangeable). Avec une **clé
+OpenRouteService** :
 
-- sans réglage : calcul local à vol d'oiseau, correct mais qui ignore les routes ;
-- avec une **clé OpenRouteService** (gratuite sur [openrouteservice.org](https://openrouteservice.org), environ 500
-  calculs par jour) : ordre calculé sur les vraies routes, avec la durée. Ajoutez la clé dans la variable
-  d'environnement `ORS_API_KEY` (dans Netlify : *Project configuration → Environment variables*), puis redéployez. Si
-  le service ne répond pas, l'application revient au calcul local et le signale.
+- l'**ordre** est choisi d'après les vrais temps de conduite entre tous les arrêts. Ils viennent de la matrice
+  OpenRouteService, puis l'ordre est amélioré jusqu'à ne plus gagner de temps. Les sens uniques sont pris en compte ;
+- la **carte** dessine l'itinéraire par les routes, retour compris ;
+- l'écran affiche la **distance et le temps de route** de la tournée, le **temps entre chaque arrêt** (« 🚗 12 min ·
+  8 km depuis l'arrêt précédent »), le temps restant en cours de tournée et le retour au départ ;
+- le dernier itinéraire reste dans le téléphone. En zone blanche, le tracé reste affiché.
+
+Sans clé, tout est calculé à vol d'oiseau. C'est correct, mais les routes sont ignorées. Si le service ne répond pas,
+l'application fait de même et le signale.
+
+**Obtenir la clé (gratuite)** : créez un compte sur [openrouteservice.org](https://openrouteservice.org) (compte
+HeiGIT), puis demandez une clé (*token*) au plan gratuit *Standard*. Le plan gratuit couvre largement une tournée :
+environ 2 000 itinéraires et 500 matrices par jour. Ajoutez la clé dans la variable d'environnement `ORS_API_KEY`
+(dans Netlify : *Project configuration → Environment variables*), puis redéployez. Le service est servi par
+`api.heigit.org` (l'ancienne adresse `api.openrouteservice.org` ferme à l'automne 2026). `ORS_URL` permet de pointer
+vers une autre adresse, par exemple une installation à vous.
 
 **Livreurs** : un compte au rôle `livreur` ne voit que l'onglet Tournée. Il peut marquer les livraisons et changer
 l'ordre, mais ne touche ni aux clients ni aux commandes.

@@ -162,7 +162,8 @@ test("fidélité : ajustement manuel, puis récompense utilisée sur une command
   // Le solde du client est à 0, le cadeau apparaît dans le récapitulatif à préparer
   await ouvrirFiche(page, "essai", /Zoé Essai/);
   await expect(page.getByText("Encore 5 tampons pour « Supplément offert ».")).toBeVisible();
-  await page.goto("/livraisons");
+  // La commande est celle de samedi prochain (la semaine suivante si l'on est dimanche)
+  await page.goto(`/livraisons?du=${prochaineDate(6, aujourdhui())}`);
   await expect(page.getByText(/dont 1 offert/).first()).toBeVisible();
   await expect(page.getByText(/🎁 Offert : .*Confiture artisanale – figue/)).toBeVisible();
 });
@@ -215,7 +216,7 @@ test("vue Livraisons : récapitulatif et regroupement par secteur", async ({ pag
   await expect(page.getByRole("heading", { name: "À préparer" })).toBeVisible();
 });
 
-test("tournée : carte, ordre optimisé, réorganisation, bouton Livré", async ({ page }) => {
+test("tournée : carte et temps par les routes, ordre optimisé, réorganisation, bouton Livré", async ({ page }) => {
   await seConnecter(page);
   await page.goto("/tournee");
   await expect(page.getByRole("heading", { name: "Tournée" })).toBeVisible();
@@ -226,16 +227,27 @@ test("tournée : carte, ordre optimisé, réorganisation, bouton Livré", async 
   await expect(page.locator(".leaflet-container")).toBeVisible();
   await expect(page.getByText(/Prochain arrêt/)).toBeVisible();
 
-  // Optimisation (calcul local, sans clé OpenRouteService)
+  // Itinéraire en voiture (faux OpenRouteService) : tracé, total, temps entre arrêts
+  await expect(page.getByText(/\d+ km · .+ de route$/)).toBeVisible();
+  await expect(page.locator("path.trace-routier")).toHaveCount(1);
+  await expect(arrets.first().getByText(/🚗 .+ depuis le départ/)).toBeVisible();
+  await expect(arrets.nth(1).getByText(/🚗 .+ depuis l'arrêt précédent/)).toBeVisible();
+  await expect(page.getByText(/Retour au départ : /)).toBeVisible();
+
+  // Optimisation par les routes
   await page.getByRole("button", { name: "Optimiser l'ordre" }).click();
-  await expect(page.getByText("Ordre optimisé à vol d'oiseau")).toBeVisible();
+  await expect(page.getByText(/Ordre optimisé par les routes : \d+ km, .+ de route\./)).toBeVisible();
 
   // Réorganisation : le 2e arrêt passe en tête, et l'ordre est enregistré
   const deuxieme = (await arrets.nth(1).getAttribute("aria-label"))!.replace(/^Arrêt 2 : /, "");
   await page.getByRole("button", { name: "Réorganiser" }).click();
   await page.getByRole("button", { name: `Monter ${deuxieme}` }).click();
+  await expect(page.locator("path.trace-routier")).toHaveCount(0);
   await page.getByRole("button", { name: "Enregistrer l'ordre" }).click();
   await expect(page.getByText("Ordre enregistré.")).toBeVisible();
+  // Nouvel ordre : nouvel itinéraire
+  await expect(page.locator("path.trace-routier")).toHaveCount(1);
+  await expect(arrets.first().getByText(/depuis le départ/)).toBeVisible();
   await page.reload();
   await expect(arrets.first()).toHaveAttribute("aria-label", `Arrêt 1 : ${deuxieme}`);
 

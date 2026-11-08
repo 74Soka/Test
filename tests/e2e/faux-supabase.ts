@@ -10,6 +10,8 @@
  * - Connexion : n'importe quel e-mail avec le mot de passe « demo-demo-demo ».
  * - Géocodage : /geocodage/search renvoie des adresses fictives ; une recherche
  *   contenant « panne » simule un service indisponible.
+ * - OpenRouteService (/openrouteservice/v2/…, clé « cle-de-test ») : matrice et
+ *   itinéraires calculés à vol d'oiseau × 1,3, à 50 km/h.
  */
 import http from "node:http";
 import crypto from "node:crypto";
@@ -80,6 +82,49 @@ function geocodage(url: URL, res: http.ServerResponse) {
       properties: { ...a, score: 0.9 },
     })),
   });
+}
+
+const CLE_ORS = "cle-de-test";
+
+function metres([lng1, lat1]: number[], [lng2, lat2]: number[]) {
+  const rad = (d: number) => (d * Math.PI) / 180;
+  const h =
+    Math.sin(rad(lat2 - lat1) / 2) ** 2 + Math.cos(rad(lat1)) * Math.cos(rad(lat2)) * Math.sin(rad(lng2 - lng1) / 2) ** 2;
+  return 1.3 * 2 * 6_371_000 * Math.asin(Math.sqrt(h));
+}
+
+async function openrouteservice(req: http.IncomingMessage, res: http.ServerResponse, url: URL) {
+  if (req.headers.authorization !== CLE_ORS) return repondre(res, 403, { error: "Access to this API has been disallowed" });
+  const corps = await lireCorps(req);
+  if (url.pathname === "/openrouteservice/v2/matrix/driving-car") {
+    const lieux: number[][] = corps.locations;
+    const distances = lieux.map((a) => lieux.map((b) => metres(a, b)));
+    return repondre(res, 200, { distances, durations: distances.map((l) => l.map((d) => d / 13.9)) });
+  }
+  if (url.pathname === "/openrouteservice/v2/directions/driving-car/geojson") {
+    const points: number[][] = corps.coordinates;
+    const ligne = points.flatMap((p, i) =>
+      i === 0 ? [p] : [[(points[i - 1][0] + p[0]) / 2 + 0.002, (points[i - 1][1] + p[1]) / 2], p],
+    );
+    const segments = points.slice(1).map((p, i) => ({ distance: metres(points[i], p), duration: metres(points[i], p) / 13.9 }));
+    return repondre(res, 200, {
+      type: "FeatureCollection",
+      features: [
+        {
+          type: "Feature",
+          geometry: { type: "LineString", coordinates: ligne },
+          properties: {
+            segments,
+            summary: {
+              distance: segments.reduce((t, s) => t + s.distance, 0),
+              duration: segments.reduce((t, s) => t + s.duration, 0),
+            },
+          },
+        },
+      ],
+    });
+  }
+  repondre(res, 404, { error: { code: 2099, message: "inconnu" } });
 }
 
 const ident = (n: string) => `"${n.replace(/"/g, "")}"`;
@@ -296,6 +341,7 @@ async function demarrer() {
     try {
       if (url.pathname === "/sante") return repondre(res, 200, { ok: true });
       if (url.pathname.startsWith("/geocodage/search")) return geocodage(url, res);
+      if (url.pathname.startsWith("/openrouteservice/")) return await openrouteservice(req, res, url);
       if (url.pathname.startsWith("/auth/v1/token")) {
         const corps = await lireCorps(req);
         if (corps?.password !== MOT_DE_PASSE_DEMO) {

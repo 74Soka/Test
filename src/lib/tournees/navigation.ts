@@ -42,9 +42,10 @@ export function formaterDistance(metres: number | undefined): string {
   return metres >= 1000 ? `${Math.round(metres / 1000)} km` : `${Math.round(metres)} m`;
 }
 
-/** « 1 h 25 » / « 40 min » */
+/** « 1 h 25 » / « 40 min » / « < 1 min » */
 export function formaterDuree(secondes: number | undefined): string {
   if (secondes === undefined) return "";
   const minutes = Math.round(secondes / 60);
+  if (minutes === 0) return "< 1 min";
   return minutes >= 60 ? `${Math.floor(minutes / 60)} h ${String(minutes % 60).padStart(2, "0")}` : `${minutes} min`;
 }
