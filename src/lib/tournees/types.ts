@@ -27,6 +27,8 @@ export type ResultatOptimisation = {
   /** Durée de conduite estimée (secondes) */
   dureeSecondes?: number;
   methode: "openrouteservice" | "locale";
+  /** Meilleur ordre possible pour ces distances ou ces temps (calcul exact) */
+  optimal?: boolean;
 };
 
 export interface Optimiseur {

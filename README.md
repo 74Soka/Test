@@ -83,8 +83,10 @@ Onglet **Tournée**, pour un jour et un secteur :
 - **Optimiser l'ordre** : calcule le meilleur ordre depuis le point de départ, retour compris. En cours de tournée, les
   arrêts déjà livrés restent en tête et le reste repart du dernier arrêt livré ;
 - **Réorganiser** : flèches ↑ ↓, puis *Enregistrer l'ordre* ;
-- **Prochain arrêt** mis en avant, avec **Google Maps** et **Waze** en un geste. On peut aussi ouvrir les prochains
-  arrêts d'un coup dans Google Maps, qui limite à 10 arrêts ;
+- **Prochain arrêt** mis en avant, avec **Waze** et **Google Maps** en un geste. Juste après « Livré », un bouton **Y
+  aller avec Waze** part vers l'arrêt suivant. Waze n'accepte qu'une destination par lien, d'où un lien par arrêt ;
+  le trajet suit alors le trafic en temps réel. On peut aussi ouvrir les prochains arrêts d'un coup dans Google
+  Maps, qui limite à 10 arrêts et tient compte du trafic ;
 - sur chaque arrêt : notes de livraison (code portail…), contenu, cadeaux à remettre, montant à encaisser, appel ;
 - **bouton « Livré »** : statut, heure de livraison et tampons de fidélité. Il marche **sans réseau** : l'appui est
   gardé dans le téléphone, avec son heure, et envoyé dès que la connexion revient. Laissez alors la page ouverte.
@@ -92,15 +94,19 @@ Onglet **Tournée**, pour un jour et un secteur :
 **En voiture, sur les routes** (module `src/lib/tournees/`, fournisseur interchangeable). Avec une **clé
 OpenRouteService** :
 
-- l'**ordre** est choisi d'après les vrais temps de conduite entre tous les arrêts. Ils viennent de la matrice
-  OpenRouteService, puis l'ordre est amélioré jusqu'à ne plus gagner de temps. Les sens uniques sont pris en compte ;
-- la **carte** dessine l'itinéraire par les routes, retour compris ;
+- l'**ordre** est choisi d'après les vrais temps de conduite entre tous les arrêts, sens uniques compris. Les temps
+  viennent d'OpenRouteService ; l'ordre est calculé par l'application. Jusqu'à 15 arrêts, c'est le **meilleur ordre
+  possible** (calcul exact, message « Meilleur ordre possible »). Au-delà, c'est un très bon ordre, sans garantie ;
+- la **carte** dessine le trajet le plus rapide par les routes, retour compris ;
 - l'écran affiche la **distance et le temps de route** de la tournée, le **temps entre chaque arrêt** (« 🚗 12 min ·
   8 km depuis l'arrêt précédent »), le temps restant en cours de tournée et le retour au départ ;
 - le dernier itinéraire reste dans le téléphone. En zone blanche, le tracé reste affiché.
 
 Sans clé, tout est calculé à vol d'oiseau. C'est correct, mais les routes sont ignorées. Si le service ne répond pas,
 l'application fait de même et le signale.
+
+Les temps OpenRouteService viennent des limitations de vitesse et du type de route, pas du trafic du jour. Le temps
+passé à chaque arrêt n'est pas compté. Pour le trafic en direct, partez de chaque arrêt avec Waze.
 
 **Obtenir la clé (gratuite)** : créez un compte sur [openrouteservice.org](https://openrouteservice.org) (compte
 HeiGIT), puis demandez une clé (*token*) au plan gratuit *Standard*. Le plan gratuit couvre largement une tournée :

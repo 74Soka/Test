@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { distance, longueurTrajet } from "@/lib/tournees/geo";
-import { optimiserLocalement, ordonnerSelonCouts } from "@/lib/tournees/locale";
+import { ARRETS_MAX_EXACT, optimiserLocalement, ordonnerSelonCouts } from "@/lib/tournees/locale";
 import { creerClientORS, creerOptimiseurORS, decouper, LIEUX_MAX_MATRICE } from "@/lib/tournees/openrouteservice";
 import {
   CLE_STOCKAGE_TRAJET,
@@ -52,10 +52,10 @@ describe("optimisation locale", () => {
     expect(optimiserLocalement(ferme, arrets, false).ordre).toEqual(["a1", "a2", "a3", "a4"]);
   });
 
-  it("trouve un trajet proche de l'optimum (comparé à toutes les possibilités, 7 arrêts)", () => {
+  it("trouve le meilleur trajet possible (comparé à toutes les possibilités, 8 arrêts)", () => {
     for (let graine = 1; graine <= 5; graine++) {
       const r = aleatoire(graine);
-      const arrets: Arret[] = Array.from({ length: 7 }, (_, i) => ({
+      const arrets: Arret[] = Array.from({ length: 8 }, (_, i) => ({
         id: `c${i}`,
         position: { lat: ferme.lat + (r() - 0.5) * 0.3, lng: ferme.lng + (r() - 0.5) * 0.4 },
       }));
@@ -63,11 +63,52 @@ describe("optimisation locale", () => {
       const longueur = (ids: string[]) => longueurTrajet([ferme, ...ids.map((id) => parId.get(id)!), ferme]);
       const optimum = Math.min(...permutations(arrets.map((a) => a.id)).map(longueur));
       const resultat = optimiserLocalement(ferme, arrets, true);
-      expect(resultat.ordre).toHaveLength(7);
-      expect(new Set(resultat.ordre).size).toBe(7);
-      expect(longueur(resultat.ordre)).toBeLessThanOrEqual(optimum * 1.05);
-      expect(resultat.distanceMetres).toBeCloseTo(longueur(resultat.ordre), 0);
+      expect(new Set(resultat.ordre).size).toBe(8);
+      expect(longueur(resultat.ordre)).toBeCloseTo(optimum, 3);
+      expect(resultat.distanceMetres).toBeCloseTo(optimum, 3);
+      expect(resultat.optimal).toBe(true);
     }
+  });
+
+  it("meilleur ordre aussi avec des temps asymétriques, avec ou sans retour", () => {
+    for (let graine = 1; graine <= 5; graine++) {
+      const r = aleatoire(graine * 7);
+      const n = 8;
+      const temps = Array.from({ length: n + 1 }, () => Array.from({ length: n + 1 }, () => 60 + Math.floor(r() * 1800)));
+      const cout = (i: number, j: number) => temps[i][j];
+      for (const retour of [true, false]) {
+        const total = (ordre: number[]) =>
+          [0, ...ordre, ...(retour ? [0] : [])].reduce((t, k, i, l) => (i === 0 ? 0 : t + cout(l[i - 1], k)), 0);
+        const optimum = Math.min(...permutations(Array.from({ length: n }, (_, i) => i + 1)).map(total));
+        expect(total(ordonnerSelonCouts(n, cout, retour))).toBe(optimum);
+      }
+    }
+  });
+
+  it(`calcul exact instantané jusqu'à ${ARRETS_MAX_EXACT} arrêts, très bon ordre au-delà`, () => {
+    const r = aleatoire(42);
+    const lieux = Array.from({ length: 31 }, () => ({ lat: ferme.lat + (r() - 0.5) * 0.4, lng: ferme.lng + (r() - 0.5) * 0.5 }));
+    const arrets = (n: number): Arret[] => lieux.slice(1, n + 1).map((position, i) => ({ id: `c${i}`, position }));
+
+    const debut = performance.now();
+    const exact = optimiserLocalement(ferme, arrets(ARRETS_MAX_EXACT));
+    expect(performance.now() - debut).toBeLessThan(2000);
+    expect(exact.optimal).toBe(true);
+    expect(new Set(exact.ordre).size).toBe(ARRETS_MAX_EXACT);
+
+    const long = optimiserLocalement(ferme, arrets(30));
+    expect(long.optimal).toBe(false);
+    expect(new Set(long.ordre).size).toBe(30);
+    // Pas plus long que l'ordre du plus proche voisin seul
+    const restants = arrets(30);
+    const voisin: Point[] = [];
+    let courant = ferme;
+    while (restants.length) {
+      restants.sort((a, b) => distance(courant, a.position) - distance(courant, b.position));
+      courant = restants.shift()!.position;
+      voisin.push(courant);
+    }
+    expect(long.distanceMetres!).toBeLessThanOrEqual(longueurTrajet([ferme, ...voisin, ferme]));
   });
 
   it("gère 0 ou 1 arrêt", () => {
@@ -130,6 +171,7 @@ describe("optimisation par les routes (OpenRouteService)", () => {
     });
     expect(r.ordre).toEqual(["cmd-c", "cmd-a", "cmd-b"]);
     expect(r.methode).toBe("openrouteservice");
+    expect(r.optimal).toBe(true);
     expect(r.dureeSecondes).toBe(100 + 100 + 100 + 600);
     // Retour b → ferme inconnu : estimé (1,5 × vol d'oiseau)
     const retourEstime = 1.5 * distance(arrets[1].position, ferme);
@@ -210,6 +252,7 @@ describe("itinéraire par les routes (OpenRouteService)", () => {
         [5.88, 43.1],
         [6.0745, 43.1497],
       ],
+      preference: "fastest",
     });
     expect(t.geometrie).toHaveLength(7);
     expect(t.geometrie[0]).toEqual(ferme);

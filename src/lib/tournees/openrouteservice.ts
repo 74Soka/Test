@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { distance } from "./geo";
-import { ordonnerSelonCouts } from "./locale";
+import { ARRETS_MAX_EXACT, ordonnerSelonCouts } from "./locale";
 import { ErreurOptimisation, type Optimiseur, type Point, type Trajet } from "./types";
 
 /**
@@ -126,8 +126,9 @@ export function creerClientORS(options: Options) {
         const donnees = reponseTrajet.safeParse(
           await appeler(
             `directions/${profil}/geojson`,
-            // Instructions laissées (par défaut) : ce sont elles qui donnent un tronçon par étape
-            { coordinates: morceau.map(versCoord) },
+            // Le plus rapide, comme les temps qui ont servi à choisir l'ordre.
+            // Instructions laissées (par défaut) : ce sont elles qui donnent un tronçon par étape.
+            { coordinates: morceau.map(versCoord), preference: "fastest" },
             "application/geo+json",
           ),
         );
@@ -165,7 +166,7 @@ export function creerOptimiseurORS(options: Options): Optimiseur {
   const client = creerClientORS(options);
   return {
     async optimiser(depart, arrets, opts) {
-      if (arrets.length === 0) return { ordre: [], methode: "openrouteservice" };
+      if (arrets.length === 0) return { ordre: [], methode: "openrouteservice", optimal: true };
       const retour = opts?.retour ?? true;
       const { durees, distances } = await client.matrice([depart, ...arrets.map((a) => a.position)]);
       const ordre = ordonnerSelonCouts(arrets.length, (i, j) => durees[i][j], retour);
@@ -177,7 +178,13 @@ export function creerOptimiseurORS(options: Options): Optimiseur {
         distanceMetres += distances[etapes[k - 1]][etapes[k]];
         dureeSecondes += durees[etapes[k - 1]][etapes[k]];
       }
-      return { ordre: ordre.map((k) => arrets[k - 1].id), distanceMetres, dureeSecondes, methode: "openrouteservice" };
+      return {
+        ordre: ordre.map((k) => arrets[k - 1].id),
+        distanceMetres,
+        dureeSecondes,
+        methode: "openrouteservice",
+        optimal: arrets.length <= ARRETS_MAX_EXACT,
+      };
     },
   };
 }

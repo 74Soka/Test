@@ -2,13 +2,82 @@ import { distance, longueurTrajet } from "./geo";
 import type { Arret, Optimiseur, Point, ResultatOptimisation } from "./types";
 
 /**
+ * Jusqu'à ce nombre d'arrêts, l'ordre est le meilleur possible (calcul exact,
+ * instantané). Au-delà, le calcul exact deviendrait trop long : on cherche un
+ * très bon ordre, sans garantie que ce soit le meilleur.
+ */
+export const ARRETS_MAX_EXACT = 15;
+
+/**
  * Ordre de passage minimisant un coût (distance ou durée) entre lieux.
  * Lieu 0 = départ, lieux 1…n = arrêts ; `cout(i, j)` peut être asymétrique
- * (sens uniques). Plus proche voisin, puis améliorations « 2-opt » (inverser
- * une portion) et « or-opt » (déplacer 1 à 3 arrêts consécutifs) tant que le
- * trajet raccourcit. Renvoie les numéros des arrêts (1…n) dans l'ordre.
+ * (sens uniques). Renvoie les numéros des arrêts (1…n) dans l'ordre.
  */
 export function ordonnerSelonCouts(n: number, cout: (i: number, j: number) => number, retour = true): number[] {
+  return n <= ARRETS_MAX_EXACT ? ordreExact(n, cout, retour) : ordreApproche(n, cout, retour);
+}
+
+/**
+ * Meilleur ordre possible, par programmation dynamique (Held-Karp) : pour
+ * chaque groupe d'arrêts déjà visités et chaque dernier arrêt, on garde le
+ * trajet le plus court. 15 arrêts ≈ 7 millions d'opérations.
+ */
+function ordreExact(n: number, cout: (i: number, j: number) => number, retour: boolean): number[] {
+  if (n === 0) return [];
+  const m = n + 1;
+  const c = new Float64Array(m * m);
+  for (let i = 0; i < m; i++) for (let j = 0; j < m; j++) c[i * m + j] = cout(i, j);
+
+  // meilleur[groupe * n + j] : trajet le plus court depuis le départ, passant
+  // par les arrêts du groupe (bits) et finissant à l'arrêt j
+  const taille = 1 << n;
+  const meilleur = new Float64Array(taille * n).fill(Infinity);
+  const precedent = new Int8Array(taille * n).fill(-1);
+  for (let j = 0; j < n; j++) meilleur[(1 << j) * n + j] = c[j + 1];
+
+  for (let groupe = 1; groupe < taille; groupe++) {
+    for (let j = 0; j < n; j++) {
+      if (!(groupe & (1 << j))) continue;
+      const v = meilleur[groupe * n + j];
+      if (v === Infinity) continue;
+      for (let k = 0; k < n; k++) {
+        if (groupe & (1 << k)) continue;
+        const case_ = (groupe | (1 << k)) * n + k;
+        const w = v + c[(j + 1) * m + k + 1];
+        if (w < meilleur[case_]) {
+          meilleur[case_] = w;
+          precedent[case_] = j;
+        }
+      }
+    }
+  }
+
+  const tous = taille - 1;
+  let dernier = 0;
+  let record = Infinity;
+  for (let j = 0; j < n; j++) {
+    const v = meilleur[tous * n + j] + (retour ? c[(j + 1) * m] : 0);
+    if (v < record) {
+      record = v;
+      dernier = j;
+    }
+  }
+  const ordre: number[] = [];
+  for (let groupe = tous, j = dernier; j !== -1; ) {
+    ordre.push(j + 1);
+    const p = precedent[groupe * n + j];
+    groupe &= ~(1 << j);
+    j = p;
+  }
+  return ordre.reverse();
+}
+
+/**
+ * Très bon ordre pour les longues tournées : plus proche voisin, puis
+ * améliorations « 2-opt » (inverser une portion) et « or-opt » (déplacer 1 à
+ * 3 arrêts consécutifs) tant que le trajet raccourcit.
+ */
+function ordreApproche(n: number, cout: (i: number, j: number) => number, retour: boolean): number[] {
   const tour: number[] = [];
   const restants = new Set(Array.from({ length: n }, (_, i) => i + 1));
   let courant = 0;
@@ -66,15 +135,19 @@ export function ordonnerSelonCouts(n: number, cout: (i: number, j: number) => nu
 }
 
 /**
- * Optimiseur sans service extérieur, sur les distances à vol d'oiseau. Bon
- * pour quelques dizaines d'arrêts ; ne connaît pas les routes (relief,
- * littoral, sens uniques).
+ * Optimiseur sans service extérieur, sur les distances à vol d'oiseau. Ne
+ * connaît pas les routes (relief, littoral, sens uniques).
  */
 export function optimiserLocalement(depart: Point, arrets: Arret[], retour = true): ResultatOptimisation {
   const lieux = [depart, ...arrets.map((a) => a.position)];
   const ordre = ordonnerSelonCouts(arrets.length, (i, j) => distance(lieux[i], lieux[j]), retour);
   const points = [depart, ...ordre.map((k) => lieux[k]), ...(retour ? [depart] : [])];
-  return { ordre: ordre.map((k) => arrets[k - 1].id), distanceMetres: longueurTrajet(points), methode: "locale" };
+  return {
+    ordre: ordre.map((k) => arrets[k - 1].id),
+    distanceMetres: longueurTrajet(points),
+    methode: "locale",
+    optimal: arrets.length <= ARRETS_MAX_EXACT,
+  };
 }
 
 export const optimiseurLocal: Optimiseur = {

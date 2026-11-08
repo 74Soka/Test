@@ -236,7 +236,7 @@ test("tournée : carte et temps par les routes, ordre optimisé, réorganisation
 
   // Optimisation par les routes
   await page.getByRole("button", { name: "Optimiser l'ordre" }).click();
-  await expect(page.getByText(/Ordre optimisé par les routes : \d+ km, .+ de route\./)).toBeVisible();
+  await expect(page.getByText(/Meilleur ordre possible par les routes : \d+ km, .+ de route\./)).toBeVisible();
 
   // Réorganisation : le 2e arrêt passe en tête, et l'ordre est enregistré
   const deuxieme = (await arrets.nth(1).getAttribute("aria-label"))!.replace(/^Arrêt 2 : /, "");
@@ -251,10 +251,17 @@ test("tournée : carte et temps par les routes, ordre optimisé, réorganisation
   await page.reload();
   await expect(arrets.first()).toHaveAttribute("aria-label", `Arrêt 1 : ${deuxieme}`);
 
-  // Livré : bouton puis annulation
+  // Livré : bouton, départ immédiat vers le suivant avec Waze, puis annulation
   const premier = arrets.first();
+  const suivant = (await arrets.nth(1).getAttribute("aria-label"))!.replace(/^Arrêt 2 : /, "");
   await premier.getByRole("button", { name: "Livré", exact: true }).click();
   await expect(premier.getByRole("button", { name: /✓ Livré à \d{2}:\d{2} · annuler/ })).toBeVisible();
+  const ensuite = premier.getByRole("group", { name: "Arrêt suivant" });
+  await expect(ensuite.getByText(`2. ${suivant}`)).toBeVisible();
+  await expect(ensuite.getByRole("link", { name: "Y aller avec Waze" })).toHaveAttribute(
+    "href",
+    /^https:\/\/waze\.com\/ul\?ll=[\d.]+,[\d.]+&navigate=yes$/,
+  );
   await expect(page.getByText(`1 / ${total} livré`)).toBeVisible();
   await page.reload();
   await expect(arrets.first().getByRole("button", { name: /✓ Livré/ })).toBeVisible();

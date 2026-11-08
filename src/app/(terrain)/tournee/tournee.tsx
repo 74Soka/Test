@@ -78,6 +78,8 @@ export function Tournee({
   const [enCours, demarrer] = useTransition();
   const envoiEnCours = useRef(false);
   const [itineraire, setItineraire] = useState<({ cle: string } & ResultatTrajet) | null>(null);
+  // Arrêt qui vient d'être livré : on y propose de partir tout de suite vers le suivant
+  const [justeLivre, setJusteLivre] = useState<string | null>(null);
 
   // Envoie les appuis en attente ; s'arrête à la première coupure réseau
   const vider = useCallback(async (aEnvoyer: ActionLivraison[]) => {
@@ -130,6 +132,7 @@ export function Tournee({
     const livree = !etats[id]?.livree;
     const action: ActionLivraison = { commandeId: id, livree, horodatage: new Date().toISOString() };
     setEtats((e) => ({ ...e, [id]: { livree, heure: livree ? action.horodatage : null } }));
+    setJusteLivre(livree ? id : null);
     const suite = ajouterALaFile(file, action);
     setFile(suite);
     ecrireFile(window.localStorage, suite);
@@ -254,11 +257,11 @@ export function Tournee({
             </button>
             {prochain.position && (
               <div className="mt-2 grid grid-cols-2 gap-2">
-                <LienExterneBouton href={lienGoogleMaps(prochain.position)} target="_blank" rel="noopener noreferrer" variante="principal">
-                  Google Maps
-                </LienExterneBouton>
                 <LienExterneBouton href={lienWaze(prochain.position)} target="_blank" rel="noopener noreferrer" variante="principal">
                   Waze
+                </LienExterneBouton>
+                <LienExterneBouton href={lienGoogleMaps(prochain.position)} target="_blank" rel="noopener noreferrer" variante="principal">
+                  Google Maps
                 </LienExterneBouton>
               </div>
             )}
@@ -281,7 +284,7 @@ export function Tournee({
                 setInfos({
                   texte:
                     r.methode === "openrouteservice"
-                      ? `Ordre optimisé par les routes${r.distanceMetres ? ` : ${formaterDistance(r.distanceMetres)}` : ""}${r.dureeSecondes ? `, ${formaterDuree(r.dureeSecondes)} de route` : ""}.`
+                      ? `${r.optimal ? "Meilleur ordre possible" : "Ordre optimisé"} par les routes${r.distanceMetres ? ` : ${formaterDistance(r.distanceMetres)}` : ""}${r.dureeSecondes ? `, ${formaterDuree(r.dureeSecondes)} de route` : ""}.`
                       : "Ordre optimisé à vol d'oiseau (sans tenir compte des routes).",
                   avertissement: r.avertissement,
                 });
@@ -428,6 +431,40 @@ export function Tournee({
                         ? `✓ Livré${etat.heure ? ` à ${HEURE.format(new Date(etat.heure))}` : ""} · annuler`
                         : "Livré"}
                     </Bouton>
+                    {etat?.livree && a.id === justeLivre && prochain && (
+                      <div role="group" aria-label="Arrêt suivant" className="mt-2 rounded-xl bg-marque-50 p-3 ring-1 ring-marque-600/30">
+                        <p className="text-sm text-stone-600">
+                          Ensuite
+                          {tempsParArret.has(prochain.id) && ` · 🚗 ${route(tempsParArret.get(prochain.id)!)}`}
+                        </p>
+                        <p className="font-bold">
+                          {ordre.indexOf(prochain.id) + 1}. {prochain.nom}
+                        </p>
+                        {prochain.position ? (
+                          <div className="mt-2 space-y-2">
+                            <LienExterneBouton
+                              href={lienWaze(prochain.position)}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              variante="principal"
+                              className="w-full"
+                            >
+                              Y aller avec Waze
+                            </LienExterneBouton>
+                            <a
+                              href={lienGoogleMaps(prochain.position)}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="block text-center text-sm font-semibold text-marque-800 underline"
+                            >
+                              ou avec Google Maps
+                            </a>
+                          </div>
+                        ) : (
+                          <p className="text-sm text-stone-500">Position inconnue</p>
+                        )}
+                      </div>
+                    )}
                     {estAdmin && (
                       <Link href={`/commandes/${a.id}`} className="mt-2 block text-center text-sm font-semibold text-marque-800 underline">
                         Voir la commande

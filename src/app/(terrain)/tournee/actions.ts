@@ -10,7 +10,15 @@ import { clientSupabase } from "@/lib/supabase/serveur";
 import { optimiserTournee as optimiser } from "@/lib/tournees";
 
 export type ResultatOptimisationTournee =
-  | { ok: true; ordre: string[]; distanceMetres?: number; dureeSecondes?: number; methode: string; avertissement?: string }
+  | {
+      ok: true;
+      ordre: string[];
+      distanceMetres?: number;
+      dureeSecondes?: number;
+      methode: string;
+      optimal?: boolean;
+      avertissement?: string;
+    }
   | { ok: false; erreur: string };
 
 /**
@@ -50,6 +58,7 @@ export async function optimiserTournee(date: string, secteurId: string): Promise
     distanceMetres: resultat.distanceMetres,
     dureeSecondes: resultat.dureeSecondes,
     methode: resultat.methode,
+    optimal: resultat.optimal,
     avertissement: resultat.avertissement,
   };
 }
