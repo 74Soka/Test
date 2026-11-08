@@ -49,6 +49,7 @@ const schemaRecompense = z.object({
   cout_tampons: entier(1, 1000),
   niveau: z.enum(["standard", "vip", "ultra"]),
   article_id: z.string().optional(),
+  nb_offerts: entier(1, 10).optional(),
   actif: z.boolean(),
 });
 

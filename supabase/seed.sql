@@ -149,5 +149,19 @@ begin
       join public.articles a on a.id = q.article_id;
     end loop;
   end loop;
+
+  ---------------------------------------------------------------------------
+  -- Composition des paniers : cette semaine et les trois suivantes
+  ---------------------------------------------------------------------------
+  insert into public.compositions (semaine, article_id, contenu)
+  select date_trunc('week', current_date)::date + 7 * n, a.id,
+         case when a.id = a_p30 then
+           E'1 kg de pommes de terre\n500 g de carottes\n1 salade\n1 botte de radis\n4 pommes\n1 courge butternut'
+         else
+           E'1,5 kg de pommes de terre\n1 kg de carottes\n2 salades\n1 botte de radis\n6 pommes\n1 courge butternut\n500 g de poireaux\n1 chou-fleur\n4 kakis'
+         end
+  from generate_series(0, 3) as n
+  cross join public.articles a
+  where a.id in (a_p30, a_p50);
 end;
 $$;

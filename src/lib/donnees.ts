@@ -179,7 +179,7 @@ export async function listerArticles(options: { actifsSeulement?: boolean } = {}
 }
 export type Article = Awaited<ReturnType<typeof listerArticles>>[number];
 
-const CHAMPS_COMMANDE = `id, client_id, date_livraison, statut, livree_le, notes,
+const CHAMPS_COMMANDE = `id, client_id, date_livraison, statut, livree_le, notes, source,
   client:clients(id, nom, prenom, adresse, complement_adresse, code_postal, commune, telephone, secteur_id, notes_livraison, actif),
   lignes:lignes_commande(article_id, libelle, categorie, quantite, prix_unitaire_centimes),
   recompenses:recompenses_utilisees(id, recompense_id, nom, cout_tampons, cadeaux(article_id, libelle, categorie, quantite))` as const;
@@ -248,3 +248,14 @@ export async function listerCommandesDuJour(date: DateIso) {
   );
 }
 export type CommandeTournee = Awaited<ReturnType<typeof listerCommandesDuJour>>[number];
+
+/** La fiche est-elle reliée à un compte client en ligne ? */
+export async function aUnCompteEnLigne(clientId: string): Promise<boolean> {
+  const supabase = await clientSupabase();
+  const { count, error } = await supabase
+    .from("comptes_clients")
+    .select("user_id", { count: "exact", head: true })
+    .eq("client_id", clientId);
+  if (error) throw new Error(error.message);
+  return (count ?? 0) > 0;
+}

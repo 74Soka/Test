@@ -20,16 +20,28 @@ const ICONES = {
   ),
 };
 
-const ONGLETS = [
+type Onglet = { href: string; libelle: string; icone: React.ReactNode; accent?: boolean; exact?: boolean };
+
+const ONGLETS_EQUIPE: Onglet[] = [
   { href: "/livraisons", libelle: "Livraisons", icone: ICONES.livraisons },
   { href: "/tournee", libelle: "Tournée", icone: ICONES.tournee },
   { href: "/commandes/nouvelle", libelle: "Commande", icone: ICONES.commande, accent: true },
   { href: "/clients", libelle: "Clients", icone: ICONES.clients },
   { href: "/reglages", libelle: "Réglages", icone: ICONES.reglages },
-] as const;
+];
 
-export function NavigationBas() {
+const ONGLETS_CLIENT: Onglet[] = [
+  { href: "/espace", libelle: "Accueil", icone: <path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z" />, exact: true },
+  { href: "/espace/fidelite", libelle: "Fidélité", icone: <path d="M20 12v9H4v-9M2 7h20v5H2zM12 21V7M12 7H7.5a2.5 2.5 0 1 1 0-5C11 2 12 7 12 7zM12 7h4.5a2.5 2.5 0 1 0 0-5C13 2 12 7 12 7z" /> },
+  { href: "/espace/commander", libelle: "Commander", icone: ICONES.commande, accent: true },
+  { href: "/espace/commandes", libelle: "Commandes", icone: <path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01" /> },
+  { href: "/espace/compte", libelle: "Compte", icone: <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z" /> },
+];
+
+/** Barre d'onglets en bas d'écran : celle de l'équipe, ou celle des clients. */
+export function NavigationBas({ espace = "equipe" }: { espace?: "equipe" | "client" }) {
   const chemin = usePathname();
+  const onglets = espace === "client" ? ONGLETS_CLIENT : ONGLETS_EQUIPE;
 
   return (
     <nav
@@ -37,8 +49,8 @@ export function NavigationBas() {
       className="fixed inset-x-0 bottom-0 z-20 border-t border-stone-200 bg-white pb-[env(safe-area-inset-bottom)]"
     >
       <ul className="mx-auto grid max-w-2xl grid-cols-5">
-        {ONGLETS.map((o) => {
-          const actif = chemin === o.href || chemin.startsWith(`${o.href}/`);
+        {onglets.map((o) => {
+          const actif = chemin === o.href || (!o.exact && chemin.startsWith(`${o.href}/`));
           return (
             <li key={o.href}>
               <Link
@@ -52,7 +64,7 @@ export function NavigationBas() {
                 <span
                   className={cx(
                     "flex h-8 w-12 items-center justify-center rounded-full",
-                    "accent" in o && o.accent ? "bg-marque-700 text-white" : actif && "bg-marque-100",
+                    o.accent ? "bg-marque-700 text-white" : actif && "bg-marque-100",
                   )}
                 >
                   <svg

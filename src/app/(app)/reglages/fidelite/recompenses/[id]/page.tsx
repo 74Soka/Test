@@ -28,6 +28,7 @@ export default async function PageRecompense({ params }: PageProps<"/reglages/fi
             cout_tampons: String(r.cout_tampons),
             niveau: r.niveau,
             article_id: r.article_id ?? "",
+            nb_offerts: String(r.nb_offerts),
             actif: r.actif,
           }}
         />

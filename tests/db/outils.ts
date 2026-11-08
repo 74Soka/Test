@@ -143,6 +143,21 @@ export async function creerCompte(
   return id;
 }
 
+/** Crée un compte en ligne (sans profil), e-mail confirmé ou non. Renvoie son id. */
+export async function creerCompteEnLigne(
+  client: ClientBase,
+  email: string,
+  confirme = true,
+): Promise<string> {
+  const id = randomUUID();
+  await client.query("insert into auth.users (id, email, email_confirmed_at) values ($1, $2, $3)", [
+    id,
+    email,
+    confirme ? new Date() : null,
+  ]);
+  return id;
+}
+
 /** Code SQLSTATE d'une erreur Postgres (ou undefined). */
 export function codeErreur(e: unknown): string | undefined {
   return (e as { code?: string }).code;

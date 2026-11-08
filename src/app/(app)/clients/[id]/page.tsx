@@ -3,6 +3,7 @@ import Link from "next/link";
 import { exigerAdmin } from "@/lib/auth";
 import {
   commandeDeLaSemaine,
+  aUnCompteEnLigne,
   lireClient,
   lireFideliteClient,
   lireParametresFidelite,
@@ -40,13 +41,15 @@ const COULEUR_STATUT: Record<Statut, "orange" | "vert" | "gris"> = {
 export default async function PageClient({ params }: PageProps<"/clients/[id]">) {
   await exigerAdmin();
   const { id } = await params;
-  const [{ client, parrain, filleuls, commandes }, secteurs, fidelite, recompenses, parametres] = await Promise.all([
-    lireClient(id),
-    listerSecteurs(),
-    lireFideliteClient(id),
-    listerRecompenses({ actifsSeulement: true }),
-    lireParametresFidelite(),
-  ]);
+  const [{ client, parrain, filleuls, commandes }, secteurs, fidelite, recompenses, parametres, compteEnLigne] =
+    await Promise.all([
+      lireClient(id),
+      listerSecteurs(),
+      lireFideliteClient(id),
+      listerRecompenses({ actifsSeulement: true }),
+      lireParametresFidelite(),
+      aUnCompteEnLigne(id),
+    ]);
   const secteur = secteurs.find((s) => s.id === client.secteur_id);
   const prochaine = secteur ? prochaineLivraison(secteur, aujourdhui()) : null;
   const commandeSemaine = prochaine ? await commandeDeLaSemaine(id, lundiDeLaSemaine(prochaine)) : null;
@@ -167,6 +170,16 @@ export default async function PageClient({ params }: PageProps<"/clients/[id]">)
             <div>
               <dt className="text-sm text-stone-600">E-mail</dt>
               <dd className="break-all">{client.email ?? "—"}</dd>
+            </div>
+            <div>
+              <dt className="text-sm text-stone-600">Compte en ligne</dt>
+              <dd>
+                {compteEnLigne
+                  ? "Oui : commande depuis son espace client"
+                  : client.email
+                    ? "Pas encore : il peut créer son compte avec cette adresse e-mail"
+                    : "Non (ajoutez son e-mail pour qu'il puisse créer son compte)"}
+              </dd>
             </div>
             <div>
               <dt className="text-sm text-stone-600">Client depuis le</dt>

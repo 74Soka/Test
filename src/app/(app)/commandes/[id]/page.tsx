@@ -68,6 +68,9 @@ export default async function PageCommande({ params, searchParams }: PageProps<"
         action={<Pastille couleur={COULEUR_STATUT[commande.statut]}>{LIBELLES_STATUT[commande.statut]}</Pastille>}
       />
       <div className="space-y-4">
+        {commande.source === "client" && (
+          <p className="text-sm font-medium text-sky-800">🌐 Commandée en ligne par le client</p>
+        )}
         {enregistree && (
           <MessageInfo>
             Commande enregistrée.{" "}

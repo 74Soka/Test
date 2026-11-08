@@ -252,6 +252,9 @@ export default async function PageLivraisons({ searchParams }: PageProps<"/livra
                             <span className="min-w-0">
                               <span className={cx("block font-semibold", c.statut === "annulee" && "line-through")}>
                                 {nomComplet(c.client)}
+                                {c.source === "client" && (
+                                  <span className="ml-2 align-middle text-xs font-semibold text-sky-800">🌐 en ligne</span>
+                                )}
                               </span>
                               <span className="block text-sm text-stone-600">
                                 {c.client.adresse}, {c.client.commune}

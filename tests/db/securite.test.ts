@@ -2,22 +2,27 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { creerBaseDeTest, creerCompte, en, codeErreur, type BaseDeTest } from "./outils";
 import { creerArticle, creerClient, creerSecteur, enregistrerCommande } from "./fabrique";
 
-const TABLES = [
+/** Données privées : invisibles d'un compte sans profil ni fiche client */
+const TABLES_PRIVEES = [
   "profils",
   "secteurs",
   "secteur_communes",
   "clients",
-  "articles",
   "commandes",
   "lignes_commande",
-  "parametres_fidelite",
-  "recompenses",
   "tampons",
   "recompenses_utilisees",
   "cadeaux",
   "fidelite_clients",
   "confitures_parrain_dues",
+  "comptes_clients",
+  "inscriptions",
 ];
+
+/** Vitrine : catalogue actif, récompenses actives, règles, composition des paniers */
+const TABLES_VITRINE = ["articles", "recompenses", "parametres_fidelite", "parametres_commandes", "compositions"];
+
+const TABLES = [...TABLES_PRIVEES, ...TABLES_VITRINE];
 
 let base: BaseDeTest;
 let admin: string;
@@ -103,10 +108,35 @@ describe("visiteur anonyme", () => {
   });
 });
 
-describe("compte connecté mais sans profil (ex. inscription non autorisée)", () => {
-  it.each(TABLES)("ne voit aucune ligne de %s", async (table) => {
+describe("compte connecté mais sans profil ni fiche client (ex. inscription en attente)", () => {
+  it.each(TABLES_PRIVEES)("ne voit aucune ligne de %s", async (table) => {
     const { rows } = await en(base.client, { role: "authenticated", userId: sansProfil }, (c) =>
       c.query(`select * from public.${table}`),
+    );
+    expect(rows).toEqual([]);
+  });
+
+  it("voit la vitrine : seulement les articles et récompenses actifs, et les règles", async () => {
+    const actif = await creerArticle(base.client, { categorie: "supplement", prix: 500 });
+    await base.client.query("update public.articles set actif = false where id = $1", [panier]);
+    const lire = (sql: string) =>
+      en(base.client, { role: "authenticated", userId: sansProfil }, async (c) => (await c.query(sql)).rows);
+    try {
+      const articles = await lire("select id, actif from public.articles");
+      expect(articles.some((a) => a.id === actif)).toBe(true);
+      expect(articles.every((a) => a.actif)).toBe(true);
+      expect(articles.some((a) => a.id === panier)).toBe(false);
+      expect((await lire("select actif from public.recompenses")).every((r) => r.actif)).toBe(true);
+      expect(await lire("select 1 from public.parametres_fidelite")).toHaveLength(1);
+      expect(await lire("select 1 from public.parametres_commandes")).toHaveLength(1);
+    } finally {
+      await base.client.query("update public.articles set actif = true where id = $1", [panier]);
+    }
+  });
+
+  it.each(TABLES_VITRINE)("ne peut pas modifier %s", async (table) => {
+    const { rows } = await en(base.client, { role: "authenticated", userId: sansProfil }, (c) =>
+      c.query(`delete from public.${table} returning 1`),
     );
     expect(rows).toEqual([]);
   });

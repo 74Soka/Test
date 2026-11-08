@@ -205,6 +205,7 @@ export type Database = {
           livree_le: string | null
           notes: string | null
           semaine: string | null
+          source: Database["public"]["Enums"]["source_commande"]
           statut: Database["public"]["Enums"]["statut_commande"]
           updated_at: string
         }
@@ -217,6 +218,7 @@ export type Database = {
           livree_le?: string | null
           notes?: string | null
           semaine?: string | null
+          source?: Database["public"]["Enums"]["source_commande"]
           statut?: Database["public"]["Enums"]["statut_commande"]
           updated_at?: string
         }
@@ -229,6 +231,7 @@ export type Database = {
           livree_le?: string | null
           notes?: string | null
           semaine?: string | null
+          source?: Database["public"]["Enums"]["source_commande"]
           statut?: Database["public"]["Enums"]["statut_commande"]
           updated_at?: string
         }
@@ -255,6 +258,135 @@ export type Database = {
             referencedColumns: ["client_id"]
           },
         ]
+      }
+      compositions: {
+        Row: {
+          article_id: string
+          contenu: string
+          semaine: string
+          updated_at: string
+        }
+        Insert: {
+          article_id: string
+          contenu: string
+          semaine: string
+          updated_at?: string
+        }
+        Update: {
+          article_id?: string
+          contenu?: string
+          semaine?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "compositions_article_id_fkey"
+            columns: ["article_id"]
+            isOneToOne: false
+            referencedRelation: "articles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      comptes_clients: {
+        Row: {
+          client_id: string
+          created_at: string
+          user_id: string
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          user_id: string
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "comptes_clients_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: true
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "comptes_clients_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "confitures_parrain_dues"
+            referencedColumns: ["filleul_id"]
+          },
+          {
+            foreignKeyName: "comptes_clients_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "fidelite_clients"
+            referencedColumns: ["client_id"]
+          },
+        ]
+      }
+      inscriptions: {
+        Row: {
+          adresse: string
+          code_insee: string | null
+          code_postal: string
+          commune: string
+          complement_adresse: string | null
+          created_at: string
+          email: string
+          lat: number | null
+          lng: number | null
+          nom: string
+          notes_livraison: string | null
+          parrain: string | null
+          prenom: string
+          statut: Database["public"]["Enums"]["statut_inscription"]
+          telephone: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          adresse: string
+          code_insee?: string | null
+          code_postal: string
+          commune: string
+          complement_adresse?: string | null
+          created_at?: string
+          email: string
+          lat?: number | null
+          lng?: number | null
+          nom: string
+          notes_livraison?: string | null
+          parrain?: string | null
+          prenom?: string
+          statut?: Database["public"]["Enums"]["statut_inscription"]
+          telephone: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          adresse?: string
+          code_insee?: string | null
+          code_postal?: string
+          commune?: string
+          complement_adresse?: string | null
+          created_at?: string
+          email?: string
+          lat?: number | null
+          lng?: number | null
+          nom?: string
+          notes_livraison?: string | null
+          parrain?: string | null
+          prenom?: string
+          statut?: Database["public"]["Enums"]["statut_inscription"]
+          telephone?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       lignes_commande: {
         Row: {
@@ -297,6 +429,33 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      parametres_commandes: {
+        Row: {
+          cloture_heure: string
+          cloture_jour: number
+          commandes_ouvertes: boolean
+          id: boolean
+          message_clients: string | null
+          updated_at: string
+        }
+        Insert: {
+          cloture_heure?: string
+          cloture_jour?: number
+          commandes_ouvertes?: boolean
+          id?: boolean
+          message_clients?: string | null
+          updated_at?: string
+        }
+        Update: {
+          cloture_heure?: string
+          cloture_jour?: number
+          commandes_ouvertes?: boolean
+          id?: boolean
+          message_clients?: string | null
+          updated_at?: string
+        }
+        Relationships: []
       }
       parametres_fidelite: {
         Row: {
@@ -364,6 +523,7 @@ export type Database = {
           created_at: string
           description: string | null
           id: string
+          nb_offerts: number
           niveau: Database["public"]["Enums"]["niveau_fidelite"]
           nom: string
           ordre: number
@@ -377,6 +537,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           id?: string
+          nb_offerts?: number
           niveau?: Database["public"]["Enums"]["niveau_fidelite"]
           nom: string
           ordre?: number
@@ -390,6 +551,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           id?: string
+          nb_offerts?: number
           niveau?: Database["public"]["Enums"]["niveau_fidelite"]
           nom?: string
           ordre?: number
@@ -696,6 +858,7 @@ export type Database = {
       }
     }
     Functions: {
+      annuler_ma_commande: { Args: { p_commande_id: string }; Returns: undefined }
       changer_statut_commande: {
         Args: {
           p_commande_id: string
@@ -707,9 +870,51 @@ export type Database = {
         Args: { p_commandes: string[] }
         Returns: undefined
       }
+      envoyer_inscription: {
+        Args: {
+          p_adresse: string
+          p_code_insee: string
+          p_code_postal: string
+          p_commune: string
+          p_complement_adresse: string
+          p_lat: number
+          p_lng: number
+          p_nom: string
+          p_notes_livraison: string
+          p_parrain: string
+          p_prenom: string
+          p_telephone: string
+        }
+        Returns: undefined
+      }
+      ma_fidelite: { Args: never; Returns: Json }
+      ma_situation: { Args: never; Returns: Json }
       marquer_livraison: {
         Args: { p_commande_id: string; p_livree: boolean; p_livree_le?: string }
         Returns: undefined
+      }
+      modifier_mes_coordonnees: {
+        Args: { p_notes_livraison: string; p_telephone: string }
+        Returns: undefined
+      }
+      passer_commande: {
+        Args: {
+          p_lignes: Json
+          p_notes?: string
+          p_nouvelles_recompenses?: Json
+          p_recompenses_gardees?: string[]
+        }
+        Returns: Json
+      }
+      supprimer_mon_compte: { Args: never; Returns: undefined }
+      valider_inscription: {
+        Args: {
+          p_client_id?: string
+          p_parrain_id?: string
+          p_secteur_id?: string
+          p_user_id: string
+        }
+        Returns: string
       }
       enregistrer_commande: {
         Args: {
@@ -734,8 +939,10 @@ export type Database = {
         | "ajustement"
       niveau_fidelite: "standard" | "vip" | "ultra"
       role_utilisateur: "admin" | "livreur"
+      source_commande: "equipe" | "client"
       source_position: "adresse" | "manuelle"
       statut_commande: "a_livrer" | "livree" | "annulee"
+      statut_inscription: "en_attente" | "refusee"
       type_recompense: "tampons" | "bienvenue_filleul" | "cadeau_parrain"
     }
     CompositeTypes: {
@@ -875,8 +1082,10 @@ export const Constants = {
       ],
       niveau_fidelite: ["standard", "vip", "ultra"],
       role_utilisateur: ["admin", "livreur"],
+      source_commande: ["equipe", "client"],
       source_position: ["adresse", "manuelle"],
       statut_commande: ["a_livrer", "livree", "annulee"],
+      statut_inscription: ["en_attente", "refusee"],
       type_recompense: ["tampons", "bienvenue_filleul", "cadeau_parrain"],
     },
   },

@@ -28,6 +28,7 @@ export function FormulaireRecompense({
       cout_tampons: "5",
       niveau: "standard",
       article_id: "",
+      nb_offerts: "1",
       actif: true,
     },
   );
@@ -103,6 +104,26 @@ export function FormulaireRecompense({
           </option>
         ))}
       </Selection>
+      {cadeauParrainage && !donnees.article_id && (
+        <p className="-mt-2 text-sm text-stone-600">
+          Choisissez l&apos;article offert pour que ce cadeau s&apos;ajoute tout seul aux commandes passées en ligne.
+          Sinon, ajoutez-le vous-même depuis la commande.
+        </p>
+      )}
+      {!cadeauParrainage && !donnees.article_id && (
+        <Champ
+          label="Suppléments au choix (commande en ligne)"
+          name="nb_offerts"
+          type="number"
+          inputMode="numeric"
+          min={1}
+          max={10}
+          value={donnees.nb_offerts ?? "1"}
+          onChange={(e) => maj({ nb_offerts: e.target.value })}
+          erreur={champs.nb_offerts}
+          aide="Quand le client utilise cette récompense en ligne, il choisit ce nombre de suppléments."
+        />
+      )}
       <label className="flex min-h-12 cursor-pointer items-center gap-3">
         <input
           type="checkbox"

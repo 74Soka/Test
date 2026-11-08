@@ -1,0 +1,101 @@
+import { describe, expect, it, vi } from "vitest";
+import { alerteCommande, alerteInscription } from "@/lib/emails/alertes";
+import { creerEnvoyeurBrevo, ErreurEmail } from "@/lib/emails/brevo";
+import { formaterPrix } from "@/lib/domaine/argent";
+import { formaterEcheance } from "@/lib/domaine/dates";
+
+describe("envoi par Brevo", () => {
+  it("envoie l'e-mail avec la clé, l'expéditeur, les destinataires et l'adresse de réponse", async () => {
+    const fetch = vi.fn(async (..._a: unknown[]) => new Response(JSON.stringify({ messageId: "x" }), { status: 201 }));
+    const envoyeur = creerEnvoyeurBrevo({
+      cle: "cle-brevo",
+      expediteur: { email: "commandes@exemple.fr", nom: "Paniers" },
+      fetch: fetch as unknown as typeof globalThis.fetch,
+    });
+    await envoyeur.envoyer({ a: ["moi@exemple.fr", "associe@exemple.fr"], sujet: "Test", texte: "Bonjour", repondreA: "client@exemple.fr" });
+
+    const [url, init] = fetch.mock.calls[0] as [string, RequestInit];
+    expect(url).toBe("https://api.brevo.com/v3/smtp/email");
+    expect((init.headers as Record<string, string>)["api-key"]).toBe("cle-brevo");
+    expect(JSON.parse(String(init.body))).toEqual({
+      sender: { email: "commandes@exemple.fr", name: "Paniers" },
+      to: [{ email: "moi@exemple.fr" }, { email: "associe@exemple.fr" }],
+      subject: "Test",
+      textContent: "Bonjour",
+      replyTo: { email: "client@exemple.fr" },
+    });
+  });
+
+  it("signale un refus ou une panne, et n'envoie rien sans destinataire", async () => {
+    const refus = creerEnvoyeurBrevo({
+      cle: "x",
+      expediteur: { email: "a@b.fr" },
+      fetch: (async () => new Response("{}", { status: 401 })) as unknown as typeof globalThis.fetch,
+    });
+    await expect(refus.envoyer({ a: ["c@d.fr"], sujet: "s", texte: "t" })).rejects.toThrow("refusé l'envoi (401)");
+
+    const panne = creerEnvoyeurBrevo({
+      cle: "x",
+      expediteur: { email: "a@b.fr" },
+      fetch: (async () => {
+        throw new TypeError("fetch failed");
+      }) as unknown as typeof globalThis.fetch,
+    });
+    await expect(panne.envoyer({ a: ["c@d.fr"], sujet: "s", texte: "t" })).rejects.toBeInstanceOf(ErreurEmail);
+
+    const fetch = vi.fn();
+    await creerEnvoyeurBrevo({ cle: "x", expediteur: { email: "a@b.fr" }, fetch }).envoyer({ a: [], sujet: "s", texte: "t" });
+    expect(fetch).not.toHaveBeenCalled();
+  });
+});
+
+describe("textes des alertes", () => {
+  const detail = {
+    client: "Claire Martin (claire@exemple.fr)",
+    dateLivraison: "2026-11-14",
+    lignes: [
+      { libelle: "Panier 30 €", quantite: 2, prix_unitaire_centimes: 3000 },
+      { libelle: "Œufs BIO (6)", quantite: 1, prix_unitaire_centimes: 300 },
+    ],
+    offerts: [{ libelle: "Kakis BIO", quantite: 1, recompense: "Supplément offert" }],
+    notes: "Portail ouvert",
+    lien: "https://exemple.fr/commandes/123",
+  };
+
+  it("nouvelle commande : contenu, cadeaux, total, message et lien", () => {
+    const { sujet, texte } = alerteCommande("nouvelle", detail);
+    expect(sujet).toBe("Nouvelle commande : Claire Martin (claire@exemple.fr) · Samedi 14 novembre");
+    expect(texte).toContain(`- 2 × Panier 30 € (${formaterPrix(6000)})`);
+    expect(texte).toContain("- 1 × Kakis BIO (Supplément offert)");
+    expect(texte).toContain(`Total à encaisser : ${formaterPrix(6300)}`);
+    expect(texte).toContain("« Portail ouvert »");
+    expect(texte).toContain("Voir la commande : https://exemple.fr/commandes/123");
+  });
+
+  it("annulation : sans le détail", () => {
+    const { sujet, texte } = alerteCommande("annulee", detail);
+    expect(sujet.startsWith("Commande annulée")).toBe(true);
+    expect(texte).not.toContain("Panier 30 €");
+    expect(texte).toContain("https://exemple.fr/commandes/123");
+  });
+
+  it("inscription à valider", () => {
+    const { sujet, texte } = alerteInscription({
+      nom: "Hélène Nouvelle",
+      email: "helene@exemple.fr",
+      telephone: "+33612345678",
+      adresse: "4 Rue Neuve, 83000 Toulon",
+      parrain: "Claire",
+      lien: "https://exemple.fr/clients/inscriptions",
+    });
+    expect(sujet).toBe("Nouvelle inscription à valider : Hélène Nouvelle");
+    expect(texte).toContain("Parrainé par : Claire");
+  });
+});
+
+describe("échéance des commandes", () => {
+  it("affiche la clôture à l'heure de Paris", () => {
+    expect(formaterEcheance("2026-11-13T11:00:00Z")).toBe("vendredi 13 novembre à 12 h");
+    expect(formaterEcheance("2026-07-10T16:30:00Z")).toBe("vendredi 10 juillet à 18 h 30");
+  });
+});

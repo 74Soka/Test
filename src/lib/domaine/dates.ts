@@ -123,3 +123,18 @@ export function formaterSemaine(iso: DateIso): string {
 export function majuscule(texte: string): string {
   return texte.charAt(0).toUpperCase() + texte.slice(1);
 }
+
+/** « vendredi 13 novembre à 12 h » : un instant donné, lu à l'heure de Paris. */
+export function formaterEcheance(instant: string | Date): string {
+  const d = new Date(instant);
+  const jour = aujourdhui(d);
+  const [h, m] = new Intl.DateTimeFormat("fr-FR", {
+    timeZone: "Europe/Paris",
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+  })
+    .format(d)
+    .split(":");
+  return `${formaterDate(jour)} à ${Number(h)} h${m === "00" ? "" : ` ${m}`}`;
+}

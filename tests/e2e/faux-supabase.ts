@@ -6,8 +6,14 @@
  * - Crée une base Postgres jetable (migrations + données de démo) sur le
  *   serveur TEST_DATABASE_URL, détruite à l'arrêt.
  * - Traduit les requêtes REST de supabase-js en SQL (sous-ensemble utilisé par
- *   l'application). Pas de RLS ici : elle est testée à part (npm run test:db).
- * - Connexion : n'importe quel e-mail avec le mot de passe « demo-demo-demo ».
+ *   l'application), exécutées avec l'identité du jeton : la RLS s'applique.
+ * - Comptes : n'importe quel e-mail avec le mot de passe « demo-demo-demo »
+ *   ouvre le compte administrateur de démo ; les comptes créés par
+ *   l'inscription (/auth/v1/signup) ont leur propre mot de passe et doivent
+ *   être confirmés (POST /test/confirmer { email }).
+ * - Chaque requête de l'API s'exécute avec l'identité de son jeton (rôle
+ *   authenticated ou anon, auth.uid()) : la RLS s'applique comme en vrai.
+ * - E-mails (Brevo) : /brevo/v3/smtp/email les garde ; GET /test/emails les liste.
  * - Géocodage : /geocodage/search renvoie des adresses fictives ; une recherche
  *   contenant « panne » simule un service indisponible.
  * - OpenRouteService (/openrouteservice/v2/…, clé « cle-de-test ») : matrice et
@@ -15,12 +21,12 @@
  */
 import http from "node:http";
 import crypto from "node:crypto";
-import { Pool } from "pg";
+import { Pool, type PoolClient } from "pg";
 import { creerBaseDeTest, supprimerBasesOrphelines, urlAvecBase, urlServeur } from "../db/outils";
 
 const PORT = Number(process.env.PORT_FAUX_SUPABASE || 54399);
 export const MOT_DE_PASSE_DEMO = "demo-demo-demo";
-let db: any;
+let pool: Pool;
 const UTILISATEUR = { id: "11111111-1111-4111-8111-111111111111", email: "admin@demo.fr" };
 
 // Relations connues : table parente > table embarquée
@@ -37,30 +43,65 @@ const RELATIONS: Record<string, { type: "many" | "one"; fk: string }> = {
 function b64url(o: unknown) {
   return Buffer.from(JSON.stringify(o)).toString("base64url");
 }
-function jeton() {
+type Compte = { id: string; email: string; motDePasse: string; confirme: boolean; meta: Record<string, unknown> };
+/** Comptes créés par l'inscription (le compte de démo est à part) */
+const COMPTES = new Map<string, Compte>();
+const EMAILS: unknown[] = [];
+
+const DEMO: Compte = { id: UTILISATEUR.id, email: UTILISATEUR.email, motDePasse: MOT_DE_PASSE_DEMO, confirme: true, meta: {} };
+
+function jeton(c: Compte = DEMO) {
   const maintenant = Math.floor(Date.now() / 1000);
   const entete = b64url({ alg: "HS256", typ: "JWT" });
   const charge = b64url({
-    sub: UTILISATEUR.id,
-    email: UTILISATEUR.email,
+    sub: c.id,
+    email: c.email,
     role: "authenticated",
     aud: "authenticated",
     exp: maintenant + 3600,
     iat: maintenant,
     session_id: "s",
+    user_metadata: c.meta,
   });
   const sig = crypto.createHmac("sha256", "secret").update(`${entete}.${charge}`).digest("base64url");
   return `${entete}.${charge}.${sig}`;
 }
-function utilisateurJson() {
+function utilisateurJson(c: Compte = DEMO) {
   return {
-    id: UTILISATEUR.id,
+    id: c.id,
     aud: "authenticated",
     role: "authenticated",
-    email: UTILISATEUR.email,
-    app_metadata: {},
-    user_metadata: {},
+    email: c.email,
+    email_confirmed_at: c.confirme ? new Date().toISOString() : null,
+    app_metadata: { provider: "email" },
+    user_metadata: c.meta,
+    identities: [{ id: c.id, provider: "email" }],
     created_at: new Date().toISOString(),
+  };
+}
+
+/** Compte du jeton envoyé avec la requête (ou null : visiteur anonyme). */
+function compteDeLaRequete(req: http.IncomingMessage): Compte | null {
+  const m = /^Bearer (.+)$/.exec(req.headers.authorization ?? "");
+  if (!m) return null;
+  try {
+    const charge = JSON.parse(Buffer.from(m[1].split(".")[1], "base64url").toString());
+    if (charge.role !== "authenticated" || !charge.sub) return null;
+    if (charge.sub === DEMO.id) return DEMO;
+    return [...COMPTES.values()].find((c) => c.id === charge.sub) ?? null;
+  } catch {
+    return null;
+  }
+}
+
+function session(c: Compte) {
+  return {
+    access_token: jeton(c),
+    token_type: "bearer",
+    expires_in: 3600,
+    expires_at: Math.floor(Date.now() / 1000) + 3600,
+    refresh_token: "rt",
+    user: utilisateurJson(c),
   };
 }
 
@@ -237,7 +278,44 @@ function erreurPg(res: http.ServerResponse, e: any) {
   });
 }
 
+/**
+ * Exécute une requête de l'API dans une transaction, avec l'identité du jeton
+ * (comme PostgREST) : rôle authenticated ou anon, auth.uid(), RLS.
+ */
 async function rest(req: http.IncomingMessage, res: http.ServerResponse, url: URL) {
+  const compte = compteDeLaRequete(req);
+  const connexion = await pool.connect();
+  try {
+    await connexion.query("begin");
+    await connexion.query(`set local role ${compte ? "authenticated" : "anon"}`);
+    await connexion.query("select set_config('request.jwt.claims', $1, true)", [
+      JSON.stringify(compte ? { sub: compte.id, role: "authenticated", email: compte.email } : { role: "anon" }),
+    ]);
+    const reponse = await traiter(req, url, connexion);
+    await connexion.query("commit");
+    repondre(res, reponse.statut, reponse.corps, reponse.entetes);
+  } catch (e) {
+    await connexion.query("rollback").catch(() => undefined);
+    const code = (e as { code?: string }).code;
+    if (code === "42501") {
+      repondre(res, 403, { code, message: (e as Error).message, details: null, hint: null });
+    } else {
+      erreurPg(res, e);
+    }
+  } finally {
+    connexion.release();
+  }
+}
+
+type Reponse = { statut: number; corps?: unknown; entetes?: Record<string, string> };
+
+async function traiter(req: http.IncomingMessage, url: URL, db: PoolClient): Promise<Reponse> {
+  const repondre = (_res: unknown, statut: number, corps?: unknown, entetes: Record<string, string> = {}): Reponse => ({
+    statut,
+    corps,
+    entetes,
+  });
+  const res = null;
   const [, , , table] = url.pathname.split("/"); // /rest/v1/<table>
   const params = url.searchParams;
   const objet = (req.headers.accept || "").includes("vnd.pgrst.object");
@@ -267,10 +345,6 @@ async function rest(req: http.IncomingMessage, res: http.ServerResponse, url: UR
   }
 
   if (req.method === "GET" || req.method === "HEAD") {
-    if (table === "profils") {
-      const ligne = { role: "admin" };
-      return repondre(res, 200, objet ? ligne : [ligne]);
-    }
     const where = filtres(params, valeurs);
     const limite = params.get("limit") ? `limit ${Number(params.get("limit"))}` : "";
     const sql = `select coalesce(json_agg(row_to_json(t)), '[]') as d from (select ${sqlSelect(table, params.get("select") || "*")} from public.${ident(table)} t ${where} ${ordre(params)} ${limite}) t`;
@@ -314,7 +388,7 @@ async function rest(req: http.IncomingMessage, res: http.ServerResponse, url: UR
     const r = await db.query(`delete from public.${ident(table)} t ${where}`, valeurs);
     return repondre(res, 204, undefined, { "content-range": `*/${r.rowCount}` });
   }
-  repondre(res, 405, { message: "méthode" });
+  return repondre(res, 405, { message: "méthode" });
 }
 
 async function demarrer() {
@@ -328,14 +402,9 @@ async function demarrer() {
   await base.client.query("insert into public.profils (id, role) values ($1, 'admin') on conflict do nothing", [
     UTILISATEUR.id,
   ]);
-  // Pool : l'application envoie plusieurs requêtes en parallèle. Chaque
-  // connexion porte l'identité du compte de démo (auth.uid()).
-  db = new Pool({ connectionString: urlAvecBase(urlServeur(), base.nom), max: 5 });
-  db.on("connect", (connexion: { query: (sql: string, valeurs: unknown[]) => Promise<unknown> }) =>
-    connexion.query("select set_config('request.jwt.claims', $1, false)", [
-      JSON.stringify({ sub: UTILISATEUR.id, role: "authenticated" }),
-    ]),
-  );
+  // Pool : l'application envoie plusieurs requêtes en parallèle ; chacune a
+  // sa connexion et son identité le temps de sa transaction.
+  pool = new Pool({ connectionString: urlAvecBase(urlServeur(), base.nom), max: 5 });
   const serveur = http.createServer(async (req, res) => {
     const url = new URL(req.url ?? "/", `http://localhost:${PORT}`);
     try {
@@ -344,19 +413,59 @@ async function demarrer() {
       if (url.pathname.startsWith("/openrouteservice/")) return await openrouteservice(req, res, url);
       if (url.pathname.startsWith("/auth/v1/token")) {
         const corps = await lireCorps(req);
-        if (corps?.password !== MOT_DE_PASSE_DEMO) {
-          return repondre(res, 400, { code: "invalid_credentials", error_code: "invalid_credentials", msg: "Invalid login credentials" });
+        const email = String(corps?.email ?? "").toLowerCase();
+        const compte = COMPTES.get(email);
+        const refus = { code: 400, error_code: "invalid_credentials", msg: "Invalid login credentials" };
+        if (compte) {
+          if (corps?.password !== compte.motDePasse) return repondre(res, 400, refus);
+          if (!compte.confirme) {
+            return repondre(res, 400, { code: 400, error_code: "email_not_confirmed", msg: "Email not confirmed" });
+          }
+          return repondre(res, 200, session(compte));
         }
-        return repondre(res, 200, {
-          access_token: jeton(),
-          token_type: "bearer",
-          expires_in: 3600,
-          expires_at: Math.floor(Date.now() / 1000) + 3600,
-          refresh_token: "rt",
-          user: utilisateurJson(),
-        });
+        if (corps?.password !== MOT_DE_PASSE_DEMO) return repondre(res, 400, refus);
+        return repondre(res, 200, session(DEMO));
       }
-      if (url.pathname === "/auth/v1/user") return repondre(res, 200, utilisateurJson());
+      if (url.pathname === "/auth/v1/signup") {
+        const corps = await lireCorps(req);
+        const email = String(corps?.email ?? "").toLowerCase();
+        const existant = COMPTES.get(email);
+        if (existant) return repondre(res, 200, { ...utilisateurJson(existant), identities: [] });
+        const compte: Compte = {
+          id: crypto.randomUUID(),
+          email,
+          motDePasse: String(corps?.password ?? ""),
+          confirme: false,
+          meta: corps?.data ?? {},
+        };
+        await pool.query("insert into auth.users (id, email) values ($1, $2)", [compte.id, email]);
+        COMPTES.set(email, compte);
+        return repondre(res, 200, utilisateurJson(compte));
+      }
+      if (url.pathname === "/test/confirmer") {
+        const corps = await lireCorps(req);
+        const compte = COMPTES.get(String(corps?.email ?? "").toLowerCase());
+        if (!compte) return repondre(res, 404, { message: "compte inconnu" });
+        compte.confirme = true;
+        await pool.query("update auth.users set email_confirmed_at = now() where id = $1", [compte.id]);
+        return repondre(res, 200, { ok: true });
+      }
+      if (url.pathname === "/test/emails") return repondre(res, 200, EMAILS);
+      if (url.pathname === "/brevo/v3/smtp/email") {
+        if (req.headers["api-key"] !== "cle-brevo-test") return repondre(res, 401, { message: "Key not found" });
+        EMAILS.push(await lireCorps(req));
+        return repondre(res, 201, { messageId: `<${EMAILS.length}@test>` });
+      }
+      if (url.pathname === "/auth/v1/user") {
+        const compte = compteDeLaRequete(req);
+        if (!compte) return repondre(res, 401, { code: 401, error_code: "bad_jwt", msg: "invalid JWT" });
+        if (req.method === "PUT") {
+          const corps = await lireCorps(req);
+          if (corps?.password) compte.motDePasse = String(corps.password);
+        }
+        return repondre(res, 200, utilisateurJson(compte));
+      }
+      if (url.pathname === "/auth/v1/recover") return repondre(res, 200, {});
       if (url.pathname === "/auth/v1/logout") return repondre(res, 204);
       if (url.pathname.startsWith("/rest/v1/")) return await rest(req, res, url);
       repondre(res, 404, { message: `inconnu ${url.pathname}` });
@@ -367,7 +476,7 @@ async function demarrer() {
   serveur.listen(PORT, () => console.log(`Faux Supabase prêt sur le port ${PORT} (base ${base.nom})`));
   const arreter = async () => {
     serveur.close();
-    await db.end();
+    await pool.end();
     await base.detruire();
     process.exit(0);
   };

@@ -1,28 +1,50 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { utilisateurCourant } from "@/lib/auth";
+import { CadrePublic } from "@/components/cadre-public";
+import { MessageErreur, MessageInfo } from "@/components/ui";
 import { FormulaireConnexion } from "./formulaire-connexion";
 
 export const metadata: Metadata = { title: "Connexion" };
 
+const MESSAGES: Record<string, { type: "info" | "erreur"; texte: string }> = {
+  lien: {
+    type: "info",
+    texte:
+      "Lien ouvert sur un autre appareil ou déjà utilisé ? Si vous venez de confirmer votre adresse, connectez-vous ci-dessous.",
+  },
+  confirme: { type: "info", texte: "Adresse confirmée : connectez-vous pour continuer." },
+  supprime: { type: "info", texte: "Votre compte et vos données ont été supprimés." },
+};
+
 export default async function PageConnexion({ searchParams }: PageProps<"/connexion">) {
-  if (await utilisateurCourant()) redirect("/livraisons");
-  const { suite } = await searchParams;
+  if (await utilisateurCourant()) redirect("/");
+  const { suite, message } = await searchParams;
+  const info = typeof message === "string" ? MESSAGES[message] : undefined;
 
   return (
-    <main className="mx-auto flex min-h-dvh max-w-sm flex-col justify-center px-4 py-10">
-      <div className="mb-8 text-center">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/icon.svg" alt="" width={72} height={72} className="mx-auto mb-4 rounded-2xl" />
-        <h1 className="text-2xl font-bold">Paniers</h1>
-        <p className="mt-1 text-stone-600">Commandes et livraisons</p>
-      </div>
-      <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-stone-200">
-        <FormulaireConnexion suite={typeof suite === "string" ? suite : undefined} />
-      </div>
-      <p className="mt-6 text-center text-sm text-stone-500">
-        Pas de compte ? Les accès sont créés par l&apos;administrateur.
-      </p>
-    </main>
+    <CadrePublic
+      titre="Paniers"
+      sousTitre="Fruits et légumes livrés le week-end"
+      pied={
+        <>
+          <p>
+            <Link href="/mot-de-passe-oublie" className="font-semibold text-marque-800 underline">
+              Mot de passe oublié ?
+            </Link>
+          </p>
+          <p>
+            Pas encore de compte ?{" "}
+            <Link href="/inscription" className="font-semibold text-marque-800 underline">
+              Créer mon compte client
+            </Link>
+          </p>
+        </>
+      }
+    >
+      {info && <div className="mb-4">{info.type === "info" ? <MessageInfo>{info.texte}</MessageInfo> : <MessageErreur>{info.texte}</MessageErreur>}</div>}
+      <FormulaireConnexion suite={typeof suite === "string" ? suite : undefined} />
+    </CadrePublic>
   );
 }

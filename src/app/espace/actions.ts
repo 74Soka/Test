@@ -1,0 +1,188 @@
+"use server";
+
+import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
+import { z } from "zod";
+import { exigerClient, exigerClientRelie } from "@/lib/auth";
+import { normaliserTelephone } from "@/lib/domaine/telephone";
+import { nomComplet } from "@/lib/domaine/texte";
+import { alerteCommande, alerteInscription, envoyerAlerte, type EvenementCommande } from "@/lib/emails";
+import { messageErreur, type Resultat } from "@/lib/erreurs";
+import { lireCommandeClient } from "@/lib/espace-client";
+import { origineDuSite } from "@/lib/site";
+import { clientSupabase } from "@/lib/supabase/serveur";
+
+const ligne = z.object({ article_id: z.uuid(), quantite: z.number().int().min(0).max(99) });
+
+const schemaCommande = z.object({
+  lignes: z.array(ligne).max(100),
+  gardees: z.array(z.uuid()).max(20),
+  nouvelles: z
+    .array(z.object({ recompense_id: z.uuid(), articles: z.array(ligne).max(20) }))
+    .max(10),
+  notes: z.string().trim().max(500),
+});
+
+export type DemandeCommande = z.input<typeof schemaCommande>;
+
+async function alerter(evenement: EvenementCommande, commandeId: string, client: string) {
+  const commande = await lireCommandeClient(commandeId);
+  if (!commande) return;
+  await envoyerAlerte({
+    ...alerteCommande(evenement, {
+      client,
+      dateLivraison: commande.date_livraison,
+      lignes: commande.lignes,
+      offerts: commande.recompenses.flatMap((r) =>
+        r.cadeaux.map((c) => ({ libelle: c.libelle, quantite: c.quantite, recompense: r.nom })),
+      ),
+      notes: commande.notes,
+      lien: `${await origineDuSite()}/commandes/${commandeId}`,
+    }),
+  });
+}
+
+/** Commander, ou modifier sa commande de la semaine. */
+export async function commanderEnLigne(demande: DemandeCommande): Promise<Resultat> {
+  const { situation, utilisateur } = await exigerClientRelie();
+  const saisie = schemaCommande.safeParse(demande);
+  if (!saisie.success) return { ok: false, erreur: "Commande invalide : rechargez la page et réessayez." };
+
+  const supabase = await clientSupabase();
+  const { data, error } = await supabase.rpc("passer_commande", {
+    p_lignes: saisie.data.lignes.filter((l) => l.quantite > 0),
+    p_recompenses_gardees: saisie.data.gardees,
+    p_nouvelles_recompenses: saisie.data.nouvelles,
+    p_notes: saisie.data.notes || undefined,
+  });
+  if (error) return { ok: false, erreur: messageErreur(error) };
+
+  const r = z.object({ commande_id: z.uuid(), nouvelle: z.boolean() }).parse(data);
+  await alerter(r.nouvelle ? "nouvelle" : "modifiee", r.commande_id, nomCompletClient(situation, utilisateur.email));
+  revalidatePath("/espace", "layout");
+  return { ok: true };
+}
+
+function nomCompletClient(s: { prenom: string; nom: string }, email: string | null) {
+  return nomComplet(s) + (email ? ` (${email})` : "");
+}
+
+export async function annulerMaCommande(commandeId: string): Promise<Resultat> {
+  const { situation, utilisateur } = await exigerClientRelie();
+  if (!z.uuid().safeParse(commandeId).success) return { ok: false, erreur: "Commande introuvable." };
+  const supabase = await clientSupabase();
+  const { error } = await supabase.rpc("annuler_ma_commande", { p_commande_id: commandeId });
+  if (error) return { ok: false, erreur: messageErreur(error) };
+  await alerter("annulee", commandeId, nomCompletClient(situation, utilisateur.email));
+  revalidatePath("/espace", "layout");
+  return { ok: true };
+}
+
+const schemaCoordonnees = z.object({
+  telephone: z
+    .string()
+    .trim()
+    .min(1, "Indiquez un numéro de téléphone.")
+    .transform((t, ctx) => {
+      const n = normaliserTelephone(t);
+      if (!n) {
+        ctx.addIssue({ code: "custom", message: "Numéro de téléphone invalide." });
+        return z.NEVER;
+      }
+      return n;
+    }),
+  notesLivraison: z.string().trim().max(500, "500 caractères au plus."),
+});
+
+export async function modifierMesCoordonnees(donnees: { telephone: string; notesLivraison: string }): Promise<Resultat> {
+  await exigerClientRelie();
+  const saisie = schemaCoordonnees.safeParse(donnees);
+  if (!saisie.success) {
+    const champs: Record<string, string> = {};
+    for (const i of saisie.error.issues) champs[String(i.path[0])] ??= i.message;
+    return { ok: false, erreur: "Vérifiez les champs signalés.", champs };
+  }
+  const supabase = await clientSupabase();
+  const { error } = await supabase.rpc("modifier_mes_coordonnees", {
+    p_telephone: saisie.data.telephone,
+    p_notes_livraison: saisie.data.notesLivraison,
+  });
+  if (error) return { ok: false, erreur: messageErreur(error) };
+  revalidatePath("/espace", "layout");
+  return { ok: true };
+}
+
+const schemaInscription = z.object({
+  prenom: z.string().trim().max(100),
+  nom: z.string().trim().min(1, "Indiquez votre nom.").max(100),
+  telephone: schemaCoordonnees.shape.telephone,
+  adresse: z.object(
+    {
+      ligne: z.string().trim().min(1, "Choisissez votre adresse dans la liste.").max(200),
+      codePostal: z.string().trim().regex(/^\d{5}$/, "Code postal à 5 chiffres."),
+      commune: z.string().trim().min(1).max(100),
+      codeInsee: z.string().nullable(),
+      lat: z.number().min(-90).max(90).nullable(),
+      lng: z.number().min(-180).max(180).nullable(),
+    },
+    { error: "Choisissez votre adresse dans la liste." },
+  ),
+  complement: z.string().trim().max(200),
+  notesLivraison: z.string().trim().max(500, "500 caractères au plus."),
+  parrain: z.string().trim().max(100),
+});
+
+export type DemandeInscription = z.input<typeof schemaInscription>;
+
+/** Coordonnées d'un nouveau client (inscription à valider par l'équipe). */
+export async function envoyerMonInscription(demande: DemandeInscription): Promise<Resultat> {
+  const { utilisateur } = await exigerClient();
+  const saisie = schemaInscription.safeParse(demande);
+  if (!saisie.success) {
+    const champs: Record<string, string> = {};
+    for (const i of saisie.error.issues) champs[i.path.map(String).join(".")] ??= i.message;
+    return { ok: false, erreur: "Vérifiez les champs signalés.", champs };
+  }
+  const d = saisie.data;
+  const supabase = await clientSupabase();
+  const { error } = await supabase.rpc("envoyer_inscription", {
+    p_prenom: d.prenom,
+    p_nom: d.nom,
+    p_telephone: d.telephone,
+    p_adresse: d.adresse.ligne,
+    p_complement_adresse: d.complement,
+    p_code_postal: d.adresse.codePostal,
+    p_commune: d.adresse.commune,
+    p_code_insee: d.adresse.codeInsee ?? "",
+    p_lat: d.adresse.lat as number,
+    p_lng: d.adresse.lng as number,
+    p_notes_livraison: d.notesLivraison,
+    p_parrain: d.parrain,
+  });
+  if (error) return { ok: false, erreur: messageErreur(error) };
+
+  await envoyerAlerte({
+    ...alerteInscription({
+      nom: nomComplet(d),
+      email: utilisateur.email ?? "",
+      telephone: d.telephone,
+      adresse: `${d.adresse.ligne}${d.complement ? `, ${d.complement}` : ""}, ${d.adresse.codePostal} ${d.adresse.commune}`,
+      parrain: d.parrain || null,
+      lien: `${await origineDuSite()}/clients/inscriptions`,
+    }),
+    repondreA: utilisateur.email ?? undefined,
+  });
+  revalidatePath("/espace", "layout");
+  return { ok: true };
+}
+
+/** RGPD : suppression du compte et de toutes les données du client. */
+export async function supprimerMonCompte(formulaire: FormData): Promise<void> {
+  await exigerClient();
+  if (formulaire.get("confirmation") !== "oui") redirect("/espace/compte/supprimer?erreur=confirmation");
+  const supabase = await clientSupabase();
+  const { error } = await supabase.rpc("supprimer_mon_compte");
+  if (error) redirect("/espace/compte/supprimer?erreur=echec");
+  await supabase.auth.signOut();
+  redirect("/connexion?message=supprime");
+}

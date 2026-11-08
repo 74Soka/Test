@@ -5,11 +5,12 @@ import { ErreurGeocodage, geocodeur, type Proximite } from "@/lib/geocodage";
 /**
  * Recherche d'adresses ou de communes pour les formulaires.
  * GET /api/geocodage?q=12 rue…&type=adresse|commune[&lat=…&lng=…]
- * Passer par le serveur garde le fournisseur interchangeable et réservé aux comptes connectés.
+ * Passer par le serveur garde le fournisseur interchangeable et réservé aux comptes connectés
+ * (l'équipe, et les clients qui saisissent leur adresse à l'inscription).
  */
 export async function GET(requete: NextRequest) {
   const utilisateur = await utilisateurCourant();
-  if (utilisateur?.role !== "admin") {
+  if (!utilisateur || utilisateur.role === "livreur") {
     return NextResponse.json({ erreur: "Accès refusé" }, { status: 403 });
   }
 

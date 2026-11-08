@@ -1,8 +1,9 @@
 # Paniers : commandes, tournées et fidélité
 
 Application web pour gérer des livraisons de paniers de fruits et légumes. Elle couvre les clients, les commandes,
-les livraisons par secteur et, plus tard, les tournées optimisées et la carte de fidélité. Elle est pensée pour le
-téléphone : gros boutons, textes lisibles dehors, et on peut l'installer sur l'écran d'accueil.
+les livraisons par secteur, les tournées optimisées, la carte de fidélité et un espace où les clients commandent
+eux-mêmes. Elle est pensée pour le téléphone : gros boutons, textes lisibles dehors, et on peut l'installer sur l'écran
+d'accueil.
 
 ## Où en est-on ?
 
@@ -11,6 +12,7 @@ téléphone : gros boutons, textes lisibles dehors, et on peut l'installer sur l
 | **1** | Clients, secteurs, catalogue, commandes, vue Livraisons | ✅ livrée, à valider |
 | 2 | Tournées optimisées (carte, ordre de passage, Google Maps / Waze, bouton « Livré » hors connexion) | ✅ livrée, à valider |
 | 3 | Fidélité et parrainage (tampons, récompenses, VIP / Ultra, cadeaux de parrainage) | ✅ livrée, à valider |
+| 4 | Espace client : inscription, composition des paniers, commande en ligne, carte de fidélité, alertes e-mail | ✅ livrée, à valider |
 
 ### Ce que fait la Phase 1
 
@@ -118,6 +120,53 @@ vers une autre adresse, par exemple une installation à vous.
 **Livreurs** : un compte au rôle `livreur` ne voit que l'onglet Tournée. Il peut marquer les livraisons et changer
 l'ordre, mais ne touche ni aux clients ni aux commandes.
 
+### Espace client (commande en ligne)
+
+Les clients ont leur propre compte (e-mail + mot de passe), sur le même site. Ils arrivent sur **/espace** :
+
+- **Accueil** : prochaine livraison (jour de leur secteur), heure de clôture, leur commande de la semaine, la
+  **composition des paniers** et un résumé de leur carte de fidélité ;
+- **Commander** : paniers (avec leur contenu) et suppléments, au moins un panier. Ils peuvent utiliser leurs
+  récompenses : l'article prévu par la récompense, ou les suppléments de leur choix (nombre réglable par récompense).
+  Les cadeaux de parrainage (œufs du filleul, confiture du parrain) s'ajoutent tout seuls quand leur article est réglé.
+  Modification et annulation jusqu'à la **clôture** (vendredi 12 h par défaut). Paiement à la livraison ;
+- **Fidélité** : tampons, récompenses, filleuls, niveaux VIP / Ultra, historique ;
+- **Commandes** : historique ; **Compte** : téléphone, consignes de livraison, mot de passe, **suppression du compte
+  et de toutes ses données** (RGPD).
+
+**Inscription** : un client déjà dans vos fiches crée son compte avec l'e-mail que vous avez noté : après confirmation
+de l'adresse, son compte est relié à sa fiche tout seul. Une nouvelle personne indique son adresse et son téléphone :
+son inscription attend votre validation (*Clients → inscriptions en ligne à valider*), où vous choisissez le secteur
+(proposé d'après la commune) et le parrain, ou reliez l'inscription à une fiche existante.
+
+**Côté équipe** : *Réglages → Composition des paniers* (un texte par panier et par semaine, avec « Reprendre la semaine
+précédente ») et *Réglages → Commandes en ligne* (ouverture, jour et heure de clôture, message affiché aux clients).
+Les commandes passées en ligne portent la mention 🌐 *en ligne*. Après la clôture, vous pouvez toujours modifier une
+commande vous-même.
+
+**Alertes e-mail** : à chaque commande, modification ou annulation en ligne, et à chaque nouvelle inscription, un
+e-mail part vers `EMAIL_ALERTES`, avec le détail et le lien vers la commande.
+
+#### Mise en service de l'espace client
+
+1. **Base** : coller `supabase/migrations/20261108000000_espace_client.sql` dans l'éditeur SQL de Supabase (*Run*).
+2. **Supabase → Authentication → Sign In / Providers** : activez *Allow new users to sign up* et laissez *Confirm
+   email* activé. Ouvrir les inscriptions est sans risque : un compte qui n'est ni dans l'équipe ni relié à une fiche
+   ne voit que le catalogue et la composition des paniers (vérifié par les tests de la base).
+3. **Supabase → Authentication → URL Configuration** : *Site URL* = l'adresse du site (Netlify, puis votre nom de
+   domaine) ; ajoutez `https://<adresse du site>/**` dans *Redirect URLs*.
+4. **E-mails aux clients (confirmation, mot de passe oublié)** : le service d'e-mails fourni par Supabase n'écrit
+   qu'aux membres de votre équipe Supabase. Pour écrire à vos clients, créez un compte gratuit
+   [Brevo](https://www.brevo.com) (environ 300 e-mails par jour), authentifiez votre nom de domaine (*Senders, Domains &
+   Dedicated IPs*), puis dans *Supabase → Authentication → Emails → SMTP Settings* : hôte `smtp-relay.brevo.com`, port
+   `587`, identifiant et mot de passe SMTP donnés par Brevo (*SMTP & API*), adresse d'envoi sur votre domaine.
+5. **Modèles d'e-mails en français** (*Authentication → Emails → Templates*) : collez
+   `supabase/templates/confirmation.html` dans *Confirm signup* (sujet : « Confirmez votre adresse e-mail ») et
+   `supabase/templates/mot-de-passe.html` dans *Reset password* (sujet : « Votre nouveau mot de passe »). Ces liens
+   marchent même si le client ouvre l'e-mail sur un autre appareil.
+6. **Alertes à l'équipe** : dans Netlify, variables `BREVO_API_KEY` (clé API Brevo, *SMTP & API → API keys*),
+   `EMAIL_EXPEDITEUR` (adresse d'envoi vérifiée dans Brevo) et `EMAIL_ALERTES` (vos adresses), puis redéployez.
+
 ## Technologies
 
 - [Next.js 16](https://nextjs.org) (App Router), TypeScript, Tailwind CSS 4
@@ -135,10 +184,10 @@ l'ordre, mais ne touche ni aux clients ni aux commandes.
 
 1. Créez un compte sur [supabase.com](https://supabase.com), puis un projet. Choisissez une région en Europe (par
    exemple *West EU (Paris)*) pour que les données de vos clients restent dans l'UE.
-2. **Fermez les inscriptions libres** : *Authentication → Sign In / Providers*, désactivez *Allow new users to sign
-   up*. Les comptes seront créés par vous seul (étape 4).
-3. **Créez les tables** : *SQL Editor → New query*, collez le contenu de
-   `supabase/migrations/20261106000000_phase1_clients_commandes.sql`, puis cliquez sur *Run*.
+2. **Inscriptions** : sans espace client, fermez-les (*Authentication → Sign In / Providers*, désactivez *Allow new
+   users to sign up*). Pour l'espace client, ouvrez-les : voir « Mise en service de l'espace client ».
+3. **Créez les tables** : *SQL Editor → New query*, collez le contenu de chaque fichier de `supabase/migrations/`,
+   dans l'ordre, puis cliquez sur *Run*.
 4. *(Facultatif)* **Données de démonstration** : même opération avec `supabase/seed.sql`. Vous obtenez 3 secteurs du
    Var, 20 clients fictifs et des commandes sur 3 week-ends.
 
@@ -193,15 +242,16 @@ npx supabase status     # affiche l'URL et les clés à mettre dans .env.local
 | Commande | Ce qui est testé | Prérequis |
 |---|---|---|
 | `npm test` | Logique métier : dates de livraison, téléphones, prix, recherche, secteur proposé, récapitulatif, géocodage (réponses simulées) | aucun |
-| `npm run test:db` | La base : **RLS** (anonyme, compte sans profil, livreur, admin), parrainage sans boucle, règles des commandes, suppression RGPD, données de démo | un serveur Postgres (`TEST_DATABASE_URL`) |
-| `npm run test:e2e` | Parcours complets sur un téléphone simulé : connexion, création de client, commande, recommander, doublon de semaine, statut, livraisons, saisie manuelle d'adresse, suppression RGPD, catalogue | Postgres (`TEST_DATABASE_URL`) + Chromium |
+| `npm run test:db` | La base : **RLS** (anonyme, compte sans profil, client, livreur, admin), parrainage sans boucle, règles des commandes, fidélité, commande en ligne (clôture, récompenses, cadeaux), inscriptions, suppression RGPD, données de démo | un serveur Postgres (`TEST_DATABASE_URL`) |
+| `npm run test:e2e` | Parcours complets sur un téléphone simulé : équipe (clients, commandes, livraisons, tournée, fidélité, catalogue) et clients (inscription, confirmation, commande en ligne, validation, alertes e-mail, suppression du compte) | Postgres (`TEST_DATABASE_URL`) + Chromium |
 
 `TEST_DATABASE_URL` désigne un serveur Postgres (version 15 ou plus) où les tests créent puis suppriment des bases
 jetables. Exemple avec Supabase local : `postgresql://postgres:postgres@127.0.0.1:54322/postgres`.
 
 Les tests de bout en bout font tourner l'application contre une **imitation minimale de Supabase**
 (`tests/e2e/faux-supabase.ts`) branchée sur une vraie base Postgres avec les données de démo. Ils n'ont besoin ni de
-Docker ni d'un projet en ligne. Cette imitation ne reproduit pas la RLS : la RLS est couverte par `npm run test:db`.
+Docker ni d'un projet en ligne. Chaque requête y est exécutée avec l'identité de son jeton : la RLS s'applique comme en
+vrai. Elle imite aussi OpenRouteService et Brevo.
 
 Avant le premier `npm run test:e2e`, installez le navigateur de test : `npx playwright install chromium`.
 
@@ -211,13 +261,15 @@ Autres vérifications : `npm run lint`, `npm run typecheck`, `npm run build`.
 
 ## Sécurité et RGPD
 
-- **RLS activée sur toutes les tables.** Seuls les comptes présents dans la table `profils` voient des données.
-  L'admin lit et écrit, le livreur lit seulement. Un compte créé sans profil ne voit **rien**, même si les
-  inscriptions étaient rouvertes par erreur. Le rôle anonyme n'a aucun droit.
+- **RLS activée sur toutes les tables.** L'équipe (table `profils`) : l'admin lit et écrit, le livreur lit seulement.
+  Un **client** ne lit que ses propres données (fiche, commandes, tampons) et n'écrit que par des fonctions qui
+  vérifient tout (clôture, compte actif, règles des récompenses). Un compte ni équipe ni client ne voit que le
+  catalogue actif et la composition des paniers. Le rôle anonyme n'a aucun droit.
 - Chaque action côté serveur revérifie que l'utilisateur est administrateur avant de toucher aux données.
 - La clé secrète n'est utilisée que par le script `creer-admin`, jamais par l'application.
 - **Droit à l'effacement** : *Fiche client → Supprimer le client et ses données…* supprime la fiche, les commandes et
-  leurs lignes. Les filleuls restent clients, sans parrain.
+  leurs lignes. Les filleuls restent clients, sans parrain. Le client peut aussi supprimer lui-même son compte et
+  toutes ses données depuis *Compte*.
 - Données hébergées dans la région Supabase choisie (UE recommandée).
 
 ## Organisation du code
@@ -228,13 +280,19 @@ supabase/
   seed.sql         données de démonstration (Var)
 src/
   app/
-    connexion/     connexion par e-mail + mot de passe
-    (app)/         écrans protégés : livraisons, clients, commandes, reglages
-    api/geocodage/ recherche d'adresses (passe par le serveur)
+    connexion/     connexion par e-mail + mot de passe (équipe et clients)
+    inscription/, mot-de-passe-oublie/, nouveau-mot-de-passe/, auth/confirmer/
+    (app)/         écrans de l'équipe : livraisons, clients, commandes, reglages
+    (terrain)/     tournée (admin et livreurs)
+    espace/        espace client : accueil, commander, fidélité, commandes, compte
+    api/           recherche d'adresses, itinéraires (passent par le serveur)
   components/      boutons, champs, carte, recherche d'adresse, compteur +/−
   lib/
     domaine/       règles métier pures (testées) : dates, prix, téléphones…
     geocodage/     géocodeur interchangeable (interface + implémentation IGN)
+    tournees/      optimisation et itinéraires (OpenRouteService), file hors connexion
+    emails/        alertes e-mail (Brevo), isolées
+    espace-client.ts  lectures de l'espace client
     supabase/      clients Supabase et types de la base
     donnees.ts     lectures de la base
   proxy.ts         rafraîchit la session, protège les pages
