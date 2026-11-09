@@ -17,6 +17,7 @@ import { correspond, nomComplet, normaliser } from "@/lib/domaine/texte";
 import {
   comparerSecteurs,
   dateDuSecteurDansLaSemaine,
+  libelleSecteur,
   libelleTournee,
   secteurDeLivraison,
   secteurPropose,
@@ -184,6 +185,12 @@ describe("secteurs", () => {
   it("libelle et trie les tournées", () => {
     expect(libelleTournee(secteurs[1])).toBe("Samedi après-midi");
     expect([secteurs[2], secteurs[1], secteurs[0]].sort(comparerSecteurs).map((s) => s.id)).toEqual(["a", "b", "c"]);
+  });
+
+  it("nomme le secteur sans doublon pour le client", () => {
+    expect(libelleSecteur("Secteur 1")).toBe("Secteur 1");
+    expect(libelleSecteur("secteur 3 ")).toBe("secteur 3");
+    expect(libelleSecteur("Toulon Est")).toBe("Secteur Toulon Est");
   });
 
   it("livre dans le secteur choisi pour la commande, sinon dans celui du client", () => {

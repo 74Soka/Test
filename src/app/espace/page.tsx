@@ -5,7 +5,7 @@ import { exigerClient } from "@/lib/auth";
 import { seDeconnecter } from "@/app/connexion/actions";
 import { aujourdhui, formaterDate, formaterEcheance, lundiDeLaSemaine, majuscule } from "@/lib/domaine/dates";
 import { pluriel, prochaineRecompense } from "@/lib/domaine/fidelite";
-import { LIBELLES_CRENEAU } from "@/lib/domaine/secteurs";
+import { LIBELLES_CRENEAU, libelleSecteur } from "@/lib/domaine/secteurs";
 import {
   lireCatalogue,
   lireCommandeClient,
@@ -88,7 +88,7 @@ export default async function PageEspace({ searchParams }: PageProps<"/espace">)
     <>
       <EnTetePage
         titre={`Bonjour ${situation.prenom || situation.nom}`}
-        sousTitre={`Secteur ${situation.secteur}`}
+        sousTitre={libelleSecteur(situation.secteur)}
         action={
           // eslint-disable-next-line @next/next/no-img-element
           <img src="/logo.svg" alt="Frais et Français" width={48} height={48} className="shrink-0" />

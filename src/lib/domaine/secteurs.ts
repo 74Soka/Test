@@ -63,3 +63,11 @@ export function secteurDeLivraison(commande: {
 export function dateDuSecteurDansLaSemaine(secteur: { jour: number }, date: DateIso): DateIso {
   return ajouterJours(lundiDeLaSemaine(date), secteur.jour - 1);
 }
+
+/**
+ * Nom du secteur à montrer au client : « Secteur 1 » reste tel quel, un nom
+ * de lieu prend le mot devant (« Toulon Est » → « Secteur Toulon Est »).
+ */
+export function libelleSecteur(nom: string): string {
+  return /^secteur\b/i.test(nom.trim()) ? nom.trim() : `Secteur ${nom.trim()}`;
+}

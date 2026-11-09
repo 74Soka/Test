@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { exigerClientRelie } from "@/lib/auth";
 import { seDeconnecter } from "@/app/connexion/actions";
+import { libelleSecteur } from "@/lib/domaine/secteurs";
 import { formaterTelephone } from "@/lib/domaine/telephone";
 import { lireMaFiche } from "@/lib/espace-client";
 import { Bouton, Carte, EnTetePage, LienBouton, TitreSection } from "@/components/ui";
@@ -32,7 +33,7 @@ export default async function PageCompte() {
             {fiche?.code_postal} {fiche?.commune}
           </p>
           <p className="mt-2 text-sm text-stone-600">
-            Secteur {situation.secteur}. Pour changer d&apos;adresse, contactez-nous : nous vérifierons le jour de
+            {libelleSecteur(situation.secteur)}. Pour changer d&apos;adresse, contactez-nous : nous vérifierons le jour de
             livraison.
           </p>
         </Carte>
