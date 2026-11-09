@@ -1,13 +1,39 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState, useTransition } from "react";
-import { envoyerMonInscription, type DemandeInscription } from "../actions";
+import { useEffect, useState, useTransition } from "react";
+import { envoyerMonInscription, verifierCodeParrainage, type DemandeInscription } from "../actions";
+import { codeComplet, normaliserCode } from "@/lib/domaine/parrainage";
 import { RechercheAdresse } from "@/components/recherche-adresse";
 import { Bouton, Carte, Champ, MessageErreur, ZoneTexte } from "@/components/ui";
 import type { AdresseTrouvee } from "@/lib/geocodage/types";
 
 type Adresse = NonNullable<DemandeInscription["adresse"]>;
+
+type EtatCode = "vide" | "incomplet" | "verification" | "valide" | "invalide";
+
+/** Vérifie le code de parrainage pendant la saisie (une demande par code complet). */
+function useEtatCode(saisie: string): EtatCode {
+  const normalise = normaliserCode(saisie);
+  const [resultats, setResultats] = useState<Record<string, boolean>>({});
+  const complet = codeComplet(normalise);
+  useEffect(() => {
+    if (!complet || normalise in resultats) return;
+    let annule = false;
+    const minuteur = window.setTimeout(async () => {
+      const valide = await verifierCodeParrainage(normalise).catch(() => false);
+      if (!annule) setResultats((r) => ({ ...r, [normalise]: valide }));
+    }, 400);
+    return () => {
+      annule = true;
+      window.clearTimeout(minuteur);
+    };
+  }, [normalise, complet, resultats]);
+  if (!normalise) return "vide";
+  if (!complet) return normalise.length >= 8 ? "invalide" : "incomplet";
+  if (!(normalise in resultats)) return "verification";
+  return resultats[normalise] ? "valide" : "invalide";
+}
 
 export function FormulaireBienvenue({
   initial,
@@ -21,6 +47,7 @@ export function FormulaireBienvenue({
   const [champs, setChamps] = useState<Record<string, string>>({});
   const [enCours, demarrer] = useTransition();
   const maj = (partiel: Partial<typeof d>) => setD((x) => ({ ...x, ...partiel }));
+  const code = useEtatCode(d.parrain);
   const adresse = d.adresse;
 
   return (
@@ -131,14 +158,28 @@ export function FormulaireBienvenue({
         />
       </Carte>
 
-      <Carte>
+      <Carte className="space-y-2">
         <Champ
-          label="Qui vous a parlé de nous ? (facultatif)"
+          label="Code de parrainage (facultatif)"
           name="parrain"
+          autoCapitalize="characters"
+          autoComplete="off"
+          spellCheck={false}
           value={d.parrain}
-          onChange={(e) => maj({ parrain: e.target.value })}
-          aide="Si un client vous a parrainé, indiquez son nom : vous en profiterez tous les deux."
+          onChange={(e) => {
+            maj({ parrain: e.target.value });
+            setChamps(({ parrain: _ancien, ...autres }) => autres);
+          }}
+          placeholder="Ex. EVCA 9616"
+          erreur={champs.parrain ?? (code === "invalide" ? "Code invalide, veuillez réessayer." : undefined)}
+          aide="Un client vous a parrainé ? Indiquez son code : vous en profiterez tous les deux."
         />
+        {code === "verification" && <p className="text-sm text-stone-600">Vérification du code…</p>}
+        {code === "valide" && (
+          <p role="status" className="font-semibold text-feuille-700">
+            ✓ Code valide
+          </p>
+        )}
       </Carte>
 
       <Bouton type="submit" taille="grand" className="w-full" disabled={enCours}>

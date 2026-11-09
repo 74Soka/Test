@@ -8,6 +8,7 @@ import { nomComplet } from "@/lib/domaine/texte";
 import { clientSupabase } from "@/lib/supabase/serveur";
 import { Carte, EnTetePage, EtatVide, Pastille } from "@/components/ui";
 import { ValidationInscription } from "./validation";
+import { codeComplet, formaterCode, normaliserCode } from "@/lib/domaine/parrainage";
 
 export const metadata: Metadata = { title: "Inscriptions" };
 
@@ -21,6 +22,12 @@ export default async function PageInscriptions() {
     supabase.from("comptes_clients").select("client_id"),
   ]);
   if (error) throw new Error(error.message);
+  // Parrains retrouvés par leur code (les anciennes inscriptions ont un nom en toutes lettres)
+  const codes = [...new Set((inscriptions ?? []).map((i) => normaliserCode(i.parrain ?? "")).filter(codeComplet))];
+  const { data: parrainsParCode } = codes.length
+    ? await supabase.from("clients").select("id, nom, prenom, code_parrainage").in("code_parrainage", codes)
+    : { data: [] };
+  const parrainDuCode = new Map((parrainsParCode ?? []).map((c) => [c.code_parrainage, c]));
   const relies = new Set((comptes ?? []).map((c) => c.client_id));
   const libres = clients
     .filter((c) => !relies.has(c.id))
@@ -70,7 +77,22 @@ export default async function PageInscriptions() {
                   {i.parrain && (
                     <>
                       <dt className="text-stone-500">Parrain</dt>
-                      <dd>« {i.parrain} »</dd>
+                      <dd>
+                        {codeComplet(i.parrain) ? (
+                          <>
+                            Code {formaterCode(i.parrain)}
+                            {parrainDuCode.get(normaliserCode(i.parrain)) ? (
+                              <span className="block font-semibold text-feuille-700">
+                                ✓ {nomComplet(parrainDuCode.get(normaliserCode(i.parrain))!)}
+                              </span>
+                            ) : (
+                              <span className="block text-amber-800">Code inconnu</span>
+                            )}
+                          </>
+                        ) : (
+                          <>« {i.parrain} »</>
+                        )}
+                      </dd>
                     </>
                   )}
                 </dl>
@@ -81,6 +103,7 @@ export default async function PageInscriptions() {
                   secteurPropose={secteurPropose(i.code_insee, secteurs)?.id ?? null}
                   clientsLibres={libres}
                   parrains={tous}
+                  parrainPropose={parrainDuCode.get(normaliserCode(i.parrain ?? ""))?.id ?? null}
                 />
               </Carte>
             </li>

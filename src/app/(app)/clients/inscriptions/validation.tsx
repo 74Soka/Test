@@ -14,6 +14,7 @@ export function ValidationInscription({
   secteurPropose,
   clientsLibres,
   parrains,
+  parrainPropose = null,
 }: {
   userId: string;
   statut: "en_attente" | "refusee";
@@ -21,11 +22,13 @@ export function ValidationInscription({
   secteurPropose: string | null;
   clientsLibres: ClientChoisissable[];
   parrains: ClientChoisissable[];
+  /** Parrain retrouvé grâce au code saisi par le filleul */
+  parrainPropose?: string | null;
 }) {
   const router = useRouter();
   const [mode, setMode] = useState<"nouvelle" | "existante">("nouvelle");
   const [secteurId, setSecteurId] = useState(secteurPropose ?? "");
-  const [parrainId, setParrainId] = useState<string | null>(null);
+  const [parrainId, setParrainId] = useState<string | null>(parrainPropose);
   const [clientId, setClientId] = useState<string | null>(null);
   const [erreur, setErreur] = useState<string | null>(null);
   const [enCours, demarrer] = useTransition();

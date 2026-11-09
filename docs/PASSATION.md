@@ -61,6 +61,12 @@ l'application.
    Notification aux clients » (titre 60, message 200, page ouverte au toucher), envoi immédiat à tous les clients
    actifs abonnés, historique dans `messages_clients`, double envoi refusé pendant 2 min.
 
+10. **Codes de parrainage** (`20261115000000_codes_parrainage.sql`, appliquée) : `clients.code_parrainage` =
+    2 lettres du prénom + 2 du nom + 4 derniers chiffres du téléphone (EVCA9616, affiché « EVCA 9616 »), calculé par
+    déclencheur, suffixe chiffré en cas de doublon, rien sans téléphone (TCT, Melting Box). Le filleul le tape dans
+    /espace/bienvenue (vérifié en direct, « ✓ Code valide » / « Code invalide, veuillez réessayer. ») ; à la
+    validation, le parrain est retrouvé et présélectionné. Le client voit et partage son code dans Fidélité.
+
 ## 3. Comment on travaille avec le propriétaire
 
 - Il n'a **pas d'ordinateur** : tout se fait depuis son téléphone (Supabase, Netlify, GitHub, OVH dans le navigateur).

@@ -31,6 +31,7 @@ import {
 } from "@/components/ui";
 import { BoutonActivite } from "./bouton-activite";
 import { CarteFidelite } from "./carte-fidelite";
+import { formaterCode } from "@/lib/domaine/parrainage";
 
 export const metadata: Metadata = { title: "Fiche client" };
 
@@ -173,6 +174,12 @@ export default async function PageClient({ params }: PageProps<"/clients/[id]">)
             <div>
               <dt className="text-sm text-stone-600">E-mail</dt>
               <dd className="break-all">{client.email ?? "—"}</dd>
+            </div>
+            <div>
+              <dt className="text-sm text-stone-600">Code de parrainage</dt>
+              <dd className="font-bold tracking-wider">
+                {client.code_parrainage ? formaterCode(client.code_parrainage) : "— (téléphone nécessaire)"}
+              </dd>
             </div>
             <div>
               <dt className="text-sm text-stone-600">Compte en ligne</dt>

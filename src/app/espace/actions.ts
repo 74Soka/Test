@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { exigerClient, exigerClientRelie } from "@/lib/auth";
+import { codeComplet, formaterCode, normaliserCode } from "@/lib/domaine/parrainage";
 import { normaliserTelephone } from "@/lib/domaine/telephone";
 import { nomComplet } from "@/lib/domaine/texte";
 import { alerteAvis, alerteCommande, alerteInscription, envoyerAlerte, type EvenementCommande } from "@/lib/emails";
@@ -148,9 +149,28 @@ const schemaInscription = z.object({
 
 export type DemandeInscription = z.input<typeof schemaInscription>;
 
+const CODE_INVALIDE = "Code invalide, veuillez réessayer.";
+
+/** Le code de parrainage tapé par le filleul est-il valide ? (oui / non seulement) */
+export async function verifierCodeParrainage(code: string): Promise<boolean> {
+  await exigerClient();
+  const normalise = normaliserCode(code.slice(0, 40));
+  if (!codeComplet(normalise)) return false;
+  const supabase = await clientSupabase();
+  const { data, error } = await supabase.rpc("verifier_code_parrainage", { p_code: normalise });
+  if (error) {
+    console.error("Code de parrainage :", error.message);
+    return false;
+  }
+  return data === true;
+}
+
 /** Coordonnées d'un nouveau client (inscription à valider par l'équipe). */
 export async function envoyerMonInscription(demande: DemandeInscription): Promise<Resultat> {
   const { utilisateur } = await exigerClient();
+  if (demande.parrain?.trim() && !(await verifierCodeParrainage(demande.parrain))) {
+    return { ok: false, erreur: "Vérifiez les champs signalés.", champs: { parrain: CODE_INVALIDE } };
+  }
   const saisie = schemaInscription.safeParse(demande);
   if (!saisie.success) {
     const champs: Record<string, string> = {};
@@ -171,7 +191,7 @@ export async function envoyerMonInscription(demande: DemandeInscription): Promis
     p_lat: d.adresse.lat as number,
     p_lng: d.adresse.lng as number,
     p_notes_livraison: d.notesLivraison,
-    p_parrain: d.parrain,
+    p_parrain: d.parrain ? normaliserCode(d.parrain) : "",
   });
   if (error) return { ok: false, erreur: messageErreur(error) };
 
@@ -182,7 +202,7 @@ export async function envoyerMonInscription(demande: DemandeInscription): Promis
       email: utilisateur.email ?? "",
       telephone: d.telephone,
       adresse: `${d.adresse.ligne}${d.complement ? `, ${d.complement}` : ""}, ${d.adresse.codePostal} ${d.adresse.commune}`,
-      parrain: d.parrain || null,
+      parrain: d.parrain ? `code ${formaterCode(d.parrain)}` : null,
       lien: `${await origineDuSite()}/clients/inscriptions`,
     }),
     repondreA: utilisateur.email ?? undefined,

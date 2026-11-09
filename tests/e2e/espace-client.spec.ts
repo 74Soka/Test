@@ -126,7 +126,15 @@ test("un nouveau client s'inscrit, l'équipe valide, il commande (œufs de fille
   await page.getByLabel("Téléphone").fill("06 12 34 56 78");
   await page.getByLabel("Votre adresse").fill("chemin oliviers bormes");
   await page.getByRole("button", { name: /3 Chemin des Oliviers/ }).click();
-  await page.getByLabel("Qui vous a parlé de nous ? (facultatif)").fill("Emma Dubois");
+  // Code de parrainage d'Emma Dubois (Emma, Dubois, …3344 : son nouveau téléphone, parcours précédent) :
+  // d'abord l'ancien code, devenu invalide
+  const code = page.getByLabel("Code de parrainage (facultatif)");
+  await code.fill("EMDU 0003");
+  await expect(page.getByText("Code invalide, veuillez réessayer.")).toBeVisible();
+  await page.getByRole("button", { name: "Envoyer mon inscription" }).click();
+  await expect(page).toHaveURL(/\/espace\/bienvenue/);
+  await code.fill("emdu 3344");
+  await expect(page.getByText("✓ Code valide")).toBeVisible();
   await page.getByRole("button", { name: "Envoyer mon inscription" }).click();
   await page.waitForURL("**/espace");
   await expect(page.getByText("Inscription reçue, merci !")).toBeVisible();
@@ -149,10 +157,10 @@ test("un nouveau client s'inscrit, l'équipe valide, il commande (œufs de fille
   await page.goto("/clients");
   await page.getByRole("link", { name: /1 inscription en ligne à valider/ }).click();
   const carte = page.getByRole("region", { name: "Inscription de Noé Nouveau" });
-  await expect(carte).toContainText("« Emma Dubois »");
+  // Le parrain est retrouvé grâce au code, et déjà choisi
+  await expect(carte).toContainText("Code EMDU 3344");
+  await expect(carte).toContainText("✓ Emma Dubois");
   await carte.getByLabel("Secteur").selectOption({ label: "Toulon Est – Hyères" });
-  await carte.getByLabel("Parrain (facultatif)").fill("emma");
-  await carte.getByRole("button", { name: /Emma Dubois/ }).click();
   await carte.getByRole("button", { name: "Valider" }).click();
   await expect(page.getByText("Aucune inscription en attente.")).toBeVisible();
   await deconnexionEquipe(page);

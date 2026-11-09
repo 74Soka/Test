@@ -9,7 +9,9 @@ import {
   pluriel,
   prochaineRecompense,
 } from "@/lib/domaine/fidelite";
-import { lireMaFidelite, lireMesTampons, lireRecompensesProposees, lireReglesFidelite } from "@/lib/espace-client";
+import { lireMaFiche, lireMaFidelite, lireMesTampons, lireRecompensesProposees, lireReglesFidelite } from "@/lib/espace-client";
+import { formaterCode } from "@/lib/domaine/parrainage";
+import { PartagerCode } from "./partager-code";
 import { GrilleTampons } from "@/components/grille-tampons";
 import { Carte, EnTetePage, Pastille, TitreSection } from "@/components/ui";
 
@@ -17,12 +19,14 @@ export const metadata: Metadata = { title: "Ma fidélité" };
 
 export default async function PageFidelite() {
   const { situation } = await exigerClientRelie();
-  const [fidelite, recompenses, regles, tampons] = await Promise.all([
+  const [fidelite, recompenses, regles, tampons, fiche] = await Promise.all([
     lireMaFidelite(),
     lireRecompensesProposees(),
     lireReglesFidelite(),
     lireMesTampons(),
+    lireMaFiche(situation.client_id),
   ]);
+  const monCode = fiche?.code_parrainage ? formaterCode(fiche.code_parrainage) : null;
   const suivante = prochaineRecompense(fidelite.solde, fidelite.niveau, recompenses);
   const niveauApres = regles ? niveauSuivant(fidelite.niveau, fidelite.filleuls_comptes, regles) : null;
   const enTampons = recompenses.filter((r) => r.type === "tampons");
@@ -76,7 +80,7 @@ export default async function PageFidelite() {
         <Carte aria-label="Parrainage" className="space-y-3">
           <TitreSection>Parrainage</TitreSection>
           <p className="text-stone-700">
-            Faites découvrir nos paniers : à l&apos;inscription, votre filleul indique votre nom. Vous gagnez{" "}
+            Faites découvrir nos paniers : à l&apos;inscription, votre filleul indique votre code. Vous gagnez{" "}
             {regles ? pluriel(regles.tampons_parrainage, "tampon") : "des tampons"}, puis{" "}
             {regles ? pluriel(regles.tampons_parrain_par_commande, "tampon") : "des tampons"} à chacune de ses commandes
             livrées.
@@ -85,6 +89,7 @@ export default async function PageFidelite() {
                 ? " Une confiture vous est offerte à sa première commande, et 6 œufs BIO pour lui."
                 : ` À partir du ${formaterDate(regles.parrainage_cadeaux_debut, { annee: true })}, une confiture vous est offerte à sa première commande, et 6 œufs BIO pour lui.`)}
           </p>
+          {monCode && <PartagerCode code={monCode} />}
           {fidelite.confitures_dues > 0 && (
             <p className="rounded-xl bg-peche-50 px-3 py-2 font-medium text-peche-900 ring-1 ring-peche-600/30">
               🎁 {fidelite.confitures_dues > 1 ? `${fidelite.confitures_dues} confitures vous attendent` : "Une confiture vous attend"}{" "}

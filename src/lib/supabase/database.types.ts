@@ -178,6 +178,7 @@ export type Database = {
           actif: boolean
           adresse: string
           code_insee: string | null
+          code_parrainage: string | null
           code_postal: string
           commune: string
           complement_adresse: string | null
@@ -200,6 +201,7 @@ export type Database = {
           actif?: boolean
           adresse: string
           code_insee?: string | null
+          code_parrainage?: string | null
           code_postal: string
           commune: string
           complement_adresse?: string | null
@@ -224,6 +226,7 @@ export type Database = {
           actif?: boolean
           adresse?: string
           code_insee?: string | null
+          code_parrainage?: string | null
           code_postal?: string
           commune?: string
           complement_adresse?: string | null
@@ -1211,6 +1214,7 @@ export type Database = {
       supprimer_abonnement_robot: { Args: { p_endpoint: string; p_jeton: string }; Returns: undefined }
       supprimer_mon_compte: { Args: never; Returns: undefined }
       traiter_avis: { Args: { p_commande_id: string; p_traite: boolean }; Returns: undefined }
+      verifier_code_parrainage: { Args: { p_code: string }; Returns: boolean }
       valider_inscription: {
         Args: {
           p_client_id?: string

@@ -263,3 +263,15 @@ describe("commandes", () => {
     ]);
   });
 });
+
+describe("codes de parrainage (saisie)", () => {
+  it("normalise, affiche et reconnaît un code complet", async () => {
+    const { codeComplet, formaterCode, normaliserCode } = await import("@/lib/domaine/parrainage");
+    expect(normaliserCode(" evca-9616 ")).toBe("EVCA9616");
+    expect(formaterCode("EVCA9616")).toBe("EVCA 9616");
+    expect(formaterCode("madu43212")).toBe("MADU 43212");
+    expect(codeComplet("EVCA 9616")).toBe(true);
+    expect(codeComplet("EVCA 961")).toBe(false);
+    expect(codeComplet("Emma Dubois")).toBe(false);
+  });
+});

@@ -108,7 +108,7 @@ export async function lireMaFiche(clientId: string) {
   return verifierOuNull(
     await supabase
       .from("clients")
-      .select("id, nom, prenom, email, telephone, adresse, complement_adresse, code_postal, commune, notes_livraison")
+      .select("id, nom, prenom, email, telephone, adresse, complement_adresse, code_postal, commune, notes_livraison, code_parrainage")
       .eq("id", clientId)
       .maybeSingle(),
   );
