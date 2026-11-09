@@ -12,6 +12,8 @@ import { erreursParChamp, messageErreur, type Resultat } from "@/lib/erreurs";
 const schemaCommande = z.object({
   clientId: z.uuid("Choisissez un client."),
   date: z.string().refine(estDateIso, "Choisissez une date de livraison."),
+  /** Autre secteur pour cette livraison seulement (vide : secteur du client) */
+  secteurId: z.uuid("Secteur inconnu.").nullable().optional(),
   quantites: z.record(z.uuid(), z.number().int().min(0).max(99)),
   notes: z.string().max(1000).optional(),
   recompenses: z
@@ -34,7 +36,7 @@ export async function enregistrerCommande(donnees: DonneesCommande, id?: string)
   if (!saisie.success) {
     return { ok: false, erreur: "Vérifiez les champs signalés.", champs: erreursParChamp(saisie.error.issues) };
   }
-  const { clientId, date, quantites, notes, recompenses } = saisie.data;
+  const { clientId, date, secteurId, quantites, notes, recompenses } = saisie.data;
   const lignes = Object.entries(quantites)
     .filter(([, q]) => q > 0)
     .map(([article_id, quantite]) => ({ article_id, quantite }));
@@ -61,6 +63,20 @@ export async function enregistrerCommande(donnees: DonneesCommande, id?: string)
       }
     }
     return { ok: false, erreur: messageErreur(error) };
+  }
+
+  // Secteur ponctuel (la base cale alors la date sur le jour de ce secteur, même semaine).
+  // La date est renvoyée avec : en revenant au secteur habituel, elle reprend le jour choisi.
+  const secteur = await supabase
+    .from("commandes")
+    .update({ secteur_id: secteurId ?? null, date_livraison: date })
+    .eq("id", data);
+  if (secteur.error) {
+    return {
+      ok: false,
+      erreur: `Commande enregistrée, mais le secteur n'a pas pu être changé : ${messageErreur(secteur.error)}`,
+      lien: { href: `/commandes/${data}`, libelle: "Ouvrir la commande" },
+    };
   }
 
   revalidatePath("/", "layout");

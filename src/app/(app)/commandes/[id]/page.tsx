@@ -18,6 +18,7 @@ import { nomComplet } from "@/lib/domaine/texte";
 import { Carte, EnTetePage, MessageInfo, Pastille, TitreSection } from "@/components/ui";
 import { FormulaireCommande, type ArticleFormulaire } from "../formulaire-commande";
 import { ActionsStatut } from "./actions-statut";
+import { secteurDeLivraison } from "@/lib/domaine/secteurs";
 
 export const metadata: Metadata = { title: "Commande" };
 
@@ -72,7 +73,7 @@ export default async function PageCommande({ params, searchParams }: PageProps<"
       <div className="space-y-4">
         {commande.statut !== "annulee" && (
           <Link
-            href={`/tournee?du=${commande.date_livraison}&secteur=${commande.client.secteur_id}`}
+            href={`/tournee?du=${commande.date_livraison}&secteur=${secteurDeLivraison(commande)}`}
             className="block font-semibold text-marque-800 underline"
           >
             Voir dans la tournée
@@ -120,6 +121,7 @@ export default async function PageCommande({ params, searchParams }: PageProps<"
             initial={{
               clientId: commande.client_id,
               date: commande.date_livraison,
+              secteurId: commande.secteur_id,
               quantites,
               notes: commande.notes ?? "",
               recompenses: commande.recompenses.map((r) => ({

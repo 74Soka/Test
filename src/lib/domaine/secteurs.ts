@@ -1,4 +1,4 @@
-import { NOMS_JOURS, majuscule, prochaineDate, type DateIso } from "./dates";
+import { NOMS_JOURS, ajouterJours, lundiDeLaSemaine, majuscule, prochaineDate, type DateIso } from "./dates";
 
 export type Creneau = "matin" | "apres_midi" | "journee";
 
@@ -46,4 +46,20 @@ export function secteurPropose<T extends { id: string; communes: { code_insee: s
 /** Prochaine date de livraison du secteur, à partir d'aujourd'hui inclus. */
 export function prochaineLivraison(secteur: { jour: number }, aujourdhui: DateIso): DateIso {
   return prochaineDate(secteur.jour, aujourdhui);
+}
+
+/**
+ * Secteur dans lequel une commande est livrée : celui choisi pour cette
+ * livraison seulement, sinon le secteur habituel du client.
+ */
+export function secteurDeLivraison(commande: {
+  secteur_id: string | null;
+  client: { secteur_id: string };
+}): string {
+  return commande.secteur_id ?? commande.client.secteur_id;
+}
+
+/** Jour de tournée du secteur dans la même semaine (lundi → dimanche) que la date donnée. */
+export function dateDuSecteurDansLaSemaine(secteur: { jour: number }, date: DateIso): DateIso {
+  return ajouterJours(lundiDeLaSemaine(date), secteur.jour - 1);
 }

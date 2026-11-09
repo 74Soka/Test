@@ -14,7 +14,13 @@ import {
 import { estMobile, formaterTelephone, normaliserTelephone } from "@/lib/domaine/telephone";
 import { centimesVersSaisie, formaterPrix, saisieVersCentimes } from "@/lib/domaine/argent";
 import { correspond, nomComplet, normaliser } from "@/lib/domaine/texte";
-import { comparerSecteurs, libelleTournee, secteurPropose } from "@/lib/domaine/secteurs";
+import {
+  comparerSecteurs,
+  dateDuSecteurDansLaSemaine,
+  libelleTournee,
+  secteurDeLivraison,
+  secteurPropose,
+} from "@/lib/domaine/secteurs";
 import { contientUnPanier, nombreDePaniers, recapitulatif, resumeLignes, totalCommande } from "@/lib/domaine/commandes";
 
 // Les espaces insécables de Intl sont remplacés par des espaces simples pour comparer.
@@ -178,6 +184,17 @@ describe("secteurs", () => {
   it("libelle et trie les tournées", () => {
     expect(libelleTournee(secteurs[1])).toBe("Samedi après-midi");
     expect([secteurs[2], secteurs[1], secteurs[0]].sort(comparerSecteurs).map((s) => s.id)).toEqual(["a", "b", "c"]);
+  });
+
+  it("livre dans le secteur choisi pour la commande, sinon dans celui du client", () => {
+    expect(secteurDeLivraison({ secteur_id: null, client: { secteur_id: "a" } })).toBe("a");
+    expect(secteurDeLivraison({ secteur_id: "c", client: { secteur_id: "a" } })).toBe("c");
+  });
+
+  it("cale la date sur le jour du secteur, dans la même semaine", () => {
+    expect(dateDuSecteurDansLaSemaine({ jour: 7 }, "2026-11-14")).toBe("2026-11-15");
+    expect(dateDuSecteurDansLaSemaine({ jour: 6 }, "2026-11-15")).toBe("2026-11-14");
+    expect(dateDuSecteurDansLaSemaine({ jour: 1 }, "2026-11-15")).toBe("2026-11-09");
   });
 });
 

@@ -9,6 +9,7 @@ import { messageErreur, type Resultat } from "@/lib/erreurs";
 import { clientSupabase } from "@/lib/supabase/serveur";
 import { apresLivraison, FRAICHEUR_MAX_MS, prevenirDepart } from "@/lib/notifications";
 import { optimiserTournee as optimiser } from "@/lib/tournees";
+import { secteurDeLivraison } from "@/lib/domaine/secteurs";
 
 export type ResultatOptimisationTournee =
   | {
@@ -31,7 +32,7 @@ export async function optimiserTournee(date: string, secteurId: string): Promise
   if (!estDateIso(date) || !z.uuid().safeParse(secteurId).success) return { ok: false, erreur: "Tournée inconnue." };
 
   const [secteur, commandes] = await Promise.all([lireSecteur(secteurId), listerCommandesDuJour(date)]);
-  const duSecteur = commandes.filter((c) => c.client.secteur_id === secteurId);
+  const duSecteur = commandes.filter((c) => secteurDeLivraison(c) === secteurId);
   const livrees = duSecteur.filter((c) => c.statut === "livree");
   const aLivrer = duSecteur.filter((c) => c.statut !== "livree" && c.client.lat !== null && c.client.lng !== null);
   const sansPosition = duSecteur.filter((c) => c.statut !== "livree" && (c.client.lat === null || c.client.lng === null));

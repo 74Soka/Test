@@ -13,7 +13,7 @@ import {
   jourSemaine,
   majuscule,
 } from "@/lib/domaine/dates";
-import { comparerSecteurs, LIBELLES_CRENEAU } from "@/lib/domaine/secteurs";
+import { comparerSecteurs, LIBELLES_CRENEAU, secteurDeLivraison } from "@/lib/domaine/secteurs";
 import { nomComplet } from "@/lib/domaine/texte";
 import { EnTetePage, EtatVide, PointCouleur, cx } from "@/components/ui";
 import { preparerNotifications } from "@/lib/notifications";
@@ -45,7 +45,7 @@ export default async function PageTournee({ searchParams }: PageProps<"/tournee"
   // Clés de notification et adresse du site prêtes dès la première visite de l'équipe
   await preparerNotifications();
   const secteursDuJour = secteurs.filter(
-    (s) => s.jour === jourSemaine(date) || commandes.some((c) => c.client.secteur_id === s.id),
+    (s) => s.jour === jourSemaine(date) || commandes.some((c) => secteurDeLivraison(c) === s.id),
   );
   const secteurDemande = typeof sp.secteur === "string" ? sp.secteur : null;
   const secteur = secteursDuJour.find((s) => s.id === secteurDemande) ?? secteursDuJour[0];
@@ -64,7 +64,7 @@ export default async function PageTournee({ searchParams }: PageProps<"/tournee"
 
   const arrets: ArretTournee[] = secteur
     ? commandes
-        .filter((c) => c.client.secteur_id === secteur.id)
+        .filter((c) => secteurDeLivraison(c) === secteur.id)
         .map((c) => {
           const offerts = articlesOfferts(c.recompenses);
           return {

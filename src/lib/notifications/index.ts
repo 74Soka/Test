@@ -9,6 +9,7 @@ import { distance } from "@/lib/tournees/geo";
 import type { Point } from "@/lib/tournees/types";
 import { creerEnvoyeurPush, type ClesVapid } from "./envoi";
 import { NOMS_JOURS } from "@/lib/domaine/dates";
+import { secteurDeLivraison } from "@/lib/domaine/secteurs";
 import {
   dureeEstimee,
   heuresArrivee,
@@ -117,7 +118,7 @@ export async function prevenirDepart(date: string, secteurId: string) {
   const { demarree_le } = z.object({ demarree_le: z.string() }).parse(data);
 
   const [secteur, commandes] = await Promise.all([lireSecteur(secteurId), listerCommandesDuJour(date)]);
-  const duSecteur = commandes.filter((c) => c.client.secteur_id === secteurId);
+  const duSecteur = commandes.filter((c) => secteurDeLivraison(c) === secteurId);
   const derniereLivree = duSecteur
     .filter((c) => c.statut === "livree" && c.livree_le && position(c.client))
     .sort((a, b) => (a.livree_le! < b.livree_le! ? -1 : 1))
@@ -157,7 +158,7 @@ export async function apresLivraison(commandeLivreeId: string, prevenirSuivant: 
   const supabase = await clientSupabase();
   const { data: livree, error } = await supabase
     .from("commandes")
-    .select("id, date_livraison, client:clients(id, secteur_id, lat, lng)")
+    .select("id, date_livraison, secteur_id, client:clients(id, secteur_id, lat, lng)")
     .eq("id", commandeLivreeId)
     .maybeSingle();
   if (error || !livree) return;
@@ -171,11 +172,12 @@ export async function apresLivraison(commandeLivreeId: string, prevenirSuivant: 
 async function prevenirLeSuivant(livree: {
   id: string;
   date_livraison: string;
+  secteur_id: string | null;
   client: { secteur_id: string; lat: number | null; lng: number | null };
 }): Promise<boolean> {
   const commandes = await listerCommandesDuJour(livree.date_livraison);
   const suivant = commandes.find(
-    (c) => c.client.secteur_id === livree.client.secteur_id && c.statut === "a_livrer" && c.id !== livree.id,
+    (c) => secteurDeLivraison(c) === secteurDeLivraison(livree) && c.statut === "a_livrer" && c.id !== livree.id,
   );
   if (!suivant) return false;
   if (!(await reserver([suivant.id], "prochain")).length) return false;

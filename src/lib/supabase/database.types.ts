@@ -284,6 +284,7 @@ export type Database = {
           id: string
           livree_le: string | null
           notes: string | null
+          secteur_id: string | null
           semaine: string | null
           source: Database["public"]["Enums"]["source_commande"]
           statut: Database["public"]["Enums"]["statut_commande"]
@@ -297,6 +298,7 @@ export type Database = {
           id?: string
           livree_le?: string | null
           notes?: string | null
+          secteur_id?: string | null
           semaine?: string | null
           source?: Database["public"]["Enums"]["source_commande"]
           statut?: Database["public"]["Enums"]["statut_commande"]
@@ -310,12 +312,20 @@ export type Database = {
           id?: string
           livree_le?: string | null
           notes?: string | null
+          secteur_id?: string | null
           semaine?: string | null
           source?: Database["public"]["Enums"]["source_commande"]
           statut?: Database["public"]["Enums"]["statut_commande"]
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "commandes_secteur_id_fkey"
+            columns: ["secteur_id"]
+            isOneToOne: false
+            referencedRelation: "secteurs"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "commandes_client_id_fkey"
             columns: ["client_id"]

@@ -6,11 +6,11 @@ import { enregistrerCommande } from "./actions";
 import { RecompensesCommande, type RecompenseEnCours } from "./recompenses-commande";
 import { ChoixClient, type ClientChoisissable } from "@/components/choix-client";
 import { Compteur } from "@/components/compteur";
-import { Bouton, Carte, Champ, MessageErreur, PointCouleur, ZoneTexte } from "@/components/ui";
+import { Bouton, Carte, Champ, MessageErreur, PointCouleur, Selection, ZoneTexte } from "@/components/ui";
 import { formaterPrix } from "@/lib/domaine/argent";
 import { contientUnPanier } from "@/lib/domaine/commandes";
 import { formaterDate, jourSemaine, NOMS_JOURS } from "@/lib/domaine/dates";
-import { libelleTournee, prochaineLivraison, type Creneau } from "@/lib/domaine/secteurs";
+import { dateDuSecteurDansLaSemaine, libelleTournee, prochaineLivraison, type Creneau } from "@/lib/domaine/secteurs";
 import { oeufsDeBienvenue, type FideliteSaisie, type RecompenseProposee } from "@/lib/domaine/fidelite";
 import { nomComplet } from "@/lib/domaine/texte";
 import type { Resultat } from "@/lib/erreurs";
@@ -50,6 +50,8 @@ export function FormulaireCommande({
     date: string | null;
     quantites: Record<string, number>;
     notes: string;
+    /** Secteur choisi pour cette livraison seulement (vide : secteur du client) */
+    secteurId?: string | null;
     recompenses?: (RecompenseEnCours & { id: string })[];
   };
   clientFixe?: boolean;
@@ -76,6 +78,8 @@ export function FormulaireCommande({
   const [clientId, setClientId] = useState<string | null>(initial.clientId);
   const [dateChoisie, setDateChoisie] = useState<string | null>(initial.date);
   const [modifierDate, setModifierDate] = useState(false);
+  const [secteurPonctuelId, setSecteurPonctuelId] = useState<string | null>(initial.secteurId ?? null);
+  const [modifierSecteur, setModifierSecteur] = useState(Boolean(initial.secteurId));
   const [quantites, setQuantites] = useState<Record<string, number>>(initial.quantites);
   const [notes, setNotes] = useState(initial.notes);
   const [recompensesEnCours, setRecompensesEnCours] = useState<RecompenseEnCours[]>(
@@ -86,10 +90,18 @@ export function FormulaireCommande({
   const champs = resultat && !resultat.ok ? (resultat.champs ?? {}) : {};
 
   const client = clients.find((c) => c.id === clientId) ?? null;
-  const secteur = client ? secteurs.find((s) => s.id === client.secteur_id) : undefined;
-  // Date proposée : prochain jour de tournée du secteur du client
-  const date = dateChoisie ?? (secteur ? prochaineLivraison(secteur, aujourdhui) : null);
-  const horsJour = Boolean(secteur && date && jourSemaine(date) !== secteur.jour);
+  const secteurHabituel = client ? secteurs.find((s) => s.id === client.secteur_id) : undefined;
+  // Autre secteur pour cette livraison seulement (le secteur habituel n'en est pas un)
+  const secteurPonctuel =
+    secteurPonctuelId && secteurPonctuelId !== client?.secteur_id
+      ? secteurs.find((s) => s.id === secteurPonctuelId)
+      : undefined;
+  const secteur = secteurPonctuel ?? secteurHabituel;
+  // Date proposée : prochain jour de tournée du secteur du client ; avec un autre
+  // secteur, le jour de ce secteur dans la même semaine (comme le fait la base)
+  const dateDeBase = dateChoisie ?? (secteurHabituel ? prochaineLivraison(secteurHabituel, aujourdhui) : null);
+  const date = dateDeBase && secteurPonctuel ? dateDuSecteurDansLaSemaine(secteurPonctuel, dateDeBase) : dateDeBase;
+  const horsJour = Boolean(!secteurPonctuel && secteur && date && jourSemaine(date) !== secteur.jour);
 
   const total = useMemo(
     () => articles.reduce((t, a) => t + (quantites[a.id] ?? 0) * a.prix_centimes, 0),
@@ -107,6 +119,8 @@ export function FormulaireCommande({
     setClientId(nouveau);
     if (!id) {
       setDateChoisie(null); // la date suit le secteur du nouveau client
+      setSecteurPonctuelId(null);
+      setModifierSecteur(false);
       // Les récompenses dépendent du client ; œufs d'office pour la 1re commande d'un filleul
       setRecompensesEnCours(cadeauxDOffice(nouveau, dateProposee(nouveau)));
     }
@@ -139,6 +153,7 @@ export function FormulaireCommande({
               {
                 clientId: clientId ?? "",
                 date: date ?? "",
+                secteurId: secteurPonctuel?.id ?? null,
                 quantites,
                 notes,
                 recompenses: recompensesEnCours.map((r) => ({
@@ -181,6 +196,11 @@ export function FormulaireCommande({
                 <PointCouleur couleur={secteur.couleur} /> {secteur.nom} · {libelleTournee(secteur)}
               </p>
             )}
+            {secteurPonctuel && secteurHabituel && (
+              <p className="mt-1 text-sm font-medium text-peche-900">
+                Cette livraison seulement : habituellement {secteurHabituel.nom} · {libelleTournee(secteurHabituel)}.
+              </p>
+            )}
             {horsJour && secteur && (
               <p className="mt-1 text-sm font-medium text-amber-800">
                 Attention : ce secteur est livré le {NOMS_JOURS[secteur.jour - 1]}.
@@ -202,6 +222,38 @@ export function FormulaireCommande({
                 Changer la date
               </Bouton>
             )}
+            {secteurs.length > 1 &&
+              (modifierSecteur ? (
+                <div className="mt-3">
+                  <Selection
+                    label="Secteur pour cette livraison"
+                    name="secteurPonctuel"
+                    value={secteurPonctuel?.id ?? ""}
+                    onChange={(e) => {
+                      const choisi = secteurs.find((x) => x.id === e.target.value) ?? secteurHabituel;
+                      setSecteurPonctuelId(e.target.value || null);
+                      // La date suit le jour du secteur choisi, dans la même semaine
+                      if (choisi && date) setDateChoisie(dateDuSecteurDansLaSemaine(choisi, date));
+                    }}
+                    aide="Seulement cette fois : la fiche du client garde son secteur."
+                  >
+                    <option value="">
+                      {secteurHabituel ? `${secteurHabituel.nom} · ${libelleTournee(secteurHabituel)} (habituel)` : "Secteur habituel"}
+                    </option>
+                    {secteurs
+                      .filter((s) => s.id !== client.secteur_id)
+                      .map((s) => (
+                        <option key={s.id} value={s.id}>
+                          {s.nom} · {libelleTournee(s)}
+                        </option>
+                      ))}
+                  </Selection>
+                </div>
+              ) : (
+                <Bouton variante="discret" taille="petit" className="mt-1 -ml-3 block" onClick={() => setModifierSecteur(true)}>
+                  Livrer dans un autre secteur cette fois
+                </Bouton>
+              ))}
           </div>
         )}
       </Carte>

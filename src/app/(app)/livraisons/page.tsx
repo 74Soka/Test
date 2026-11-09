@@ -25,7 +25,7 @@ import {
   lundiDeLaSemaine,
   majuscule,
 } from "@/lib/domaine/dates";
-import { comparerSecteurs, LIBELLES_CRENEAU } from "@/lib/domaine/secteurs";
+import { comparerSecteurs, LIBELLES_CRENEAU, secteurDeLivraison } from "@/lib/domaine/secteurs";
 import { nomComplet } from "@/lib/domaine/texte";
 import { Carte, EnTetePage, EtatVide, LienBouton, Pastille, PointCouleur, cx } from "@/components/ui";
 
@@ -73,7 +73,7 @@ export default async function PageLivraisons({ searchParams }: PageProps<"/livra
 
   const secteurParId = new Map(secteurs.map((s) => [s.id, s]));
   const commandes = commandesSemaine.filter(
-    (c) => (!jour || c.date_livraison === jour) && (!secteurFiltre || c.client.secteur_id === secteurFiltre),
+    (c) => (!jour || c.date_livraison === jour) && (!secteurFiltre || secteurDeLivraison(c) === secteurFiltre),
   );
   const actives = commandes.filter((c) => c.statut !== "annulee");
   const recap = recapitulatif(commandes);
@@ -81,7 +81,7 @@ export default async function PageLivraisons({ searchParams }: PageProps<"/livra
   // Groupes date → secteur
   const groupes: { date: string; secteur: SecteurAvecCommunes | undefined; commandes: CommandeDetaillee[] }[] = [];
   for (const c of commandes) {
-    const secteur = secteurParId.get(c.client.secteur_id);
+    const secteur = secteurParId.get(secteurDeLivraison(c));
     let groupe = groupes.find((g) => g.date === c.date_livraison && g.secteur?.id === secteur?.id);
     if (!groupe) {
       groupe = { date: c.date_livraison, secteur, commandes: [] };

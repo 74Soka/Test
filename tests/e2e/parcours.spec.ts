@@ -134,6 +134,29 @@ test("statut : livrée (horodatée), puis remise à livrer", async ({ page }) =>
   await expect(page.getByRole("button", { name: "Marquer comme livrée" })).toBeVisible();
 });
 
+test("secteur pour une seule livraison : le dimanche, puis retour au secteur habituel", async ({ page }) => {
+  await seConnecter(page);
+  await ouvrirFiche(page, "essai", /Zoé Essai/);
+  await page.getByRole("link", { name: "Voir la commande" }).click();
+  await page.waitForURL(/\/commandes\/[0-9a-f-]{36}$/);
+
+  await page.getByRole("button", { name: "Livrer dans un autre secteur cette fois" }).click();
+  await page.getByLabel("Secteur pour cette livraison").selectOption({ label: "Centre Var · Dimanche matin" });
+  await expect(page.getByText(/Cette livraison seulement : habituellement Toulon Est – Hyères/)).toBeVisible();
+  await expect(page.getByText(/^dimanche /i).first()).toBeVisible();
+  await page.getByRole("button", { name: "Enregistrer les modifications" }).click();
+  await expect(page.getByText("Commande enregistrée.")).toBeVisible();
+  await expect(page.getByLabel("Secteur pour cette livraison")).toHaveValue(/[0-9a-f-]{36}/);
+  await expect(page.getByText(/^dimanche \d+ \S+ \d{4}$/i)).toBeVisible();
+
+  // La fiche du client garde son secteur ; retour au secteur habituel pour la suite
+  await page.getByLabel("Secteur pour cette livraison").selectOption({ index: 0 });
+  await page.getByRole("button", { name: "Enregistrer les modifications" }).click();
+  await expect(page.getByText("Commande enregistrée.")).toBeVisible();
+  await expect(page.getByText(/Cette livraison seulement/)).toHaveCount(0);
+  await expect(page.getByText(/^samedi \d+ \S+ \d{4}$/i)).toBeVisible();
+});
+
 test("fidélité : ajustement manuel, puis récompense utilisée sur une commande", async ({ page }) => {
   await seConnecter(page);
   await ouvrirFiche(page, "essai", /Zoé Essai/);

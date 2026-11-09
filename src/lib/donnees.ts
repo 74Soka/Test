@@ -179,7 +179,7 @@ export async function listerArticles(options: { actifsSeulement?: boolean } = {}
 }
 export type Article = Awaited<ReturnType<typeof listerArticles>>[number];
 
-const CHAMPS_COMMANDE = `id, client_id, date_livraison, statut, livree_le, notes, source,
+const CHAMPS_COMMANDE = `id, client_id, date_livraison, statut, livree_le, notes, source, secteur_id,
   client:clients(id, nom, prenom, adresse, complement_adresse, code_postal, commune, telephone, secteur_id, notes_livraison, actif),
   lignes:lignes_commande(article_id, libelle, categorie, quantite, prix_unitaire_centimes),
   recompenses:recompenses_utilisees(id, recompense_id, nom, cout_tampons, cadeaux(article_id, libelle, categorie, quantite))` as const;
@@ -230,7 +230,7 @@ export async function compterCommandesClient(clientId: string): Promise<number> 
   return count ?? 0;
 }
 
-const CHAMPS_TOURNEE = `id, date_livraison, statut, livree_le, notes, ordre_tournee,
+const CHAMPS_TOURNEE = `id, date_livraison, statut, livree_le, notes, ordre_tournee, secteur_id,
   client:clients(id, nom, prenom, adresse, complement_adresse, code_postal, commune, telephone, secteur_id, notes_livraison, lat, lng),
   lignes:lignes_commande(article_id, libelle, categorie, quantite, prix_unitaire_centimes),
   recompenses:recompenses_utilisees(id, nom, cadeaux(article_id, libelle, categorie, quantite))` as const;

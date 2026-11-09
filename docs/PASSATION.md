@@ -24,6 +24,16 @@ l'application.
    `[skip netlify]` pour déployer, puis lui faire ouvrir l'application une fois en admin (l'adresse du site est
    notée pour les rappels).
 2. Les migrations 20261106 à 20261109000000 sont appliquées en production.
+3. **Migration en attente** : `20261110000000_secteur_ponctuel.sql` (secteur choisi pour une seule commande,
+   `commandes.secteur_id` ; la date suit le jour de ce secteur dans la même semaine). À coller après la précédente.
+4. **Import des vrais clients** (fichier « Livraisons 2026.xlsx », 107 clients ayant commandé en 2026) et des 3 vrais
+   secteurs : SQL préparé hors dépôt (données personnelles) et envoyé au propriétaire ; à confirmer. Secteurs :
+   1 = samedi matin (Toulon 83000, La Garde, La Farlède, Solliès, Le Pradet, La Crau, Carqueiranne, Cuers,
+   Pierrefeu, Puget-Ville, Hyères), 2 = samedi après-midi (Toulon 83100/83200, Le Revest, La Valette),
+   3 = dimanche matin (Sanary, Six-Fours, La Londe, Ollioules, Saint-Mandrier, La Seyne). Toulon est dans les secteurs
+   1 et 2 (le code postal tranche à l'import ; dans l'application, on choisit). Départ des tournées :
+   337 route de la Farlède, 83130 La Garde (à saisir dans Réglages, le géocodage étant bloqué ici). Les clients
+   importés n'ont pas encore de position : prévoir un bouton « Placer les clients sur la carte ».
 
 ## 3. Comment on travaille avec le propriétaire
 
