@@ -87,7 +87,8 @@ l'application.
 - [ ] **Compte livreur** : le propriétaire doit donner l'e-mail ; il crée l'utilisateur dans Supabase Auth, puis on
       ajoute `insert into profils (id, role) values ('<uuid>', 'livreur')`.
 - [ ] **Vraie liste de clients** à importer à la place des clients de démo (garder catalogue et réglages).
-- [ ] **Nom de domaine OVH** (en cours d'achat) : DNS vers Netlify, `SITE_URL`, *Site URL* et *Redirect URLs* dans
+- [ ] **Nom de domaine OVH** (en cours d'achat ; décision du 9 novembre 2026 : seul le domaine est chez OVH, le site
+      reste sur Netlify, offre payante si besoin, pas de VPS) : DNS vers Netlify, `SITE_URL`, *Site URL* et *Redirect URLs* dans
       Supabase ; puis **Brevo** (domaine authentifié, SMTP dans Supabase, clé API dans Netlify) et ouverture des
       inscriptions (*Allow new users to sign up*). Pas à pas dans le README, « Mise en service de l'espace client ».
 - [ ] **Mentions légales et politique de confidentialité** : à ajouter quand il donnera raison sociale, statut,
