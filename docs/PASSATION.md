@@ -42,7 +42,7 @@ l'application.
    (informations publiques seulement) pour la page `/paniers`, lien des campagnes SMS. Numéro et Instagram dans
    `src/lib/paniers-publics.ts`. La recette de la semaine de l'ancienne page (artefact « Panier Frais et Français »)
    n'est pas reprise : pas encore de champ « recette » dans l'application.
-6. **Migration en attente** : `20261111000000_recette_semaine.sql` (table `recettes`, saisie dans Réglages →
+6. ~~Migration en attente~~ (appliquée, vérifiée par le connecteur Supabase) : `20261111000000_recette_semaine.sql` (table `recettes`, saisie dans Réglages →
    Composition, affichée sur `/paniers` ; remplace `prive.paniers_publics()`). Commit `[skip netlify]` : ne pas
    publier avant que le propriétaire l'ait collée. Ingrédients « dans le panier / en supplément » repérés par mots
    communs (`src/lib/domaine/recettes.ts`). Données d'essai de la semaine dernière : `tests/fixtures/semaine-derniere.ts`.
@@ -50,6 +50,9 @@ l'application.
 ## 3. Comment on travaille avec le propriétaire
 
 - Il n'a **pas d'ordinateur** : tout se fait depuis son téléphone (Supabase, Netlify, GitHub, OVH dans le navigateur).
+- **Connecteur Supabase (claude.ai)** disponible depuis le 9 novembre 2026 : outils `mcp__Supabase__*` sur le projet
+  `yrmscxuyehhwvimqfpwr` (lecture et écriture directes). Chaque semaine, le propriétaire envoie les paniers et
+  suppléments : l'assistant enregistre composition, recette et catalogue lui-même (choix « solution 2 »).
 - Migrations : il colle lui-même le SQL. Le serveur MCP Supabase de l'assistant était souvent injoignable
   (`ERR_PROXY_TUNNEL`), et le réseau de l'environnement bloque `*.supabase.co`, Instagram, `api.heigit.org` : on ne
   peut pas vérifier la base depuis l'environnement, on lui demande de vérifier à l'écran.
