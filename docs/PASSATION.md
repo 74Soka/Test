@@ -34,6 +34,10 @@ l'application.
    1 et 2 (le code postal tranche à l'import ; dans l'application, on choisit). Départ des tournées :
    337 route de la Farlède, 83130 La Garde (à saisir dans Réglages, le géocodage étant bloqué ici). Les clients
    importés n'ont pas encore de position : prévoir un bouton « Placer les clients sur la carte ».
+5. **Migration en attente** : `20261110120000_page_paniers.sql`, fonction `paniers_publics()` ouverte sans compte
+   (informations publiques seulement) pour la page `/paniers`, lien des campagnes SMS. Numéro et Instagram dans
+   `src/lib/paniers-publics.ts`. La recette de la semaine de l'ancienne page (artefact « Panier Frais et Français »)
+   n'est pas reprise : pas encore de champ « recette » dans l'application.
 
 ## 3. Comment on travaille avec le propriétaire
 

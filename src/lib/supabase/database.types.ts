@@ -1104,6 +1104,7 @@ export type Database = {
         Returns: undefined
       }
       noter_url_site: { Args: { p_url: string }; Returns: undefined }
+      paniers_publics: { Args: never; Returns: Json }
       passer_commande: {
         Args: {
           p_lignes: Json

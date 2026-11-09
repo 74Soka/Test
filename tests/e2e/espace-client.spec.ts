@@ -221,3 +221,17 @@ test("l'équipe publie la composition et un message, que les clients voient", as
   await page.getByRole("button", { name: "Enregistrer" }).click();
   await expect(page.getByText("✓ Enregistré")).toBeVisible();
 });
+
+test("page publique des paniers, sans compte : composition, suppléments, livraisons et numéro", async ({ page }) => {
+  await page.goto("/paniers");
+  await expect(page).toHaveURL(/\/paniers$/);
+  await expect(page.getByRole("heading", { name: "Frais et Français", level: 1 })).toBeVisible();
+  await expect(page.getByText("Potimarron", { exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "En supplément" })).toBeVisible();
+  await expect(page.getByText("Œufs (6)")).toBeVisible();
+  await expect(page.getByText("Samedi matin", { exact: true })).toBeVisible();
+  await expect(page.getByRole("link", { name: "📞 Appeler" })).toHaveAttribute("href", "tel:+33625502487");
+  await expect(page.getByRole("link", { name: "💬 Envoyer un SMS" })).toHaveAttribute("href", "sms:+33625502487");
+  await expect(page.getByText("Avant le vendredi 12 h pour la livraison du week-end.")).toBeVisible();
+  if (process.env.CAPTURE_PANIERS) await page.screenshot({ path: process.env.CAPTURE_PANIERS, fullPage: true });
+});

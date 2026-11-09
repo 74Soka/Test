@@ -4,7 +4,7 @@ import { configSupabase } from "@/lib/env";
 import type { Database } from "./database.types";
 
 /** Pages accessibles sans être connecté. */
-const PAGES_PUBLIQUES = ["/connexion", "/inscription", "/mot-de-passe-oublie", "/auth", "/api/rappels"];
+const PAGES_PUBLIQUES = ["/connexion", "/inscription", "/mot-de-passe-oublie", "/auth", "/api/rappels", "/paniers"];
 
 /**
  * Rafraîchit la session Supabase à chaque requête et renvoie vers la page de
