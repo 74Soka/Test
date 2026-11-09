@@ -17,7 +17,11 @@ l'application.
 
 ## 2. ⚠️ À faire en premier
 
-1. **Migration en attente** : `supabase/migrations/20261109120000_avis_annonces_rappels.sql` (merci après livraison,
+0. **Mis en ligne le 9 novembre 2026** (branche publiée `claude/basket-orders-app-91823x` mise à jour) : migrations
+   jusqu'à `20261110120000` collées par le propriétaire (vérifié à l'écran, sauf `20261110000000` qu'il a recollée
+   juste avant la mise en ligne), 3 vrais secteurs, clients importés, compte admin julian8312@hotmail.fr. Domaine
+   `fraisetfrancais.fr` branché chez OVH (A → 75.2.60.5, www → CNAME Netlify) ; offre Netlify conseillée : Personal.
+1. ~~Migration en attente~~ (fait) : `supabase/migrations/20261109120000_avis_annonces_rappels.sql` (merci après livraison,
    avis, annonce des paniers, rappels du jeudi) n'a **pas encore été confirmée** comme collée dans Supabase. Le
    dernier commit porte `[skip netlify]` : le site en ligne n'a donc pas encore ce code. Demander au propriétaire de
    la coller (*SQL Editor → Run*) ; elle active aussi `pg_cron` et `pg_net`. Ensuite, pousser un commit sans
