@@ -141,3 +141,30 @@ export async function lireReglesFidelite() {
       .maybeSingle(),
   );
 }
+
+/** Avis du client sur ses commandes (par commande). */
+export async function lireMesAvis(commandeIds: string[]) {
+  if (!commandeIds.length) return new Map<string, { note: number | null; commentaire: string | null }>();
+  const supabase = await clientSupabase();
+  const lignes = verifier(
+    await supabase.from("avis_livraison").select("commande_id, note, commentaire").in("commande_id", commandeIds),
+  );
+  return new Map(lignes.map((l) => [l.commande_id, { note: l.note, commentaire: l.commentaire }]));
+}
+
+/** Dernière commande livrée depuis moins de 7 jours et sans avis (pour inviter à en donner un). */
+export async function livraisonSansAvis() {
+  const supabase = await clientSupabase();
+  const derniere = verifierOuNull(
+    await supabase
+      .from("commandes")
+      .select("id, date_livraison, livree_le")
+      .eq("statut", "livree")
+      .order("livree_le", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+  );
+  if (!derniere?.livree_le || Date.now() - Date.parse(derniere.livree_le) > 7 * 24 * 3600 * 1000) return null;
+  const avis = await lireMesAvis([derniere.id]);
+  return avis.has(derniere.id) ? null : derniere;
+}

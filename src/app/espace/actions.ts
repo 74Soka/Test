@@ -6,7 +6,7 @@ import { z } from "zod";
 import { exigerClient, exigerClientRelie } from "@/lib/auth";
 import { normaliserTelephone } from "@/lib/domaine/telephone";
 import { nomComplet } from "@/lib/domaine/texte";
-import { alerteCommande, alerteInscription, envoyerAlerte, type EvenementCommande } from "@/lib/emails";
+import { alerteAvis, alerteCommande, alerteInscription, envoyerAlerte, type EvenementCommande } from "@/lib/emails";
 import { messageErreur, type Resultat } from "@/lib/erreurs";
 import { lireCommandeClient } from "@/lib/espace-client";
 import { origineDuSite } from "@/lib/site";
@@ -215,5 +215,43 @@ export async function supprimerMonAbonnement(endpoint: string): Promise<Resultat
   const supabase = await clientSupabase();
   const { error } = await supabase.rpc("supprimer_abonnement_push", { p_endpoint: endpoint.slice(0, 1000) });
   if (error) return { ok: false, erreur: messageErreur(error) };
+  return { ok: true };
+}
+
+// --- Avis après livraison ------------------------------------------------------------
+
+const schemaAvis = z
+  .object({
+    commandeId: z.uuid(),
+    note: z.number().int().min(1).max(5).nullable(),
+    commentaire: z.string().trim().max(1000, "1 000 caractères au plus."),
+  })
+  .refine((a) => a.note !== null || a.commentaire.length > 0, { message: "Choisissez une note ou écrivez un commentaire." });
+
+export async function donnerMonAvis(donnees: z.input<typeof schemaAvis>): Promise<Resultat> {
+  const { situation, utilisateur } = await exigerClientRelie();
+  const saisie = schemaAvis.safeParse(donnees);
+  if (!saisie.success) return { ok: false, erreur: saisie.error.issues[0]?.message ?? "Avis invalide." };
+  const d = saisie.data;
+  const supabase = await clientSupabase();
+  const { error } = await supabase.rpc("donner_mon_avis", {
+    p_commande_id: d.commandeId,
+    p_note: d.note as number,
+    p_commentaire: d.commentaire,
+  });
+  if (error) return { ok: false, erreur: messageErreur(error) };
+
+  const commande = await lireCommandeClient(d.commandeId);
+  await envoyerAlerte({
+    ...alerteAvis({
+      client: nomCompletClient(situation, utilisateur.email),
+      dateLivraison: commande?.date_livraison ?? "",
+      note: d.note,
+      commentaire: d.commentaire || null,
+      lien: `${await origineDuSite()}/clients/retours`,
+    }),
+    repondreA: utilisateur.email ?? undefined,
+  });
+  revalidatePath("/espace", "layout");
   return { ok: true };
 }

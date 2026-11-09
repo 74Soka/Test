@@ -14,6 +14,7 @@ d'accueil.
 | 3 | Fidélité et parrainage (tampons, récompenses, VIP / Ultra, cadeaux de parrainage) | ✅ livrée, à valider |
 | 4 | Espace client : inscription, composition des paniers, commande en ligne, carte de fidélité, alertes e-mail | ✅ livrée, à valider |
 | 5 | Notifications de livraison : départ de tournée avec heure estimée, « vous êtes le prochain » | ✅ livrée, à valider |
+| 6 | Merci après livraison, avis des clients, annonce des paniers, rappels du jeudi | ✅ livrée, à valider |
 
 ### Ce que fait la Phase 1
 
@@ -165,10 +166,27 @@ Ce sont des notifications web, gratuites, sans App Store : sur Android elles mar
 Sur la fiche d'un client, l'équipe voit combien de téléphones sont abonnés et peut envoyer une notification de test.
 Aucun réglage : les clés de signature sont créées par l'application à la première visite de l'équipe sur la tournée.
 
+### Merci, avis et rappels
+
+- **Merci** : à chaque « Livré », le client reçoit « 🧡 Merci pour votre commande ! Un souci ou un avis ? » ; la
+  notification ouvre la page d'avis de la commande.
+- **Avis** : sur une commande livrée (jusqu'à 30 jours), le client donne une note (1 à 5 étoiles) et un commentaire.
+  L'équipe reçoit un e-mail (⚠️ si 2 étoiles ou moins) et les retrouve dans *Clients → Retours clients*, avec
+  « Traité ». L'avis apparaît aussi sur la commande.
+- **Nouveaux paniers** : en enregistrant la composition d'une semaine en cours ou à venir, la case « 📣 Prévenir les
+  clients » envoie « 🥕 Les paniers de la semaine sont prêts ! Au menu : … », une seule fois par semaine.
+- **Rappels du jeudi** à 12 h et 19 h (heure de Paris) : « 🧺 N'oubliez pas de commander avant vendredi 12 h », pour
+  les clients abonnés, actifs, sans commande pour leur prochaine livraison et dont la clôture est dans les 48 h.
+  Une fois par rappel. Ils partent tout seuls : le planificateur de Supabase (`pg_cron` + `pg_net`, gratuits) appelle
+  chaque heure du jeudi la page `/api/rappels` du site, avec un jeton secret gardé dans la base (schéma privé).
+  L'adresse du site est notée par l'application à chaque visite de l'équipe : rien à régler, y compris après le
+  passage au nom de domaine (ouvrez une fois l'application avec la nouvelle adresse).
+
 #### Mise en service de l'espace client
 
-1. **Base** : coller `supabase/migrations/20261108000000_espace_client.sql` puis
-   `supabase/migrations/20261109000000_notifications_livraison.sql` dans l'éditeur SQL de Supabase (*Run*).
+1. **Base** : coller `supabase/migrations/20261108000000_espace_client.sql`, puis
+   `20261109000000_notifications_livraison.sql` et `20261109120000_avis_annonces_rappels.sql` (même dossier) dans
+   l'éditeur SQL de Supabase (*Run*). La dernière active le planificateur (`pg_cron`, `pg_net`).
 2. **Supabase → Authentication → Sign In / Providers** : activez *Allow new users to sign up* et laissez *Confirm
    email* activé. Ouvrir les inscriptions est sans risque : un compte qui n'est ni dans l'équipe ni relié à une fiche
    ne voit que le catalogue et la composition des paniers (vérifié par les tests de la base).
@@ -333,7 +351,7 @@ L'application ne connaît que l'interface `Geocodeur` (`src/lib/geocodage/types.
 
 > Les migrations ont été appliquées à la main dans l'éditeur SQL du projet. Si vous utilisez un jour la CLI
 > (`supabase db push`), marquez-les d'abord comme appliquées :
-> `npx supabase migration repair --status applied 20261106000000 20261107000000 20261107120000 20261108000000 20261109000000`.
+> `npx supabase migration repair --status applied 20261106000000 20261107000000 20261107120000 20261108000000 20261109000000 20261109120000`.
 
 Ajoutez un **nouveau** fichier dans `supabase/migrations/` (ne modifiez pas un fichier déjà appliqué). Mettez ensuite
 à jour `src/lib/supabase/database.types.ts`, par exemple avec

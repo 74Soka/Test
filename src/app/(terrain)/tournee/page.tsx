@@ -16,7 +16,7 @@ import {
 import { comparerSecteurs, LIBELLES_CRENEAU } from "@/lib/domaine/secteurs";
 import { nomComplet } from "@/lib/domaine/texte";
 import { EnTetePage, EtatVide, PointCouleur, cx } from "@/components/ui";
-import { clesVapid } from "@/lib/notifications";
+import { preparerNotifications } from "@/lib/notifications";
 import { clientSupabase } from "@/lib/supabase/serveur";
 import { Tournee, type ArretTournee } from "./tournee";
 
@@ -42,8 +42,8 @@ export default async function PageTournee({ searchParams }: PageProps<"/tournee"
   }
 
   const commandes = await listerCommandesDuJour(date);
-  // Les clés de notification sont créées à la première visite de l'équipe
-  await clesVapid().catch((e) => console.error("Clés de notification :", e));
+  // Clés de notification et adresse du site prêtes dès la première visite de l'équipe
+  await preparerNotifications();
   const secteursDuJour = secteurs.filter(
     (s) => s.jour === jourSemaine(date) || commandes.some((c) => c.client.secteur_id === s.id),
   );

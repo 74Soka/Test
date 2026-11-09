@@ -8,7 +8,16 @@ import { calculerTrajet } from "@/lib/tournees";
 import { distance } from "@/lib/tournees/geo";
 import type { Point } from "@/lib/tournees/types";
 import { creerEnvoyeurPush, type ClesVapid } from "./envoi";
-import { dureeEstimee, heuresArrivee, messageDepart, messageProchain, type MessagePush } from "./messages";
+import { NOMS_JOURS } from "@/lib/domaine/dates";
+import {
+  dureeEstimee,
+  heuresArrivee,
+  messageAnnonce,
+  messageDepart,
+  messageMerci,
+  messageProchain,
+  type MessagePush,
+} from "./messages";
 
 /**
  * Notifications de livraison, envoyées depuis les actions de l'équipe
@@ -85,7 +94,7 @@ async function dureeDeRoute(de: Point, a: Point): Promise<number> {
   return r.trajet?.troncons[0]?.dureeSecondes ?? dureeEstimee(distance(de, a));
 }
 
-async function reserver(ids: string[], type: "depart" | "prochain"): Promise<string[]> {
+async function reserver(ids: string[], type: "depart" | "prochain" | "merci"): Promise<string[]> {
   if (!ids.length) return [];
   const supabase = await clientSupabase();
   const { data, error } = await supabase.rpc("reserver_notifications", { p_commandes: ids, p_type: type });
@@ -139,16 +148,31 @@ export async function prevenirDepart(date: string, secteurId: string) {
   return { demarreeLe: demarree_le, clients: aLivrer.length, prevenus };
 }
 
-/** Après un « Livré » : le client suivant de la tournée est prévenu (une seule fois). */
-export async function prevenirLeSuivant(commandeLivreeId: string): Promise<boolean> {
+/**
+ * Après un « Livré » : merci au client livré, et le client suivant de la
+ * tournée est prévenu (sauf pour un appui ancien envoyé en différé). Chaque
+ * message ne part qu'une fois.
+ */
+export async function apresLivraison(commandeLivreeId: string, prevenirSuivant: boolean): Promise<void> {
   const supabase = await clientSupabase();
   const { data: livree, error } = await supabase
     .from("commandes")
-    .select("id, date_livraison, client:clients(secteur_id, lat, lng)")
+    .select("id, date_livraison, client:clients(id, secteur_id, lat, lng)")
     .eq("id", commandeLivreeId)
     .maybeSingle();
-  if (error || !livree) return false;
+  if (error || !livree) return;
 
+  if ((await reserver([livree.id], "merci")).length) {
+    await notifierClient(livree.client.id, messageMerci(livree.id));
+  }
+  if (prevenirSuivant) await prevenirLeSuivant(livree);
+}
+
+async function prevenirLeSuivant(livree: {
+  id: string;
+  date_livraison: string;
+  client: { secteur_id: string; lat: number | null; lng: number | null };
+}): Promise<boolean> {
   const commandes = await listerCommandesDuJour(livree.date_livraison);
   const suivant = commandes.find(
     (c) => c.client.secteur_id === livree.client.secteur_id && c.statut === "a_livrer" && c.id !== livree.id,
@@ -160,4 +184,54 @@ export async function prevenirLeSuivant(commandeLivreeId: string): Promise<boole
   const a = position(suivant.client);
   const duree = de && a ? await dureeDeRoute(de, a) : 15 * 60;
   return (await notifierClient(suivant.client.id, messageProchain(duree, new Date()))) > 0;
+}
+
+/** L'équipe note l'adresse publique du site, utilisée par les rappels automatiques. */
+let urlNotee: string | null = null;
+export async function noterUrlSite(): Promise<void> {
+  const url = await origineDuSite();
+  if (url === urlNotee || !url.startsWith("https://")) return;
+  const supabase = await clientSupabase();
+  const { error } = await supabase.rpc("noter_url_site", { p_url: url });
+  if (!error) urlNotee = url;
+}
+
+/**
+ * Composition de la semaine publiée : tous les clients abonnés sont prévenus,
+ * une seule fois par semaine. Renvoie le nombre de téléphones atteints, ou
+ * null si l'annonce était déjà partie.
+ */
+export async function annoncerComposition(semaine: string, contenuPrincipal: string | null): Promise<number | null> {
+  const supabase = await clientSupabase();
+  const { data: nouvelle, error } = await supabase.rpc("reserver_annonce", { p_semaine: semaine });
+  if (error) throw new Error(error.message);
+  if (!nouvelle) return null;
+
+  const [{ data: abonnements, error: e2 }, { data: p }] = await Promise.all([
+    supabase.rpc("abonnements_clients_actifs"),
+    supabase.from("parametres_commandes").select("cloture_jour, cloture_heure").maybeSingle(),
+  ]);
+  if (e2) throw new Error(e2.message);
+  const [h, m] = (p?.cloture_heure ?? "12:00").split(":");
+  const cloture = p ? `${NOMS_JOURS[p.cloture_jour - 1]} ${Number(h)} h${m === "00" ? "" : ` ${m}`}` : null;
+  const message = messageAnnonce(contenuPrincipal, cloture);
+
+  const envoyeur = creerEnvoyeurPush({ cles: await clesVapid(), sujet: await sujetVapid() });
+  const resultats = await Promise.all(
+    (abonnements ?? []).map(async (a) => {
+      const r = await envoyeur.envoyer(a, message);
+      if (r === "expire") await supabase.rpc("supprimer_abonnement_push", { p_endpoint: a.endpoint });
+      return r;
+    }),
+  );
+  return resultats.filter((r) => r === "envoye").length;
+}
+
+
+/**
+ * À chaque visite de l'équipe : clés de signature prêtes et adresse du site
+ * notée pour le planificateur. Ne bloque jamais la page.
+ */
+export async function preparerNotifications(): Promise<void> {
+  await Promise.all([clesVapid(), noterUrlSite()]).catch((e) => console.error("Préparation des notifications :", e));
 }

@@ -66,3 +66,24 @@ export function alerteInscription(d: {
     ].join("\n"),
   };
 }
+
+export function alerteAvis(d: {
+  client: string;
+  dateLivraison: string;
+  note: number | null;
+  commentaire: string | null;
+  lien: string;
+}): { sujet: string; texte: string } {
+  const etoiles = d.note ? `${"★".repeat(d.note)}${"☆".repeat(5 - d.note)} (${d.note}/5)` : "sans note";
+  return {
+    sujet: `${d.note !== null && d.note <= 2 ? "⚠️ " : ""}Avis de ${d.client} : ${etoiles}`,
+    texte: [
+      `${d.client} a donné son avis sur la livraison du ${formaterDate(d.dateLivraison)}.`,
+      "",
+      `Note : ${etoiles}`,
+      ...(d.commentaire ? ["", `« ${d.commentaire} »`] : []),
+      "",
+      `Voir les retours : ${d.lien}`,
+    ].join("\n"),
+  };
+}

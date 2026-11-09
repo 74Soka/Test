@@ -462,6 +462,9 @@ async function demarrer() {
       }
       if (url.pathname === "/test/emails") return repondre(res, 200, EMAILS);
       if (url.pathname === "/test/pushs") return repondre(res, 200, PUSHS);
+      if (url.pathname === "/test/jeton-robot") {
+        return repondre(res, 200, (await pool.query("select jeton from prive.parametres_robot")).rows[0]);
+      }
       if (url.pathname.startsWith("/push/") && req.method === "POST") {
         const morceaux: Buffer[] = [];
         for await (const m of req) morceaux.push(m as Buffer);

@@ -7,7 +7,7 @@ import { listerCommandesDuJour, lireSecteur } from "@/lib/donnees";
 import { estDateIso } from "@/lib/domaine/dates";
 import { messageErreur, type Resultat } from "@/lib/erreurs";
 import { clientSupabase } from "@/lib/supabase/serveur";
-import { FRAICHEUR_MAX_MS, prevenirDepart, prevenirLeSuivant } from "@/lib/notifications";
+import { apresLivraison, FRAICHEUR_MAX_MS, prevenirDepart } from "@/lib/notifications";
 import { optimiserTournee as optimiser } from "@/lib/tournees";
 
 export type ResultatOptimisationTournee =
@@ -106,10 +106,10 @@ export async function marquerLivraison(commandeId: string, livree: boolean, horo
   });
   if (error) return { ok: false, erreur: messageErreur(error) };
 
-  // Le client suivant est prévenu, sauf pour un appui ancien envoyé en différé
-  const recent = !heure || Date.now() - Date.parse(heure) < FRAICHEUR_MAX_MS;
-  if (livree && recent) {
-    await prevenirLeSuivant(commandeId).catch((e) => console.error("Prévenir le client suivant :", e));
+  // Merci au client livré ; le suivant est prévenu, sauf pour un appui ancien envoyé en différé
+  if (livree) {
+    const recent = !heure || Date.now() - Date.parse(heure) < FRAICHEUR_MAX_MS;
+    await apresLivraison(commandeId, recent).catch((e: unknown) => console.error("Notifications après livraison :", e));
   }
   revalidatePath("/", "layout");
   return { ok: true };

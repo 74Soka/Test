@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { exigerAdmin } from "@/lib/auth";
+import { preparerNotifications } from "@/lib/notifications";
 import { listerCommandes, listerSecteurs, type CommandeDetaillee, type SecteurAvecCommunes } from "@/lib/donnees";
 import { formaterPrix } from "@/lib/domaine/argent";
 import {
@@ -46,6 +47,7 @@ function lien(params: { du: string; vue: Vue; secteur?: string | null }) {
 
 export default async function PageLivraisons({ searchParams }: PageProps<"/livraisons">) {
   await exigerAdmin();
+  await preparerNotifications();
   const sp = await searchParams;
   const vue: Vue = sp.vue === "jour" ? "jour" : "semaine";
   const ajd = aujourdhui();

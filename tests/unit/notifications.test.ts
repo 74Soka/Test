@@ -113,3 +113,45 @@ describe("envoi chiffré (Web Push)", () => {
     erreurs.mockRestore();
   });
 });
+
+import { messageAnnonce, messageMerci, messageRappel } from "@/lib/notifications/messages";
+import { alerteAvis } from "@/lib/emails/alertes";
+
+describe("merci, annonce et rappels", () => {
+  it("merci après la livraison, avec le lien vers l'avis", () => {
+    expect(messageMerci("c1")).toEqual({
+      titre: "🧡 Merci pour votre commande !",
+      corps: "Bonne dégustation ! Un souci ou un avis sur votre panier ? Dites-le-nous en un geste.",
+      url: "/espace/avis/c1",
+      tag: "merci",
+    });
+  });
+
+  it("annonce : quelques produits sans les quantités, et la clôture", () => {
+    const m = messageAnnonce("1 kg de pommes de terre\n500 g de carottes\n1 salade\n4 pommes\n1 courge", "vendredi 12 h");
+    expect(m.titre).toBe("🥕 Les paniers de la semaine sont prêts !");
+    expect(m.corps).toBe("Au menu : pommes de terre, carottes, salade, pommes… Commandez avant vendredi 12 h.");
+    expect(messageAnnonce(null, null).corps).toBe("Commandez dès maintenant.");
+  });
+
+  it("rappels du jeudi : midi personnalisé, soir « dernier rappel »", () => {
+    expect(messageRappel("midi", "Léa", "vendredi 13 novembre à 12 h")).toMatchObject({
+      titre: "🧺 Votre panier de la semaine ?",
+      corps: "Bonjour Léa, n'oubliez pas de commander avant vendredi 13 novembre à 12 h.",
+      url: "/espace/commander",
+    });
+    expect(messageRappel("midi", "", "vendredi 13 novembre à 12 h").corps).toBe(
+      "N'oubliez pas de commander avant vendredi 13 novembre à 12 h.",
+    );
+    expect(messageRappel("soir", "Léa", "vendredi 13 novembre à 12 h").titre).toBe("⏰ Dernier rappel");
+  });
+
+  it("e-mail d'avis : étoiles, alerte si mauvaise note", () => {
+    const a = alerteAvis({ client: "Léa Robert", dateLivraison: "2026-11-14", note: 2, commentaire: "Salade abîmée", lien: "https://x/clients/retours" });
+    expect(a.sujet).toBe("⚠️ Avis de Léa Robert : ★★☆☆☆ (2/5)");
+    expect(a.texte).toContain("« Salade abîmée »");
+    expect(alerteAvis({ client: "Léa", dateLivraison: "2026-11-14", note: null, commentaire: "Merci", lien: "x" }).sujet).toBe(
+      "Avis de Léa : sans note",
+    );
+  });
+});

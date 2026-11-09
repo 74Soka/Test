@@ -20,6 +20,9 @@ const TABLES_PRIVEES = [
   "abonnements_push",
   "tournees",
   "notifications_envoyees",
+  "avis_livraison",
+  "annonces_composition",
+  "rappels_envoyes",
 ];
 
 /** Vitrine : catalogue actif, récompenses actives, règles, composition des paniers */

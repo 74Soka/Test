@@ -11,11 +11,12 @@ export const metadata: Metadata = { title: "Clients" };
 export default async function PageClients({ searchParams }: PageProps<"/clients">) {
   await exigerAdmin();
   const supabase = await clientSupabase();
-  const [clients, secteurs, { supprime }, { count: inscriptions }] = await Promise.all([
+  const [clients, secteurs, { supprime }, { count: inscriptions }, { count: retours }] = await Promise.all([
     listerClients(),
     listerSecteurs(),
     searchParams,
     supabase.from("inscriptions").select("user_id", { count: "exact", head: true }).eq("statut", "en_attente"),
+    supabase.from("avis_livraison").select("commande_id", { count: "exact", head: true }).is("traite_le", null),
   ]);
 
   return (
@@ -39,6 +40,13 @@ export default async function PageClients({ searchParams }: PageProps<"/clients"
           <span aria-hidden>›</span>
         </Link>
       )}
+      <Link
+        href="/clients/retours"
+        className="mb-3 flex min-h-12 items-center justify-between gap-2 rounded-2xl bg-white px-4 py-2 font-semibold text-marque-800 ring-1 ring-marque-100"
+      >
+        <span>💬 Retours clients{(retours ?? 0) > 0 ? ` : ${retours} à traiter` : ""}</span>
+        <span aria-hidden>›</span>
+      </Link>
       {supprime && (
         <div className="mb-3">
           <MessageInfo>Le client et ses données ont été supprimés.</MessageInfo>

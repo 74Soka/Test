@@ -17,7 +17,10 @@ test.beforeEach(async ({ page, context }) => {
   await page.route("https://tile.openstreetmap.org/**", (r) => r.abort());
   page.on("dialog", (d) => d.accept());
   await context.grantPermissions(["notifications"]);
-  // Service de push du téléphone simulé (le vrai passe par Google ou Apple)
+});
+
+/** Téléphone simulé : son service de push est le faux serveur (/push/<nom>). */
+async function simulerTelephone(page: Page, nom: string) {
   await page.addInitScript((endpoint) => {
     const b64 = (octets: ArrayBuffer | Uint8Array) =>
       btoa(String.fromCharCode(...new Uint8Array(octets)))
@@ -44,8 +47,8 @@ test.beforeEach(async ({ page, context }) => {
       };
       return courant as PushSubscription;
     };
-  }, `${FAUX}/push/lea`);
-});
+  }, `${FAUX}/push/${nom}`);
+}
 
 async function connexion(page: Page, email: string, motDePasse: string) {
   await page.goto("/connexion");
@@ -54,16 +57,28 @@ async function connexion(page: Page, email: string, motDePasse: string) {
   await page.getByRole("button", { name: "Se connecter" }).click();
 }
 
-async function pushsRecus(request: APIRequestContext): Promise<{ endpoint: string; ttl: string; urgence: string; octets: number }[]> {
+async function pushsRecus(
+  request: APIRequestContext,
+  nom = "lea",
+): Promise<{ endpoint: string; ttl: string; urgence: string; octets: number }[]> {
   return ((await (await request.get(`${FAUX}/test/pushs`)).json()) as { endpoint: string; ttl: string; urgence: string; octets: number }[]).filter(
-    (p) => p.endpoint === "/push/lea",
+    (p) => p.endpoint === `/push/${nom}`,
   );
+}
+
+async function deconnexion(page: Page) {
+  await page.goto("/");
+  if (page.url().includes("/espace")) await page.goto("/espace/compte");
+  else await page.goto("/reglages");
+  await page.getByRole("button", { name: "Se déconnecter" }).click();
+  await page.waitForURL("**/connexion");
 }
 
 test("le client active les notifications, puis est prévenu au départ de la tournée et quand il est le prochain", async ({
   page,
   request,
 }) => {
+  await simulerTelephone(page, "lea");
   // L'équipe passe une première fois : les clés de signature sont créées
   await connexion(page, "admin@demo.fr", "demo-demo-demo");
   await page.waitForURL("**/livraisons**");
@@ -155,4 +170,120 @@ test("le client active les notifications, puis est prévenu au départ de la tou
   // On remet la tournée comme avant pour les autres parcours
   await premier.getByRole("button", { name: /✓ Livré/ }).click();
   await expect(premier.getByRole("button", { name: "Livré", exact: true })).toBeVisible();
+});
+
+test("rappels du jeudi, annonce des paniers, merci après la livraison et avis du client", async ({ page, request }) => {
+  await simulerTelephone(page, "chloe");
+  const { jeton } = (await (await request.get(`${FAUX}/test/jeton-robot`)).json()) as { jeton: string };
+  const rappeler = (j: string) =>
+    request.post("/api/rappels", { headers: { "x-jeton": j }, data: { moment: "midi" } });
+
+  // Clôture ce soir, pour que la prochaine livraison soit dans la fenêtre des rappels
+  await connexion(page, "admin@demo.fr", "demo-demo-demo");
+  await page.waitForURL("**/livraisons**");
+  await page.goto("/reglages/commandes-en-ligne");
+  const jourDeLaSemaine = await page.evaluate(() =>
+    String(((new Date(new Date().toLocaleString("en-US", { timeZone: "Europe/Paris" })).getDay() + 6) % 7) + 1),
+  );
+  await page.getByLabel("Jour").selectOption(jourDeLaSemaine);
+  await page.getByLabel("Heure").fill("23:59");
+  await page.getByRole("button", { name: "Enregistrer" }).click();
+  await expect(page.getByText("✓ Enregistré")).toBeVisible();
+  await deconnexion(page);
+
+  // Chloé (cliente de la démo) crée son compte, active les notifications, et n'a pas commandé
+  await page.goto("/inscription");
+  await page.getByLabel("Prénom").fill("Chloé");
+  await page.getByLabel("Nom", { exact: true }).fill("Petit");
+  await page.getByLabel("Adresse e-mail").fill("chloe.petit@example.org");
+  await page.getByLabel("Mot de passe").fill("paniers-chloe-2026");
+  await page.getByRole("button", { name: "Créer mon compte" }).click();
+  await expect(page.getByText("Vérifiez vos e-mails")).toBeVisible();
+  await request.post(`${FAUX}/test/confirmer`, { data: { email: "chloe.petit@example.org" } });
+  await connexion(page, "chloe.petit@example.org", "paniers-chloe-2026");
+  await page.waitForURL("**/espace");
+  if (await page.getByRole("button", { name: "Annuler ma commande" }).isVisible()) {
+    await page.getByRole("button", { name: "Annuler ma commande" }).click();
+    await expect(page.getByRole("link", { name: "Commander" }).first()).toBeVisible();
+  }
+  await page.getByRole("link", { name: "Compte" }).click();
+  await page.getByRole("button", { name: "Activer les notifications" }).click();
+  await expect(page.getByText("✓ Activées sur ce téléphone")).toBeVisible();
+
+  // Rappel de midi : Chloé seulement (Léa a commandé), une seule fois ; jeton exigé
+  expect((await rappeler("faux-".repeat(10))).status()).toBe(403);
+  const r1 = await rappeler(jeton);
+  expect(r1.ok()).toBe(true);
+  expect(await r1.json()).toMatchObject({ moment: "midi" });
+  await expect.poll(async () => (await pushsRecus(request, "chloe")).length).toBe(1);
+  await rappeler(jeton);
+  expect(await pushsRecus(request, "chloe")).toHaveLength(1);
+  expect(await pushsRecus(request, "lea")).toHaveLength(3);
+  await deconnexion(page);
+
+  // Annonce de la composition de la semaine prochaine : tous les abonnés, une fois
+  await connexion(page, "admin@demo.fr", "demo-demo-demo");
+  await page.waitForURL("**/livraisons**");
+  await page.goto("/reglages/composition");
+  await page.getByRole("link", { name: "Semaine suivante ›" }).click();
+  await page.getByLabel("Panier 30 €").fill("1 kg de potimarron\nBlettes\n4 pommes");
+  await expect(page.getByLabel(/Prévenir les clients par notification/)).toBeChecked();
+  await page.getByRole("button", { name: "Enregistrer la composition" }).click();
+  await expect(page.getByText(/✓ Composition enregistrée · 2 téléphones prévenus/)).toBeVisible();
+  await expect.poll(async () => (await pushsRecus(request, "chloe")).length).toBe(2);
+  expect(await pushsRecus(request, "lea")).toHaveLength(4);
+  await page.reload();
+  await expect(page.getByText(/📣 Clients prévenus/)).toBeVisible();
+
+  // Léa est livrée : elle reçoit le merci
+  await page.goto("/clients");
+  await page.getByLabel("Rechercher un client").fill("lea robert");
+  await page.getByRole("link", { name: /Léa Robert/ }).click();
+  await page.getByRole("link", { name: "Voir la commande" }).click();
+  await page.getByRole("link", { name: "Voir dans la tournée" }).click();
+  const lea = page.getByRole("region", { name: /^Arrêt \d+ : Léa Robert$/ });
+  await lea.getByRole("button", { name: "Livré", exact: true }).click();
+  await expect(lea.getByRole("button", { name: /✓ Livré/ })).toBeVisible();
+  await expect.poll(async () => (await pushsRecus(request, "lea")).length).toBe(5);
+  await deconnexion(page);
+
+  // Elle donne son avis depuis son accueil
+  await connexion(page, LEA.email, LEA.motDePasse);
+  await page.waitForURL("**/espace");
+  await page.getByRole("link", { name: /Comment était votre panier/ }).click();
+  await page.getByRole("radio", { name: /^2 étoiles/ }).click();
+  await page.getByLabel("Un commentaire ? (facultatif)").fill("Une salade un peu abîmée");
+  await page.getByRole("button", { name: "Envoyer mon avis" }).click();
+  await expect(page.getByText("Votre avis est transmis à l'équipe.")).toBeVisible();
+  await expect
+    .poll(async () =>
+      ((await (await request.get(`${FAUX}/test/emails`)).json()) as { subject: string }[]).some(
+        (e) => e.subject === "⚠️ Avis de Léa Robert (lea.robert@example.org) : ★★☆☆☆ (2/5)",
+      ),
+    )
+    .toBe(true);
+  await page.goto("/espace/commandes");
+  await expect(page.getByText(/Votre avis : ★★☆☆☆/).first()).toBeVisible();
+  await deconnexion(page);
+
+  // L'équipe voit le retour et le traite ; on remet la tournée et la clôture comme avant
+  await connexion(page, "admin@demo.fr", "demo-demo-demo");
+  await page.waitForURL("**/livraisons**");
+  await page.goto("/clients");
+  await page.getByRole("link", { name: /Retours clients : 1 à traiter/ }).click();
+  const retour = page.getByRole("region", { name: "Avis de Léa Robert" });
+  await expect(retour).toContainText("« Une salade un peu abîmée »");
+  await retour.getByRole("button", { name: "✓ Traité" }).click();
+  await expect(retour.getByText("Traité", { exact: true })).toBeVisible();
+
+  await retour.getByRole("link", { name: "La commande" }).click();
+  await expect(page.getByText(/Avis du client : ★★☆☆☆ · traité/)).toBeVisible();
+  await page.getByRole("link", { name: "Voir dans la tournée" }).click();
+  await lea.getByRole("button", { name: /✓ Livré/ }).click();
+  await expect(lea.getByRole("button", { name: "Livré", exact: true })).toBeVisible();
+  await page.goto("/reglages/commandes-en-ligne");
+  await page.getByLabel("Jour").selectOption("5");
+  await page.getByLabel("Heure").fill("12:00");
+  await page.getByRole("button", { name: "Enregistrer" }).click();
+  await expect(page.getByText("✓ Enregistré")).toBeVisible();
 });

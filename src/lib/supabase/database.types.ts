@@ -48,6 +48,21 @@ export type Database = {
         }
         Relationships: []
       }
+      annonces_composition: {
+        Row: {
+          envoyee_le: string
+          semaine: string
+        }
+        Insert: {
+          envoyee_le?: string
+          semaine: string
+        }
+        Update: {
+          envoyee_le?: string
+          semaine?: string
+        }
+        Relationships: []
+      }
       articles: {
         Row: {
           actif: boolean
@@ -83,6 +98,41 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      avis_livraison: {
+        Row: {
+          commande_id: string
+          commentaire: string | null
+          created_at: string
+          note: number | null
+          traite_le: string | null
+          updated_at: string
+        }
+        Insert: {
+          commande_id: string
+          commentaire?: string | null
+          created_at?: string
+          note?: number | null
+          traite_le?: string | null
+          updated_at?: string
+        }
+        Update: {
+          commande_id?: string
+          commentaire?: string | null
+          created_at?: string
+          note?: number | null
+          traite_le?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "avis_livraison_commande_id_fkey"
+            columns: ["commande_id"]
+            isOneToOne: true
+            referencedRelation: "commandes"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       cadeaux: {
         Row: {
@@ -570,6 +620,49 @@ export type Database = {
         }
         Relationships: []
       }
+      rappels_envoyes: {
+        Row: {
+          client_id: string
+          date_livraison: string
+          envoye_le: string
+          moment: string
+        }
+        Insert: {
+          client_id: string
+          date_livraison: string
+          envoye_le?: string
+          moment: string
+        }
+        Update: {
+          client_id?: string
+          date_livraison?: string
+          envoye_le?: string
+          moment?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rappels_envoyes_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rappels_envoyes_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "confitures_parrain_dues"
+            referencedColumns: ["filleul_id"]
+          },
+          {
+            foreignKeyName: "rappels_envoyes_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "fidelite_clients"
+            referencedColumns: ["client_id"]
+          },
+        ]
+      }
       recompenses: {
         Row: {
           type: Database["public"]["Enums"]["type_recompense"]
@@ -940,6 +1033,10 @@ export type Database = {
       }
     }
     Functions: {
+      abonnements_clients_actifs: {
+        Args: never
+        Returns: { auth: string; client_id: string; endpoint: string; p256dh: string }[]
+      }
       abonnements_du_client: {
         Args: { p_client_id: string }
         Returns: { auth: string; endpoint: string; p256dh: string }[]
@@ -947,11 +1044,16 @@ export type Database = {
       annuler_ma_commande: { Args: { p_commande_id: string }; Returns: undefined }
       cle_publique_push: { Args: never; Returns: string }
       cles_push: { Args: never; Returns: Json }
+      cles_push_robot: { Args: { p_jeton: string }; Returns: Json }
       changer_statut_commande: {
         Args: {
           p_commande_id: string
           p_statut: Database["public"]["Enums"]["statut_commande"]
         }
+        Returns: undefined
+      }
+      donner_mon_avis: {
+        Args: { p_commande_id: string; p_commentaire: string; p_note: number }
         Returns: undefined
       }
       demarrer_tournee: { Args: { p_date: string; p_secteur_id: string }; Returns: Json }
@@ -991,6 +1093,7 @@ export type Database = {
         Args: { p_notes_livraison: string; p_telephone: string }
         Returns: undefined
       }
+      noter_url_site: { Args: { p_url: string }; Returns: undefined }
       passer_commande: {
         Args: {
           p_lignes: Json
@@ -1000,12 +1103,27 @@ export type Database = {
         }
         Returns: Json
       }
+      rappels_a_envoyer: {
+        Args: { p_jeton: string; p_moment: string }
+        Returns: {
+          auth: string
+          client_id: string
+          cloture: string
+          date_livraison: string
+          endpoint: string
+          p256dh: string
+          prenom: string
+        }[]
+      }
+      reserver_annonce: { Args: { p_semaine: string }; Returns: boolean }
       reserver_notifications: {
         Args: { p_commandes: string[]; p_type: Database["public"]["Enums"]["type_notification"] }
         Returns: string[]
       }
       supprimer_abonnement_push: { Args: { p_endpoint: string }; Returns: undefined }
+      supprimer_abonnement_robot: { Args: { p_endpoint: string; p_jeton: string }; Returns: undefined }
       supprimer_mon_compte: { Args: never; Returns: undefined }
+      traiter_avis: { Args: { p_commande_id: string; p_traite: boolean }; Returns: undefined }
       valider_inscription: {
         Args: {
           p_client_id?: string
@@ -1042,7 +1160,7 @@ export type Database = {
       source_position: "adresse" | "manuelle"
       statut_commande: "a_livrer" | "livree" | "annulee"
       statut_inscription: "en_attente" | "refusee"
-      type_notification: "depart" | "prochain"
+      type_notification: "depart" | "prochain" | "merci"
       type_recompense: "tampons" | "bienvenue_filleul" | "cadeau_parrain"
     }
     CompositeTypes: {
@@ -1186,7 +1304,7 @@ export const Constants = {
       source_position: ["adresse", "manuelle"],
       statut_commande: ["a_livrer", "livree", "annulee"],
       statut_inscription: ["en_attente", "refusee"],
-      type_notification: ["depart", "prochain"],
+      type_notification: ["depart", "prochain", "merci"],
       type_recompense: ["tampons", "bienvenue_filleul", "cadeau_parrain"],
     },
   },

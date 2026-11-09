@@ -267,3 +267,15 @@ export async function compterTelephonesNotifies(clientId: string): Promise<numbe
   if (error) throw new Error(error.message);
   return data?.length ?? 0;
 }
+
+/** Avis du client sur une commande (équipe), ou null. */
+export async function lireAvisCommande(commandeId: string) {
+  const supabase = await clientSupabase();
+  return verifierOuNull(
+    await supabase
+      .from("avis_livraison")
+      .select("note, commentaire, traite_le")
+      .eq("commande_id", commandeId)
+      .maybeSingle(),
+  );
+}

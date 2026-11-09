@@ -13,6 +13,7 @@ import {
   lireMaFidelite,
   lireMonInscription,
   lireRecompensesProposees,
+  livraisonSansAvis,
 } from "@/lib/espace-client";
 import { GrilleTampons } from "@/components/grille-tampons";
 import { Bouton, Carte, EnTetePage, LienBouton, MessageErreur, MessageInfo } from "@/components/ui";
@@ -71,13 +72,14 @@ export default async function PageEspace({ searchParams }: PageProps<"/espace">)
   if (situation.etat !== "client") redirect("/");
 
   const date = situation.prochaine_livraison;
-  const [catalogue, composition, commande, fidelite, recompenses, clePublique] = await Promise.all([
+  const [catalogue, composition, commande, fidelite, recompenses, clePublique, sansAvis] = await Promise.all([
     lireCatalogue(),
     lireComposition(lundiDeLaSemaine(date ?? aujourdhui())),
     situation.commande_id ? lireCommandeClient(situation.commande_id) : Promise.resolve(null),
     lireMaFidelite(),
     lireRecompensesProposees(),
     clePubliqueVapid(),
+    livraisonSansAvis(),
   ]);
   const suivante = prochaineRecompense(fidelite.solde, fidelite.niveau, recompenses);
   const peutCommander = situation.actif && situation.commandes_ouvertes && date !== null;
@@ -99,6 +101,15 @@ export default async function PageEspace({ searchParams }: PageProps<"/espace">)
           </div>
         )}
         {situation.message_clients && <MessageInfo>{situation.message_clients}</MessageInfo>}
+        {sansAvis && (
+          <Link
+            href={`/espace/avis/${sansAvis.id}`}
+            className="flex min-h-14 items-center justify-between gap-3 rounded-3xl bg-peche-50 px-4 py-3 font-semibold text-peche-900 ring-1 ring-peche-600/30"
+          >
+            <span>🧡 Comment était votre panier du {formaterDate(sansAvis.date_livraison)} ? Donnez votre avis</span>
+            <span aria-hidden>›</span>
+          </Link>
+        )}
         {!situation.actif && (
           <MessageErreur>Votre compte est suspendu pour le moment : contactez-nous pour commander.</MessageErreur>
         )}

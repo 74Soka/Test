@@ -19,10 +19,11 @@ export default async function PageComposition({ searchParams }: PageProps<"/regl
     typeof demandee === "string" && estDateIso(demandee) ? lundiDeLaSemaine(demandee) : parDefaut;
 
   const supabase = await clientSupabase();
-  const [articles, { data: lignes }, { data: precedentes }] = await Promise.all([
+  const [articles, { data: lignes }, { data: precedentes }, { data: annonce }] = await Promise.all([
     listerArticles({ actifsSeulement: true }),
     supabase.from("compositions").select("article_id, contenu").eq("semaine", semaine),
     supabase.from("compositions").select("article_id, contenu").eq("semaine", ajouterJours(semaine, -7)),
+    supabase.from("annonces_composition").select("envoyee_le").eq("semaine", semaine).maybeSingle(),
   ]);
   const paniers = articles.filter((a) => a.categorie === "panier");
   const versDico = (l: { article_id: string; contenu: string }[] | null) =>
@@ -46,6 +47,8 @@ export default async function PageComposition({ searchParams }: PageProps<"/regl
         paniers={paniers.map((p) => ({ id: p.id, nom: p.nom }))}
         initial={versDico(lignes)}
         precedente={versDico(precedentes)}
+        annonceEnvoyee={annonce?.envoyee_le ?? null}
+        annoncable={semaine >= lundiDeLaSemaine(ajd)}
       />
     </>
   );

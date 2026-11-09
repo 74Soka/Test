@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { exigerAdmin } from "@/lib/auth";
 import {
+  lireAvisCommande,
   lireCommande,
   listerArticles,
   listerClients,
@@ -32,7 +33,7 @@ export default async function PageCommande({ params, searchParams }: PageProps<"
   await exigerAdmin();
   const { id } = await params;
   const { enregistree } = await searchParams;
-  const [commande, clients, secteurs, catalogue, fidelite, recompenses, parametres] = await Promise.all([
+  const [commande, clients, secteurs, catalogue, fidelite, recompenses, parametres, avis] = await Promise.all([
     lireCommande(id),
     listerClients(),
     listerSecteurs(),
@@ -40,6 +41,7 @@ export default async function PageCommande({ params, searchParams }: PageProps<"
     listerFidelite(),
     listerRecompenses({ actifsSeulement: true }),
     lireParametresFidelite(),
+    lireAvisCommande(id),
   ]);
   const retour = `/livraisons?du=${commande.date_livraison}`;
 
@@ -75,6 +77,18 @@ export default async function PageCommande({ params, searchParams }: PageProps<"
           >
             Voir dans la tournée
           </Link>
+        )}
+        {avis && (
+          <div className="rounded-2xl bg-peche-50 px-4 py-3 ring-1 ring-peche-600/30">
+            <p className="font-semibold text-peche-900">
+              Avis du client {avis.note !== null && `: ${"★".repeat(avis.note)}${"☆".repeat(5 - avis.note)}`}
+              {avis.traite_le && " · traité"}
+            </p>
+            {avis.commentaire && <p className="text-stone-800">« {avis.commentaire} »</p>}
+            <Link href="/clients/retours" className="text-sm font-semibold text-marque-800 underline">
+              Tous les retours
+            </Link>
+          </div>
         )}
         {commande.source === "client" && (
           <p className="text-sm font-medium text-sky-800">🌐 Commandée en ligne par le client</p>

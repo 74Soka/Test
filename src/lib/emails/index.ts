@@ -1,7 +1,7 @@
 import "server-only";
 import { creerEnvoyeurBrevo, type Email } from "./brevo";
 
-export { alerteCommande, alerteInscription, type DetailCommande, type EvenementCommande } from "./alertes";
+export { alerteAvis, alerteCommande, alerteInscription, type DetailCommande, type EvenementCommande } from "./alertes";
 
 /**
  * Alerte à l'équipe (EMAIL_ALERTES, plusieurs adresses séparées par des

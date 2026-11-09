@@ -74,3 +74,47 @@ export function messageProchain(dureeSecondes: number, maintenant: Date): Messag
 export function dureeEstimee(distanceMetres: number): number {
   return (distanceMetres * 1.3) / (40_000 / 3600);
 }
+
+/** Après la livraison : merci, et un lien pour donner son avis. */
+export function messageMerci(commandeId: string): MessagePush {
+  return {
+    titre: "🧡 Merci pour votre commande !",
+    corps: "Bonne dégustation ! Un souci ou un avis sur votre panier ? Dites-le-nous en un geste.",
+    url: `/espace/avis/${commandeId}`,
+    tag: "merci",
+  };
+}
+
+/** Composition de la semaine publiée : quelques produits et l'heure de clôture. */
+export function messageAnnonce(contenu: string | null, cloture: string | null): MessagePush {
+  const produits = (contenu ?? "")
+    .split("\n")
+    .map((l) => l.trim())
+    .filter(Boolean)
+    .slice(0, 4)
+    .map((l) => l.replace(/^[\d,.]+\s*(kg|g|botte|bottes|barquette|pièces?)?\s*(de |d')?/i, ""))
+    .join(", ");
+  return {
+    titre: "🥕 Les paniers de la semaine sont prêts !",
+    corps: `${produits ? `Au menu : ${produits}… ` : ""}${cloture ? `Commandez avant ${cloture}.` : "Commandez dès maintenant."}`,
+    url: "/espace",
+    tag: "annonce",
+  };
+}
+
+/** Rappel du jeudi : midi, puis dernier rappel le soir. */
+export function messageRappel(moment: "midi" | "soir", prenom: string, cloture: string): MessagePush {
+  return moment === "midi"
+    ? {
+        titre: "🧺 Votre panier de la semaine ?",
+        corps: `${prenom ? `Bonjour ${prenom}, n` : "N"}'oubliez pas de commander avant ${cloture}.`,
+        url: "/espace/commander",
+        tag: "rappel",
+      }
+    : {
+        titre: "⏰ Dernier rappel",
+        corps: `Les commandes ferment ${cloture} : il est encore temps de commander votre panier.`,
+        url: "/espace/commander",
+        tag: "rappel",
+      };
+}
