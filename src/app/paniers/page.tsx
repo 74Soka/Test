@@ -116,6 +116,19 @@ export default async function PagePaniers() {
         </div>
       </section>
 
+      <section
+        aria-label="Déjà client"
+        className="flex flex-col gap-3 rounded-3xl bg-feuille-50 p-5 ring-2 ring-feuille-700 sm:flex-row sm:items-center sm:justify-between"
+      >
+        <div>
+          <h2 className="font-titre text-xl text-feuille-900">Déjà client ?</h2>
+          <p className="text-stone-800">Commandez en ligne, suivez vos livraisons et vos tampons de fidélité.</p>
+        </div>
+        <Link href="/espace" className={`${classesBouton} shrink-0 bg-feuille-700 text-white`}>
+          Mon espace client ›
+        </Link>
+      </section>
+
       <div className="grid gap-4 sm:grid-cols-2">
         {d.paniers.map((p) => {
           const lignes = lignesComposition(p.contenu);
@@ -208,12 +221,9 @@ export default async function PagePaniers() {
             {TELEPHONE_COMMANDES.affiche}
           </a>
         </p>
-        <p className="text-sm">
-          Déjà client ?{" "}
-          <Link href="/espace" className="font-semibold text-marque-800 underline">
-            Mon espace
-          </Link>
-        </p>
+        <Link href="/espace" className={`${classesBouton} bg-feuille-700 text-base text-white`}>
+          Déjà client ? Mon espace client ›
+        </Link>
       </footer>
     </main>
   );

@@ -233,5 +233,6 @@ test("page publique des paniers, sans compte : composition, suppléments, livrai
   await expect(page.getByRole("link", { name: "📞 Appeler" })).toHaveAttribute("href", "tel:+33625502487");
   await expect(page.getByRole("link", { name: "💬 Envoyer un SMS" })).toHaveAttribute("href", "sms:+33625502487");
   await expect(page.getByText("Avant le vendredi 12 h pour la livraison du week-end.")).toBeVisible();
+  await expect(page.getByRole("link", { name: "Mon espace client ›", exact: true })).toHaveAttribute("href", "/espace");
   if (process.env.CAPTURE_PANIERS) await page.screenshot({ path: process.env.CAPTURE_PANIERS, fullPage: true });
 });
