@@ -145,6 +145,7 @@ const schemaInscription = z.object({
   complement: z.string().trim().max(200),
   notesLivraison: z.string().trim().max(500, "500 caractères au plus."),
   parrain: z.string().trim().max(100),
+  connuPar: z.string().trim().max(100).default(""),
 });
 
 export type DemandeInscription = z.input<typeof schemaInscription>;
@@ -195,6 +196,10 @@ export async function envoyerMonInscription(demande: DemandeInscription): Promis
   });
   if (error) return { ok: false, erreur: messageErreur(error) };
 
+  if (d.connuPar) {
+    const { error: e2 } = await supabase.rpc("preciser_connu_par", { p_texte: d.connuPar });
+    if (e2) console.error("Comment nous avez-vous connu :", e2.message);
+  }
   await notifierEquipe("inscription", utilisateur.id);
   await envoyerAlerte({
     ...alerteInscription({
@@ -203,6 +208,7 @@ export async function envoyerMonInscription(demande: DemandeInscription): Promis
       telephone: d.telephone,
       adresse: `${d.adresse.ligne}${d.complement ? `, ${d.complement}` : ""}, ${d.adresse.codePostal} ${d.adresse.commune}`,
       parrain: d.parrain ? `code ${formaterCode(d.parrain)}` : null,
+      connuPar: d.connuPar || null,
       lien: `${await origineDuSite()}/clients/inscriptions`,
     }),
     repondreA: utilisateur.email ?? undefined,

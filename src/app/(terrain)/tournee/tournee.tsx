@@ -47,11 +47,29 @@ export type ArretTournee = {
   totalCentimes: number;
   livree: boolean;
   livreeLe: string | null;
+  /** Payée à la livraison (null : pas encore livrée) */
+  payee: boolean | null;
+  /** Ce que le client devait déjà (+) ou son avoir (−), sans cette commande */
+  duAvantCentimes: number;
 };
 
-type EtatLivraison = { livree: boolean; heure: string | null };
+type EtatLivraison = { livree: boolean; heure: string | null; payee: boolean | null };
 
 const HEURE = new Intl.DateTimeFormat("fr-FR", { timeZone: "Europe/Paris", hour: "2-digit", minute: "2-digit" });
+
+/** Montant à encaisser : le panier, plus ce que le client devait déjà (ou moins son avoir). */
+function AEncaisser({ total, duAvant }: { total: number; duAvant: number }) {
+  if (duAvant === 0) return <p className="mt-1 text-sm text-stone-600">À encaisser : {formaterPrix(total)}</p>;
+  const aPayer = Math.max(0, total + duAvant);
+  return (
+    <p className="mt-1 text-sm">
+      <span className="font-semibold text-amber-900">À encaisser : {formaterPrix(aPayer)}</span>
+      <span className="block text-stone-600">
+        {formaterPrix(total)} {duAvant > 0 ? `+ ${formaterPrix(duAvant)} dus (livraisons précédentes)` : `− ${formaterPrix(-duAvant)} d'avoir`}
+      </span>
+    </p>
+  );
+}
 
 const route = (t: Troncon) => `${formaterDuree(t.dureeSecondes)} · ${formaterDistance(t.distanceMetres)}`;
 
@@ -75,7 +93,7 @@ export function Tournee({
   const parId = useMemo(() => new Map(arrets.map((a) => [a.id, a])), [arrets]);
   const [ordre, setOrdre] = useState(() => arrets.map((a) => a.id));
   const [etats, setEtats] = useState<Record<string, EtatLivraison>>(() =>
-    Object.fromEntries(arrets.map((a) => [a.id, { livree: a.livree, heure: a.livreeLe }])),
+    Object.fromEntries(arrets.map((a) => [a.id, { livree: a.livree, heure: a.livreeLe, payee: a.payee }])),
   );
   const [file, setFile] = useState<ActionLivraison[]>([]);
   const [reorganiser, setReorganiser] = useState(false);
@@ -92,7 +110,9 @@ export function Tournee({
     if (envoiEnCours.current || aEnvoyer.length === 0) return;
     envoiEnCours.current = true;
     try {
-      const { restantes, refus } = await viderFile(aEnvoyer, (a) => marquerLivraison(a.commandeId, a.livree, a.horodatage));
+      const { restantes, refus } = await viderFile(aEnvoyer, (a) =>
+        marquerLivraison(a.commandeId, a.livree, a.horodatage, a.payee ?? true),
+      );
       // Des appuis ont pu arriver pendant l'envoi : on garde ceux qui ne sont pas partis
       setFile((actuelle) => {
         const envoyees = aEnvoyer.filter((a) => !restantes.includes(a));
@@ -114,7 +134,12 @@ export function Tournee({
       setFile(enAttente);
       setEtats((e) => {
         const copie = { ...e };
-        for (const a of enAttente) copie[a.commandeId] = { livree: a.livree, heure: a.livree ? a.horodatage : null };
+        for (const a of enAttente)
+          copie[a.commandeId] = {
+            livree: a.livree,
+            heure: a.livree ? a.horodatage : null,
+            payee: a.livree ? (a.payee ?? true) : null,
+          };
         return copie;
       });
       void vider(enAttente);
@@ -134,10 +159,16 @@ export function Tournee({
     };
   }, [file, vider]);
 
-  function basculer(id: string) {
-    const livree = !etats[id]?.livree;
-    const action: ActionLivraison = { commandeId: id, livree, horodatage: new Date().toISOString() };
-    setEtats((e) => ({ ...e, [id]: { livree, heure: livree ? action.horodatage : null } }));
+  /** Livré et payé, livré sans paiement, ou annulation de la livraison (payee null). */
+  function basculer(id: string, payee: boolean | null) {
+    const livree = payee !== null;
+    const action: ActionLivraison = {
+      commandeId: id,
+      livree,
+      horodatage: new Date().toISOString(),
+      ...(livree ? { payee } : {}),
+    };
+    setEtats((e) => ({ ...e, [id]: { livree, heure: livree ? action.horodatage : null, payee } }));
     setJusteLivre(livree ? id : null);
     const suite = ajouterALaFile(file, action);
     setFile(suite);
@@ -434,7 +465,7 @@ export function Tournee({
                 <p className="mt-2">{a.contenu}</p>
                 {a.offert && <p className="font-medium text-peche-700">🎁 À remettre : {a.offert}</p>}
                 {a.notesCommande && <p className="text-sm text-amber-800">« {a.notesCommande} »</p>}
-                <p className="mt-1 text-sm text-stone-600">À encaisser : {formaterPrix(a.totalCentimes)}</p>
+                <AEncaisser total={a.totalCentimes} duAvant={a.duAvantCentimes} />
 
                 {!reorganiser && (
                   <>
@@ -459,16 +490,25 @@ export function Tournee({
                         <span className="col-span-2 self-center text-sm text-stone-500">Position inconnue</span>
                       )}
                     </div>
-                    <Bouton
-                      taille="grand"
-                      variante={etat?.livree ? "secondaire" : "principal"}
-                      className="mt-2 w-full"
-                      onClick={() => basculer(a.id)}
-                    >
-                      {etat?.livree
-                        ? `✓ Livré${etat.heure ? ` à ${HEURE.format(new Date(etat.heure))}` : ""} · annuler`
-                        : "Livré"}
-                    </Bouton>
+                    {etat?.livree ? (
+                      <Bouton taille="grand" variante="secondaire" className="mt-2 w-full" onClick={() => basculer(a.id, null)}>
+                        {`✓ ${etat.payee === false ? "Livré · non payé" : "Livré et payé"}${etat.heure ? ` à ${HEURE.format(new Date(etat.heure))}` : ""} · annuler`}
+                      </Bouton>
+                    ) : (
+                      <div className="mt-2 grid grid-cols-[2fr_1fr] gap-2">
+                        <Bouton taille="grand" className="w-full" onClick={() => basculer(a.id, true)}>
+                          Livré et payé
+                        </Bouton>
+                        <Bouton taille="grand" variante="secondaire" className="w-full" onClick={() => basculer(a.id, false)}>
+                          Livré
+                        </Bouton>
+                      </div>
+                    )}
+                    {etat?.livree && etat.payee === false && (
+                      <p className="mt-1 text-sm font-medium text-amber-800">
+                        {formaterPrix(a.duAvantCentimes + a.totalCentimes)} à encaisser à la prochaine livraison.
+                      </p>
+                    )}
                     {etat?.livree && a.id === justeLivre && prochain && (
                       <div role="group" aria-label="Arrêt suivant" className="mt-2 rounded-xl bg-marque-50 p-3 ring-1 ring-marque-600/30">
                         <p className="text-sm text-stone-600">

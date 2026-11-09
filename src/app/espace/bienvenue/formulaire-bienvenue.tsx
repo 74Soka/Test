@@ -5,10 +5,12 @@ import { useEffect, useState, useTransition } from "react";
 import { envoyerMonInscription, verifierCodeParrainage, type DemandeInscription } from "../actions";
 import { codeComplet, normaliserCode } from "@/lib/domaine/parrainage";
 import { RechercheAdresse } from "@/components/recherche-adresse";
-import { Bouton, Carte, Champ, MessageErreur, ZoneTexte } from "@/components/ui";
+import { Bouton, Carte, Champ, MessageErreur, Selection, ZoneTexte } from "@/components/ui";
 import type { AdresseTrouvee } from "@/lib/geocodage/types";
 
 type Adresse = NonNullable<DemandeInscription["adresse"]>;
+
+const CONNU_PAR = ["Un proche, le bouche-à-oreille", "Au marché", "Instagram", "Facebook", "Un flyer", "Autre"];
 
 type EtatCode = "vide" | "incomplet" | "verification" | "valide" | "invalide";
 
@@ -48,6 +50,9 @@ export function FormulaireBienvenue({
   const [enCours, demarrer] = useTransition();
   const maj = (partiel: Partial<typeof d>) => setD((x) => ({ ...x, ...partiel }));
   const code = useEtatCode(d.parrain);
+  const [choixConnu, setChoixConnu] = useState(() =>
+    !d.connuPar ? "" : CONNU_PAR.includes(d.connuPar) ? d.connuPar : "Autre",
+  );
   const adresse = d.adresse;
 
   return (
@@ -179,6 +184,31 @@ export function FormulaireBienvenue({
           <p role="status" className="font-semibold text-feuille-700">
             ✓ Code valide
           </p>
+        )}
+        <Selection
+          label="Comment nous avez-vous connu ? (facultatif)"
+          name="connuParChoix"
+          value={choixConnu}
+          onChange={(e) => {
+            setChoixConnu(e.target.value);
+            maj({ connuPar: e.target.value === "Autre" ? "" : e.target.value });
+          }}
+        >
+          <option value="">Choisir…</option>
+          {CONNU_PAR.map((c) => (
+            <option key={c} value={c}>
+              {c}
+            </option>
+          ))}
+        </Selection>
+        {choixConnu === "Autre" && (
+          <Champ
+            label="Précisez"
+            name="connuPar"
+            maxLength={100}
+            value={d.connuPar ?? ""}
+            onChange={(e) => maj({ connuPar: e.target.value })}
+          />
         )}
       </Carte>
 

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { exigerEquipe } from "@/lib/auth";
-import { listerCommandesDuJour, listerSecteurs } from "@/lib/donnees";
+import { listerCommandesDuJour, listerSecteurs, soldesAvant } from "@/lib/donnees";
 import { resumeLignes, totalCommande, articlesOfferts } from "@/lib/domaine/commandes";
 import {
   ajouterJours,
@@ -62,9 +62,13 @@ export default async function PageTournee({ searchParams }: PageProps<"/tournee"
       ).data?.demarree_le ?? null)
     : null;
 
+  const duSecteur = secteur ? commandes.filter((c) => secteurDeLivraison(c) === secteur.id) : [];
+  const dusAvant = await soldesAvant(
+    duSecteur.map((c) => c.client.id),
+    duSecteur.map((c) => c.id),
+  );
   const arrets: ArretTournee[] = secteur
-    ? commandes
-        .filter((c) => secteurDeLivraison(c) === secteur.id)
+    ? duSecteur
         .map((c) => {
           const offerts = articlesOfferts(c.recompenses);
           return {
@@ -82,6 +86,8 @@ export default async function PageTournee({ searchParams }: PageProps<"/tournee"
             totalCentimes: totalCommande(c.lignes),
             livree: c.statut === "livree",
             livreeLe: c.livree_le,
+            payee: c.payee,
+            duAvantCentimes: dusAvant.get(c.client.id) ?? 0,
           };
         })
     : [];

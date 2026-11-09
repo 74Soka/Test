@@ -68,7 +68,15 @@ export default async function PageCommande({ params, searchParams }: PageProps<"
         titre={nomComplet(commande.client)}
         sousTitre={formaterDate(commande.date_livraison, { annee: true })}
         retour={retour}
-        action={<Pastille couleur={COULEUR_STATUT[commande.statut]}>{LIBELLES_STATUT[commande.statut]}</Pastille>}
+        action={
+          <Pastille couleur={commande.statut === "livree" && commande.payee === false ? "orange" : COULEUR_STATUT[commande.statut]}>
+            {commande.statut === "livree"
+              ? commande.payee === false
+                ? "Livrée · non payée"
+                : "Livrée et payée"
+              : LIBELLES_STATUT[commande.statut]}
+          </Pastille>
+        }
       />
       <div className="space-y-4">
         {commande.statut !== "annulee" && (

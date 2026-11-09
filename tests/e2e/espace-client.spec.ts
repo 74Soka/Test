@@ -135,6 +135,7 @@ test("un nouveau client s'inscrit, l'équipe valide, il commande (œufs de fille
   await expect(page).toHaveURL(/\/espace\/bienvenue/);
   await code.fill("emdu 3344");
   await expect(page.getByText("✓ Code valide")).toBeVisible();
+  await page.getByLabel("Comment nous avez-vous connu ? (facultatif)").selectOption("Au marché");
   await page.getByRole("button", { name: "Envoyer mon inscription" }).click();
   await page.waitForURL("**/espace");
   await expect(page.getByText("Inscription reçue, merci !")).toBeVisible();
@@ -160,6 +161,7 @@ test("un nouveau client s'inscrit, l'équipe valide, il commande (œufs de fille
   // Le parrain est retrouvé grâce au code, et déjà choisi
   await expect(carte).toContainText("Code EMDU 3344");
   await expect(carte).toContainText("✓ Emma Dubois");
+  await expect(carte).toContainText("Nous a connusAu marché");
   await carte.getByLabel("Secteur").selectOption({ label: "Toulon Est – Hyères" });
   await carte.getByRole("button", { name: "Valider" }).click();
   await expect(page.getByText("Aucune inscription en attente.")).toBeVisible();

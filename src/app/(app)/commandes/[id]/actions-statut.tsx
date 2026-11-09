@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { changerStatut, supprimerCommande } from "../actions";
+import { marquerLivraison } from "@/app/(terrain)/tournee/actions";
 import { Bouton, MessageErreur } from "@/components/ui";
 import type { Statut } from "@/lib/domaine/commandes";
 
@@ -15,14 +16,26 @@ export function ActionsStatut({ id, statut, retour }: { id: string; statut: Stat
       setErreur(r.ok ? null : r.erreur);
     });
 
+  // Non payée : le montant s'ajoute au compte du client, à encaisser à la prochaine livraison
+  const livrer = (payee: boolean) =>
+    demarrer(async () => {
+      const r = await marquerLivraison(id, true, undefined, payee);
+      setErreur(r.ok ? null : r.erreur);
+    });
+
   return (
     <div className="space-y-2">
       {erreur && <MessageErreur>{erreur}</MessageErreur>}
       {statut === "a_livrer" && (
         <>
-          <Bouton taille="grand" className="w-full" disabled={enCours} onClick={() => changer("livree")}>
-            Marquer comme livrée
-          </Bouton>
+          <div className="grid grid-cols-[2fr_1fr] gap-2">
+            <Bouton taille="grand" className="w-full" disabled={enCours} onClick={() => livrer(true)}>
+              Livrée et payée
+            </Bouton>
+            <Bouton taille="grand" variante="secondaire" className="w-full" disabled={enCours} onClick={() => livrer(false)}>
+              Livrée
+            </Bouton>
+          </div>
           <Bouton
             variante="secondaire"
             className="w-full"

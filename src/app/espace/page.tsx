@@ -4,10 +4,12 @@ import { redirect } from "next/navigation";
 import { exigerClient } from "@/lib/auth";
 import { seDeconnecter } from "@/app/connexion/actions";
 import { aujourdhui, formaterDate, formaterEcheance, lundiDeLaSemaine, majuscule } from "@/lib/domaine/dates";
+import { formaterPrix } from "@/lib/domaine/argent";
 import { pluriel, prochaineRecompense } from "@/lib/domaine/fidelite";
 import { LIBELLES_CRENEAU, libelleSecteur } from "@/lib/domaine/secteurs";
 import {
   lireCatalogue,
+  lireMonSolde,
   lireCommandeClient,
   lireComposition,
   lireMaFidelite,
@@ -72,7 +74,7 @@ export default async function PageEspace({ searchParams }: PageProps<"/espace">)
   if (situation.etat !== "client") redirect("/");
 
   const date = situation.prochaine_livraison;
-  const [catalogue, composition, commande, fidelite, recompenses, clePublique, sansAvis] = await Promise.all([
+  const [catalogue, composition, commande, fidelite, recompenses, clePublique, sansAvis, monSolde] = await Promise.all([
     lireCatalogue(),
     lireComposition(lundiDeLaSemaine(date ?? aujourdhui())),
     situation.commande_id ? lireCommandeClient(situation.commande_id) : Promise.resolve(null),
@@ -80,6 +82,7 @@ export default async function PageEspace({ searchParams }: PageProps<"/espace">)
     lireRecompensesProposees(),
     clePubliqueVapid(),
     livraisonSansAvis(),
+    lireMonSolde(),
   ]);
   const suivante = prochaineRecompense(fidelite.solde, fidelite.niveau, recompenses);
   const peutCommander = situation.actif && situation.commandes_ouvertes && date !== null;
@@ -101,6 +104,16 @@ export default async function PageEspace({ searchParams }: PageProps<"/espace">)
           </div>
         )}
         {situation.message_clients && <MessageInfo>{situation.message_clients}</MessageInfo>}
+        {monSolde > 0 && (
+          <p className="rounded-2xl bg-amber-50 px-4 py-3 font-medium text-amber-900 ring-1 ring-amber-200">
+            Reste à régler : {formaterPrix(monSolde)}. Il sera ajouté à votre prochaine livraison.
+          </p>
+        )}
+        {monSolde < 0 && (
+          <p className="rounded-2xl bg-feuille-50 px-4 py-3 font-medium text-feuille-900 ring-1 ring-feuille-600/30">
+            Vous avez un avoir de {formaterPrix(-monSolde)}, déduit de votre prochaine livraison.
+          </p>
+        )}
         {sansAvis && (
           <Link
             href={`/espace/avis/${sansAvis.id}`}

@@ -67,6 +67,14 @@ l'application.
     /espace/bienvenue (vérifié en direct, « ✓ Code valide » / « Code invalide, veuillez réessayer. ») ; à la
     validation, le parrain est retrouvé et présélectionné. Le client voit et partage son code dans Fidélité.
 
+11. **Paiement à la livraison** (`20261116000000_paiements.sql`, appliquée) : boutons « Livré et payé » / « Livré »
+    (tournée, file hors connexion, page commande). Journal `mouvements_compte` (+ dû, − réglé/avoir), vue
+    `soldes_clients` ; déclencheur sur `commandes.statut/payee` : livraison = +total, payé = règle tout le solde ;
+    annuler la livraison retire ses mouvements. La tournée affiche « À encaisser » avec le dû antérieur. Fiche client :
+    carte « Compte » (paiement reçu, somme due, avoir). Espace client : « Reste à régler ».
+12. **« Comment nous avez-vous connu ? »** (`20261117000000_connu_par.sql`, appliquée) : liste facultative sous le
+    code de parrainage, `inscriptions.connu_par`, affichée à la validation et dans l'e-mail d'alerte.
+
 ## 3. Comment on travaille avec le propriétaire
 
 - Il n'a **pas d'ordinateur** : tout se fait depuis son téléphone (Supabase, Netlify, GitHub, OVH dans le navigateur).

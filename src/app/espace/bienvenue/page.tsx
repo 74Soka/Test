@@ -46,6 +46,7 @@ export default async function PageBienvenue() {
             complement: inscription?.complement_adresse ?? "",
             notesLivraison: inscription?.notes_livraison ?? "",
             parrain: inscription?.parrain ?? "",
+            connuPar: inscription?.connu_par ?? "",
           }}
         />
         <form action={seDeconnecter}>

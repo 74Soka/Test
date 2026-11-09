@@ -168,3 +168,11 @@ export async function livraisonSansAvis() {
   const avis = await lireMesAvis([derniere.id]);
   return avis.has(derniere.id) ? null : derniere;
 }
+
+/** Ce que le client doit (+) ou son avoir (−), en centimes. */
+export async function lireMonSolde(): Promise<number> {
+  const supabase = await clientSupabase();
+  const { data, error } = await supabase.from("soldes_clients").select("solde_centimes").maybeSingle();
+  if (error) throw new Error(error.message);
+  return data?.solde_centimes ?? 0;
+}

@@ -281,6 +281,7 @@ export type Database = {
       commandes: {
         Row: {
           ordre_tournee: number | null
+          payee: boolean | null
           client_id: string
           created_at: string
           date_livraison: string
@@ -295,6 +296,7 @@ export type Database = {
         }
         Insert: {
           ordre_tournee?: number | null
+          payee?: boolean | null
           client_id: string
           created_at?: string
           date_livraison: string
@@ -309,6 +311,7 @@ export type Database = {
         }
         Update: {
           ordre_tournee?: number | null
+          payee?: boolean | null
           client_id?: string
           created_at?: string
           date_livraison?: string
@@ -428,6 +431,7 @@ export type Database = {
           code_postal: string
           commune: string
           complement_adresse: string | null
+          connu_par: string | null
           created_at: string
           email: string
           lat: number | null
@@ -447,6 +451,7 @@ export type Database = {
           code_postal: string
           commune: string
           complement_adresse?: string | null
+          connu_par?: string | null
           created_at?: string
           email: string
           lat?: number | null
@@ -466,6 +471,7 @@ export type Database = {
           code_postal?: string
           commune?: string
           complement_adresse?: string | null
+          connu_par?: string | null
           created_at?: string
           email?: string
           lat?: number | null
@@ -552,6 +558,54 @@ export type Database = {
           titre?: string
         }
         Relationships: []
+      }
+      mouvements_compte: {
+        Row: {
+          client_id: string
+          commande_id: string | null
+          created_at: string
+          id: string
+          montant_centimes: number
+          motif: string
+          note: string | null
+          par: string | null
+        }
+        Insert: {
+          client_id: string
+          commande_id?: string | null
+          created_at?: string
+          id?: string
+          montant_centimes: number
+          motif: string
+          note?: string | null
+          par?: string | null
+        }
+        Update: {
+          client_id?: string
+          commande_id?: string | null
+          created_at?: string
+          id?: string
+          montant_centimes?: number
+          motif?: string
+          note?: string | null
+          par?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mouvements_compte_commande_id_fkey"
+            columns: ["commande_id"]
+            isOneToOne: false
+            referencedRelation: "commandes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mouvements_compte_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       notifications_envoyees: {
         Row: {
@@ -1034,6 +1088,10 @@ export type Database = {
       }
     }
     Views: {
+      soldes_clients: {
+        Row: { client_id: string | null; solde_centimes: number | null }
+        Relationships: []
+      }
       confitures_parrain_dues: {
         Row: {
           client_id: string | null
@@ -1175,7 +1233,7 @@ export type Database = {
       ma_fidelite: { Args: never; Returns: Json }
       ma_situation: { Args: never; Returns: Json }
       marquer_livraison: {
-        Args: { p_commande_id: string; p_livree: boolean; p_livree_le?: string }
+        Args: { p_commande_id: string; p_livree: boolean; p_livree_le?: string; p_payee?: boolean }
         Returns: undefined
       }
       modifier_mes_coordonnees: {
@@ -1193,6 +1251,7 @@ export type Database = {
         }
         Returns: Json
       }
+      preciser_connu_par: { Args: { p_texte: string }; Returns: undefined }
       rappels_a_envoyer: {
         Args: { p_jeton: string; p_moment: string }
         Returns: {

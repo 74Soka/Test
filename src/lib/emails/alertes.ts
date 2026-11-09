@@ -50,6 +50,7 @@ export function alerteInscription(d: {
   telephone: string;
   adresse: string;
   parrain: string | null;
+  connuPar?: string | null;
   lien: string;
 }): { sujet: string; texte: string } {
   return {
@@ -61,6 +62,7 @@ export function alerteInscription(d: {
       `Téléphone : ${d.telephone}`,
       `Adresse : ${d.adresse}`,
       ...(d.parrain ? [`Parrainé par : ${d.parrain}`] : []),
+      ...(d.connuPar ? [`Nous a connus : ${d.connuPar}`] : []),
       "",
       `Valider l'inscription : ${d.lien}`,
     ].join("\n"),

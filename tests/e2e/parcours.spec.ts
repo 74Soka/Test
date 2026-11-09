@@ -124,14 +124,34 @@ test("recommander comme la dernière fois, puis doublon de semaine refusé", asy
   await expect(page).toHaveURL(/\/commandes\/[0-9a-f-]{36}$/);
 });
 
-test("statut : livrée (horodatée), puis remise à livrer", async ({ page }) => {
+test("statut : livrée sans paiement (le compte du client le garde), puis remise à livrer", async ({ page }) => {
   await seConnecter(page);
   await ouvrirFiche(page, "essai", /Zoé Essai/);
   await page.getByRole("link", { name: "Voir la commande" }).click();
-  await page.getByRole("button", { name: "Marquer comme livrée" }).click();
+  await page.waitForURL(/\/commandes\/[0-9a-f-]{36}/);
+  const commande = page.url();
+  await page.getByRole("button", { name: "Livrée", exact: true }).click();
   await expect(page.getByText(/^Livrée le .+ à \d{2}:\d{2}$/)).toBeVisible();
+  await expect(page.getByText("Livrée · non payée")).toBeVisible();
+
+  // Le compte de Zoé : le montant de la commande est dû
+  await ouvrirFiche(page, "essai", /Zoé Essai/);
+  const compte = page.getByRole("region", { name: "Compte du client" });
+  await expect(compte).toContainText(/\d+\s€ dus/);
+  // Paiement reçu à part, puis annulé (erreur de saisie)
+  await compte.getByRole("button", { name: "Noter un paiement ou corriger" }).click();
+  await compte.getByLabel("Montant (€)").fill("5");
+  await compte.getByLabel("Note (facultatif)").fill("Virement");
+  await compte.getByRole("button", { name: "Enregistrer" }).click();
+  await expect(compte).toContainText("Virement");
+  await compte.getByRole("button", { name: "Supprimer ce mouvement" }).click();
+  await expect(compte).not.toContainText("Virement");
+
+  await page.goto(commande);
   await page.getByRole("button", { name: /Annuler la livraison/ }).click();
-  await expect(page.getByRole("button", { name: "Marquer comme livrée" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Livrée et payée" })).toBeVisible();
+  await ouvrirFiche(page, "essai", /Zoé Essai/);
+  await expect(page.getByRole("region", { name: "Compte du client" })).toContainText("À jour");
 });
 
 test("secteur pour une seule livraison : le dimanche, puis retour au secteur habituel", async ({ page }) => {
@@ -276,9 +296,11 @@ test("tournée : carte et temps par les routes, ordre optimisé, réorganisation
 
   // Livré : bouton, départ immédiat vers le suivant avec Waze, puis annulation
   const premier = arrets.first();
-  const suivant = (await arrets.nth(1).getAttribute("aria-label"))!.replace(/^Arrêt 2 : /, "");
   await premier.getByRole("button", { name: "Livré", exact: true }).click();
-  await expect(premier.getByRole("button", { name: /✓ Livré à \d{2}:\d{2} · annuler/ })).toBeVisible();
+  // Le suivant : l'arrêt n° 2 tel qu'il est affiché après l'appui
+  const suivant = (await arrets.nth(1).getAttribute("aria-label"))!.replace(/^Arrêt 2 : /, "");
+  await expect(premier.getByRole("button", { name: /✓ Livré · non payé à \d{2}:\d{2} · annuler/ })).toBeVisible();
+  await expect(premier.getByText(/à encaisser à la prochaine livraison/)).toBeVisible();
   const ensuite = premier.getByRole("group", { name: "Arrêt suivant" });
   await expect(ensuite.getByText(`2. ${suivant}`)).toBeVisible();
   await expect(ensuite.getByRole("link", { name: "Y aller avec Waze" })).toHaveAttribute(
@@ -290,6 +312,7 @@ test("tournée : carte et temps par les routes, ordre optimisé, réorganisation
   await expect(arrets.first().getByRole("button", { name: /✓ Livré/ })).toBeVisible();
   await arrets.first().getByRole("button", { name: /✓ Livré/ }).click();
   await expect(arrets.first().getByRole("button", { name: "Livré", exact: true })).toBeVisible();
+  await expect(arrets.first().getByRole("button", { name: "Livré et payé" })).toBeVisible();
 });
 
 test("tournée hors connexion : l'appui « Livré » attend le réseau puis part tout seul", async ({ page, context }) => {

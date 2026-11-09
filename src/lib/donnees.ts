@@ -179,7 +179,7 @@ export async function listerArticles(options: { actifsSeulement?: boolean } = {}
 }
 export type Article = Awaited<ReturnType<typeof listerArticles>>[number];
 
-const CHAMPS_COMMANDE = `id, client_id, date_livraison, statut, livree_le, notes, source, secteur_id,
+const CHAMPS_COMMANDE = `id, client_id, date_livraison, statut, livree_le, notes, source, secteur_id, payee,
   client:clients(id, nom, prenom, adresse, complement_adresse, code_postal, commune, telephone, secteur_id, notes_livraison, actif),
   lignes:lignes_commande(article_id, libelle, categorie, quantite, prix_unitaire_centimes),
   recompenses:recompenses_utilisees(id, recompense_id, nom, cout_tampons, cadeaux(article_id, libelle, categorie, quantite))` as const;
@@ -230,7 +230,7 @@ export async function compterCommandesClient(clientId: string): Promise<number> 
   return count ?? 0;
 }
 
-const CHAMPS_TOURNEE = `id, date_livraison, statut, livree_le, notes, ordre_tournee, secteur_id,
+const CHAMPS_TOURNEE = `id, date_livraison, statut, livree_le, notes, ordre_tournee, secteur_id, payee,
   client:clients(id, nom, prenom, adresse, complement_adresse, code_postal, commune, telephone, secteur_id, notes_livraison, lat, lng),
   lignes:lignes_commande(article_id, libelle, categorie, quantite, prix_unitaire_centimes),
   recompenses:recompenses_utilisees(id, nom, cadeaux(article_id, libelle, categorie, quantite))` as const;
@@ -278,4 +278,36 @@ export async function lireAvisCommande(commandeId: string) {
       .eq("commande_id", commandeId)
       .maybeSingle(),
   );
+}
+
+/**
+ * Ce que chaque client devait avant ces commandes (+ = dû, − = avoir) :
+ * son compte, sans les mouvements des commandes données.
+ */
+export async function soldesAvant(clientIds: string[], commandeIds: string[]): Promise<Map<string, number>> {
+  const resultat = new Map<string, number>();
+  if (!clientIds.length) return resultat;
+  const supabase = await clientSupabase();
+  const lignes = verifier(
+    await supabase.from("mouvements_compte").select("client_id, commande_id, montant_centimes").in("client_id", clientIds),
+  );
+  const exclues = new Set(commandeIds);
+  for (const l of lignes) {
+    if (l.commande_id && exclues.has(l.commande_id)) continue;
+    resultat.set(l.client_id, (resultat.get(l.client_id) ?? 0) + l.montant_centimes);
+  }
+  return resultat;
+}
+
+/** Compte d'un client : solde et derniers mouvements. */
+export async function lireCompteClient(clientId: string) {
+  const supabase = await clientSupabase();
+  const mouvements = verifier(
+    await supabase
+      .from("mouvements_compte")
+      .select("id, montant_centimes, motif, note, created_at, commande_id, commande:commandes(date_livraison)")
+      .eq("client_id", clientId)
+      .order("created_at", { ascending: false }),
+  );
+  return { solde: mouvements.reduce((t, m) => t + m.montant_centimes, 0), mouvements: mouvements.slice(0, 15) };
 }

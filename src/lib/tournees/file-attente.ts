@@ -6,6 +6,8 @@
 export type ActionLivraison = {
   commandeId: string;
   livree: boolean;
+  /** Payé à la livraison (absent dans les appuis enregistrés avant : payé) */
+  payee?: boolean;
   /** Heure de l'appui (ISO), conservée comme heure de livraison */
   horodatage: string;
 };
@@ -48,7 +50,10 @@ export function lireFile(stockage: Pick<Storage, "getItem"> | undefined): Action
     return Array.isArray(valeur)
       ? valeur.filter(
           (a): a is ActionLivraison =>
-            typeof a?.commandeId === "string" && typeof a?.livree === "boolean" && typeof a?.horodatage === "string",
+            typeof a?.commandeId === "string" &&
+            typeof a?.livree === "boolean" &&
+            typeof a?.horodatage === "string" &&
+            (a.payee === undefined || typeof a.payee === "boolean"),
         )
       : [];
   } catch {

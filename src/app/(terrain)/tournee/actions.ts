@@ -94,8 +94,16 @@ export async function demarrerTournee(date: string, secteurId: string): Promise<
   }
 }
 
-/** Livré / pas livré. `horodatage` : heure de l'appui (envoyé plus tard si hors connexion). */
-export async function marquerLivraison(commandeId: string, livree: boolean, horodatage?: string): Promise<Resultat> {
+/**
+ * Livré (payé ou non) / pas livré. `horodatage` : heure de l'appui (envoyé plus tard si hors connexion).
+ * Non payé : le montant s'ajoute au compte du client, à encaisser à la prochaine livraison.
+ */
+export async function marquerLivraison(
+  commandeId: string,
+  livree: boolean,
+  horodatage?: string,
+  payee = true,
+): Promise<Resultat> {
   await exigerEquipe();
   if (!z.uuid().safeParse(commandeId).success) return { ok: false, erreur: "Commande inconnue." };
   const heure = horodatage && !Number.isNaN(Date.parse(horodatage)) ? new Date(horodatage).toISOString() : undefined;
@@ -104,6 +112,7 @@ export async function marquerLivraison(commandeId: string, livree: boolean, horo
     p_commande_id: commandeId,
     p_livree: livree,
     p_livree_le: heure,
+    p_payee: payee,
   });
   if (error) return { ok: false, erreur: messageErreur(error) };
 

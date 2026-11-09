@@ -74,6 +74,12 @@ export default async function PageInscriptions() {
                       <dd>{i.notes_livraison}</dd>
                     </>
                   )}
+                  {i.connu_par && (
+                    <>
+                      <dt className="text-stone-500">Nous a connus</dt>
+                      <dd>{i.connu_par}</dd>
+                    </>
+                  )}
                   {i.parrain && (
                     <>
                       <dt className="text-stone-500">Parrain</dt>

@@ -4,6 +4,7 @@ import { exigerAdmin } from "@/lib/auth";
 import {
   commandeDeLaSemaine,
   aUnCompteEnLigne,
+  lireCompteClient,
   compterTelephonesNotifies,
   lireClient,
   lireFideliteClient,
@@ -31,6 +32,7 @@ import {
 } from "@/components/ui";
 import { BoutonActivite } from "./bouton-activite";
 import { CarteFidelite } from "./carte-fidelite";
+import { CompteClient } from "./compte-client";
 import { formaterCode } from "@/lib/domaine/parrainage";
 
 export const metadata: Metadata = { title: "Fiche client" };
@@ -44,7 +46,7 @@ const COULEUR_STATUT: Record<Statut, "orange" | "vert" | "gris"> = {
 export default async function PageClient({ params }: PageProps<"/clients/[id]">) {
   await exigerAdmin();
   const { id } = await params;
-  const [{ client, parrain, filleuls, commandes }, secteurs, fidelite, recompenses, parametres, compteEnLigne] =
+  const [{ client, parrain, filleuls, commandes }, secteurs, fidelite, recompenses, parametres, compteEnLigne, compte] =
     await Promise.all([
       lireClient(id),
       listerSecteurs(),
@@ -52,6 +54,7 @@ export default async function PageClient({ params }: PageProps<"/clients/[id]">)
       listerRecompenses({ actifsSeulement: true }),
       lireParametresFidelite(),
       aUnCompteEnLigne(id),
+      lireCompteClient(id),
     ]);
   const telephones = compteEnLigne ? await compterTelephonesNotifies(id) : 0;
   const secteur = secteurs.find((s) => s.id === client.secteur_id);
@@ -127,6 +130,8 @@ export default async function PageClient({ params }: PageProps<"/clients/[id]">)
             )}
           </Carte>
         )}
+
+        <CompteClient clientId={id} solde={compte.solde} mouvements={compte.mouvements} />
 
         <CarteFidelite clientId={id} fidelite={fidelite} recompenses={recompenses} parametres={parametres} />
 
