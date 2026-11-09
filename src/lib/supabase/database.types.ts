@@ -520,6 +520,36 @@ export type Database = {
           },
         ]
       }
+      messages_clients: {
+        Row: {
+          corps: string
+          envoye_le: string
+          envoye_par: string | null
+          id: string
+          lien: string
+          telephones: number | null
+          titre: string
+        }
+        Insert: {
+          corps: string
+          envoye_le?: string
+          envoye_par?: string | null
+          id?: string
+          lien?: string
+          telephones?: number | null
+          titre: string
+        }
+        Update: {
+          corps?: string
+          envoye_le?: string
+          envoye_par?: string | null
+          id?: string
+          lien?: string
+          telephones?: number | null
+          titre?: string
+        }
+        Relationships: []
+      }
       notifications_envoyees: {
         Row: {
           commande_id: string

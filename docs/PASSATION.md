@@ -57,6 +57,10 @@ l'application.
    passée / modifiée / annulée en ligne → `demander_alerte_equipe` (vérifie que c'est bien la sienne, anti-doublon
    2 min) → `pg_net` → `POST /api/alertes` (jeton) → push aux téléphones des admins. S'ajoute aux e-mails Brevo.
 
+9. **Notification libre aux clients** (`20261114000000_messages_clients.sql`, appliquée) : Réglages → « 📣
+   Notification aux clients » (titre 60, message 200, page ouverte au toucher), envoi immédiat à tous les clients
+   actifs abonnés, historique dans `messages_clients`, double envoi refusé pendant 2 min.
+
 ## 3. Comment on travaille avec le propriétaire
 
 - Il n'a **pas d'ordinateur** : tout se fait depuis son téléphone (Supabase, Netlify, GitHub, OVH dans le navigateur).

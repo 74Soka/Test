@@ -10,6 +10,7 @@ import { abonnerTelephoneEquipe, desabonnerTelephoneEquipe } from "./actions-not
 export const metadata: Metadata = { title: "Réglages" };
 
 const LIENS = [
+  { href: "/reglages/messages", titre: "📣 Notification aux clients", detail: "Nouveau produit, information : envoyée tout de suite" },
   { href: "/reglages/composition", titre: "Composition des paniers", detail: "Le contenu des paniers, semaine par semaine" },
   { href: "/reglages/commandes-en-ligne", titre: "Commandes en ligne", detail: "Ouverture, heure de clôture, message aux clients" },
   { href: "/reglages/secteurs", titre: "Secteurs", detail: "Zones, jours et créneaux de livraison, communes couvertes" },

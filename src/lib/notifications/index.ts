@@ -218,15 +218,41 @@ export async function annoncerComposition(semaine: string, contenuPrincipal: str
   const cloture = p ? `${NOMS_JOURS[p.cloture_jour - 1]} ${Number(h)} h${m === "00" ? "" : ` ${m}`}` : null;
   const message = messageAnnonce(contenuPrincipal, cloture);
 
+  return envoyerAuxAbonnes(abonnements ?? [], message);
+}
+
+/** Envoie un message à une liste de téléphones ; renvoie le nombre atteints. */
+async function envoyerAuxAbonnes(
+  abonnements: { endpoint: string; p256dh: string; auth: string }[],
+  message: MessagePush,
+): Promise<number> {
+  if (!abonnements.length) return 0;
+  const supabase = await clientSupabase();
   const envoyeur = creerEnvoyeurPush({ cles: await clesVapid(), sujet: await sujetVapid() });
   const resultats = await Promise.all(
-    (abonnements ?? []).map(async (a) => {
+    abonnements.map(async (a) => {
       const r = await envoyeur.envoyer(a, message);
       if (r === "expire") await supabase.rpc("supprimer_abonnement_push", { p_endpoint: a.endpoint });
       return r;
     }),
   );
   return resultats.filter((r) => r === "envoye").length;
+}
+
+/** Téléphones des clients actifs abonnés aux notifications. */
+export async function compterTelephonesClients(): Promise<number> {
+  const supabase = await clientSupabase();
+  const { data, error } = await supabase.rpc("abonnements_clients_actifs");
+  if (error) throw new Error(error.message);
+  return data?.length ?? 0;
+}
+
+/** Message libre de l'équipe à tous les clients abonnés ; renvoie le nombre de téléphones atteints. */
+export async function envoyerMessageClients(message: MessagePush): Promise<number> {
+  const supabase = await clientSupabase();
+  const { data: abonnements, error } = await supabase.rpc("abonnements_clients_actifs");
+  if (error) throw new Error(error.message);
+  return envoyerAuxAbonnes(abonnements ?? [], message);
 }
 
 

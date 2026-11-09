@@ -326,3 +326,35 @@ test("les administrateurs sont prévenus sur leur téléphone d'une commande en 
   await expect.poll(async () => (await pushsRecus(request, "admin")).length).toBe(avant + 1);
   expect(await (await envoyer(jeton)).json()).toEqual({ alertes: 0, envoyes: 0 });
 });
+
+test("l'administrateur envoie une notification libre à tous les clients abonnés", async ({ page, request }) => {
+  const avantLea = (await pushsRecus(request, "lea")).length;
+  const avantChloe = (await pushsRecus(request, "chloe")).length;
+  const avantAdmin = (await pushsRecus(request, "admin")).length;
+
+  await connexion(page, "admin@demo.fr", "demo-demo-demo");
+  await page.waitForURL("**/livraisons**");
+  await page.goto("/reglages");
+  await page.getByRole("link", { name: /Notification aux clients/ }).click();
+  await expect(page.getByText(/Envoyée tout de suite à 2 téléphones/)).toBeVisible();
+
+  await page.getByLabel("Titre").fill("🍓 Les fraises sont arrivées !");
+  await page.getByLabel("Message").fill("Barquettes de 500 g BIO, à ajouter à votre panier cette semaine.");
+  await page.getByLabel("Quand le client touche la notification").selectOption("/espace/commander");
+  await expect(page.getByRole("region", { name: "Aperçu" })).toContainText("Les fraises sont arrivées");
+  await page.getByRole("button", { name: "Envoyer à 2 téléphones" }).click();
+  await expect(page.getByText("✓ Notification envoyée à 2 téléphones")).toBeVisible();
+
+  // Les deux clientes abonnées, pas le téléphone de l'administrateur
+  await expect.poll(async () => (await pushsRecus(request, "lea")).length).toBe(avantLea + 1);
+  expect(await pushsRecus(request, "chloe")).toHaveLength(avantChloe + 1);
+  expect(await pushsRecus(request, "admin")).toHaveLength(avantAdmin);
+
+  // Historique ; un double envoi du même message est refusé
+  await page.reload();
+  await expect(page.getByRole("region", { name: "Historique des envois" })).toContainText("2 téléphones · Commander");
+  await page.getByLabel("Titre").fill("🍓 Les fraises sont arrivées !");
+  await page.getByLabel("Message").fill("Barquettes de 500 g BIO, à ajouter à votre panier cette semaine.");
+  await page.getByRole("button", { name: "Envoyer à 2 téléphones" }).click();
+  await expect(page.getByText("Ce message vient déjà d'être envoyé.")).toBeVisible();
+});

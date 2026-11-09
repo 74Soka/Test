@@ -107,3 +107,28 @@ describe("alertes aux administrateurs", () => {
     ).rejects.toThrow(/permission|Connexion/);
   });
 });
+
+describe("messages libres aux clients", () => {
+  const ecrire = (userId: string) =>
+    comme(userId, (c) =>
+      c.query("insert into public.messages_clients (titre, corps) values ('Nouveau', 'Des fraises') returning envoye_par"),
+    );
+
+  it("seul un administrateur peut en envoyer et lire l'historique", async () => {
+    const { rows } = await ecrire(admin);
+    expect(rows[0].envoye_par).toBe(admin);
+    await expect(ecrire(livreur)).rejects.toThrow(/row-level security/);
+    const { compte } = await clientEnLigneAvecCommande();
+    await expect(ecrire(compte)).rejects.toThrow(/row-level security/);
+    const lus = await comme(compte, async (c) => (await c.query("select * from public.messages_clients")).rows);
+    expect(lus).toHaveLength(0);
+  });
+
+  it("refuse un lien vers une autre page que celles prévues", async () => {
+    await expect(
+      comme(admin, (c) =>
+        c.query("insert into public.messages_clients (titre, corps, lien) values ('x', 'y', 'https://pirate.example')"),
+      ),
+    ).rejects.toThrow(/check constraint/);
+  });
+});
