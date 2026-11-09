@@ -37,7 +37,7 @@ export default async function PageFidelite() {
       <div className="space-y-4">
         <Carte aria-label="Ma carte" className="space-y-3">
           <div className="flex items-center justify-between gap-2">
-            <p className="font-titre text-2xl text-marque-800">{pluriel(fidelite.solde, "tampon")}</p>
+            <p className="font-titre text-2xl text-marque-800">{pluriel(fidelite.solde, "graine")}</p>
             <Pastille couleur={fidelite.niveau === "standard" ? "gris" : "vert"}>
               {fidelite.niveau === "standard" ? "Client" : `Client ${LIBELLES_NIVEAU[fidelite.niveau]}`}
             </Pastille>
@@ -45,13 +45,13 @@ export default async function PageFidelite() {
           <GrilleTampons solde={fidelite.solde} />
           {suivante ? (
             <p className="text-stone-700">
-              Encore {pluriel(suivante.manque, "tampon")} pour « {suivante.recompense.nom} ».
+              Encore {pluriel(suivante.manque, "graine")} pour « {suivante.recompense.nom} ».
             </p>
           ) : (
             fidelite.solde > 0 && <p className="font-semibold text-peche-700">🎁 Vous pouvez utiliser une récompense à votre prochaine commande !</p>
           )}
           <p className="text-sm text-stone-600">
-            Un tampon par Panier 30 €, deux par Panier 50 €, à chaque livraison. Les récompenses s&apos;utilisent au moment
+            Une graine par Panier 30 €, deux par Panier 50 €, à chaque livraison. Les récompenses s&apos;utilisent au moment
             de commander.
           </p>
         </Carte>
@@ -69,7 +69,7 @@ export default async function PageFidelite() {
                     {r.description && <p className="text-sm text-stone-600">{r.description}</p>}
                   </div>
                   <Pastille couleur={atteinte ? "vert" : accessible ? "gris" : "orange"}>
-                    {accessible ? pluriel(r.cout_tampons, "tampon") : r.niveau === "vip" ? "VIP" : "Ultra"}
+                    {accessible ? pluriel(r.cout_tampons, "graine") : r.niveau === "vip" ? "VIP" : "Ultra"}
                   </Pastille>
                 </li>
               );
@@ -81,8 +81,8 @@ export default async function PageFidelite() {
           <TitreSection>Parrainage</TitreSection>
           <p className="text-stone-700">
             Faites découvrir nos paniers : à l&apos;inscription, votre filleul indique votre code. Vous gagnez{" "}
-            {regles ? pluriel(regles.tampons_parrainage, "tampon") : "des tampons"}, puis{" "}
-            {regles ? pluriel(regles.tampons_parrain_par_commande, "tampon") : "des tampons"} à chacune de ses commandes
+            {regles ? pluriel(regles.tampons_parrainage, "graine") : "des graines"}, puis{" "}
+            {regles ? pluriel(regles.tampons_parrain_par_commande, "graine") : "des graines"} à chacune de ses commandes
             livrées.
             {regles &&
               (regles.parrainage_cadeaux_debut <= aujourdhui()
@@ -121,8 +121,8 @@ export default async function PageFidelite() {
         </Carte>
 
         {tampons.length > 0 && (
-          <Carte aria-label="Historique des tampons">
-            <TitreSection>Derniers tampons</TitreSection>
+          <Carte aria-label="Historique des graines">
+            <TitreSection>Dernières graines 🌱</TitreSection>
             <ul className="divide-y divide-stone-100">
               {tampons.map((t) => (
                 <li key={t.id} className="flex justify-between gap-2 py-1.5">

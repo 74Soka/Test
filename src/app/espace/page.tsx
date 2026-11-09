@@ -169,7 +169,7 @@ export default async function PageEspace({ searchParams }: PageProps<"/espace">)
 
         <Carte aria-label="Ma fidélité" className="space-y-3">
           <div className="flex items-baseline justify-between gap-2">
-            <p className="font-titre text-xl text-marque-800">{pluriel(fidelite.solde, "tampon")}</p>
+            <p className="font-titre text-xl text-marque-800">{pluriel(fidelite.solde, "graine")}</p>
             <Link href="/espace/fidelite" className="text-sm font-semibold text-marque-800 underline">
               Ma carte
             </Link>
@@ -177,7 +177,7 @@ export default async function PageEspace({ searchParams }: PageProps<"/espace">)
           <GrilleTampons solde={fidelite.solde} />
           {suivante && (
             <p className="text-stone-700">
-              Encore {pluriel(suivante.manque, "tampon")} pour « {suivante.recompense.nom} ».
+              Encore {pluriel(suivante.manque, "graine")} pour « {suivante.recompense.nom} ».
             </p>
           )}
         </Carte>

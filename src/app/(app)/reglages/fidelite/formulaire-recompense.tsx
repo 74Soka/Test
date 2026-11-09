@@ -67,7 +67,7 @@ export function FormulaireRecompense({
       />
       {!cadeauParrainage && (
         <Champ
-          label="Coût en tampons"
+          label="Coût en graines"
           name="cout_tampons"
           type="number"
           inputMode="numeric"

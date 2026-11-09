@@ -162,7 +162,7 @@ export function FormulaireCommandeClient({
       <Carte aria-label="Fidélité">
         <TitreSection>Ma fidélité</TitreSection>
         <p className="mb-3 text-stone-700">
-          {pluriel(disponible, "tampon")} disponible{disponible > 1 ? "s" : ""}.
+          {pluriel(disponible, "graine")} disponible{disponible > 1 ? "s" : ""}.
         </p>
         <ul className="space-y-2">
           {cadeauxParrainage.map((r) => (
@@ -235,7 +235,7 @@ export function FormulaireCommandeClient({
                   <div className="min-w-0">
                     <p className="font-semibold">{r.nom}</p>
                     <p className="text-sm text-stone-600">
-                      {pluriel(r.cout_tampons, "tampon")}
+                      {pluriel(r.cout_tampons, "graine")}
                       {r.description ? ` · ${r.description}` : ""}
                       {!accessible &&
                         !/réservé/i.test(r.description ?? "") &&

@@ -9,7 +9,10 @@ export function messageErreur(
   const code = erreur?.code ?? "";
   if (messages[code]) return messages[code]!;
   // Erreurs métier : le message rédigé en français dans la base est affichable tel quel.
-  if (code.startsWith("PN") && erreur?.message) return erreur.message;
+  // (Les points de fidélité s'appellent « graines » à l'écran ; la base dit encore « tampons ».)
+  if (code.startsWith("PN") && erreur?.message) {
+    return erreur.message.replace(/\btampons\b/g, "graines").replace(/\btampon\b/g, "graine");
+  }
   switch (code) {
     case "23505":
       return "Cette valeur existe déjà.";

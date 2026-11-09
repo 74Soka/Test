@@ -27,19 +27,19 @@ export default async function PageFidelite() {
           <TitreSection>En résumé</TitreSection>
           <ul className="list-disc space-y-1 pl-5 text-stone-800">
             {parametres.tampons_bienvenue > 0 && (
-              <li>Nouveau client : {pluriel(parametres.tampons_bienvenue, "tampon")} de bienvenue.</li>
+              <li>Nouveau client : {pluriel(parametres.tampons_bienvenue, "graine")} de bienvenue.</li>
             )}
             {articlesAvecTampons.map((a) => (
               <li key={a.id}>
-                {a.nom} livré : {pluriel(a.tampons, "tampon")}.
+                {a.nom} livré : {pluriel(a.tampons, "graine")}.
               </li>
             ))}
             {parametres.tampons_parrainage > 0 && (
-              <li>Parrainage : {pluriel(parametres.tampons_parrainage, "tampon")} pour le parrain.</li>
+              <li>Parrainage : {pluriel(parametres.tampons_parrainage, "graine")} pour le parrain.</li>
             )}
             {parametres.tampons_parrain_par_commande > 0 && (
               <li>
-                Chaque commande livrée d&apos;un filleul : {pluriel(parametres.tampons_parrain_par_commande, "tampon")} pour
+                Chaque commande livrée d&apos;un filleul : {pluriel(parametres.tampons_parrain_par_commande, "graine")} pour
                 le parrain.
               </li>
             )}
@@ -48,14 +48,14 @@ export default async function PageFidelite() {
               {filleulsLivres}, Ultra à {pluriel(parametres.filleuls_ultra, "filleul")}
               {filleulsLivres}.
             </li>
-            <li>Une récompense utilisée retire ses tampons du solde.</li>
+            <li>Une récompense utilisée retire ses graines du solde.</li>
             <li>
               Parrainage, à partir du {formaterDate(parametres.parrainage_cadeaux_debut, { annee: true })} : à la première
               commande du filleul, œufs offerts au filleul et confiture offerte au parrain.
             </li>
           </ul>
           <p className="mt-2 text-sm text-stone-600">
-            Les tampons par panier se règlent dans{" "}
+            Les graines par panier se règlent dans{" "}
             <Link href="/reglages/catalogue" className="font-semibold text-marque-800 underline">
               Catalogue
             </Link>
@@ -89,7 +89,7 @@ export default async function PageFidelite() {
                   </span>
                   <span className="flex shrink-0 flex-col items-end gap-1">
                     <span className="font-bold tabular-nums">
-                      {r.type === "tampons" ? pluriel(r.cout_tampons, "tampon") : "🎁"}
+                      {r.type === "tampons" ? pluriel(r.cout_tampons, "graine") : "🎁"}
                     </span>
                     {r.type !== "tampons" && <Pastille couleur="orange">Parrainage</Pastille>}
                     {r.niveau !== "standard" && (

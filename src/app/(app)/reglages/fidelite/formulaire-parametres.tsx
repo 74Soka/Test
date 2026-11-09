@@ -9,9 +9,9 @@ const CHAMPS: {
   cle: keyof Omit<DonneesParametres, "filleuls_livres_seulement" | "parrainage_cadeaux_debut">;
   label: string;
 }[] = [
-  { cle: "tampons_bienvenue", label: "Tampons offerts à la création d'un client" },
-  { cle: "tampons_parrainage", label: "Tampons pour le parrain quand on lui rattache un filleul" },
-  { cle: "tampons_parrain_par_commande", label: "Tampons pour le parrain à chaque commande livrée d'un filleul" },
+  { cle: "tampons_bienvenue", label: "Graines offertes à la création d'un client" },
+  { cle: "tampons_parrainage", label: "Graines pour le parrain quand on lui rattache un filleul" },
+  { cle: "tampons_parrain_par_commande", label: "Graines pour le parrain à chaque commande livrée d'un filleul" },
   { cle: "filleuls_vip", label: "Filleuls nécessaires pour être VIP" },
   { cle: "filleuls_ultra", label: "Filleuls nécessaires pour être Ultra" },
 ];
@@ -69,7 +69,7 @@ export function FormulaireParametres({ initial }: { initial: DonneesParametres }
         aide="Seuls les filleuls dont la première commande est livrée à partir de cette date y ont droit."
       />
       <p className="text-sm text-stone-600">
-        Les changements valent pour la suite : les tampons déjà gagnés ne sont pas recalculés.
+        Les changements valent pour la suite : les graines déjà gagnées ne sont pas recalculées.
       </p>
       <Bouton type="submit" className="w-full" disabled={enCours}>
         {enCours ? "Enregistrement…" : "Enregistrer les règles"}

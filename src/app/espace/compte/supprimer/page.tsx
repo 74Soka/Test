@@ -19,7 +19,7 @@ export default async function PageSupprimerCompte({ searchParams }: PageProps<"/
           <li>votre compte ({utilisateur.email}) ;</li>
           <li>vos coordonnées et votre adresse ;</li>
           <li>vos commandes, y compris celle de cette semaine ;</li>
-          <li>vos tampons et récompenses.</li>
+          <li>vos graines et récompenses.</li>
         </ul>
         <form action={supprimerMonCompte} className="space-y-4">
           <label className="flex items-start gap-3">

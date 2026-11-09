@@ -194,7 +194,7 @@ export default async function PagePaniers() {
       >
         <div>
           <h2 className="font-titre text-xl text-feuille-900">Déjà client ?</h2>
-          <p className="text-stone-800">Commandez en ligne, suivez vos livraisons et vos tampons de fidélité.</p>
+          <p className="text-stone-800">Commandez en ligne, suivez vos livraisons et vos graines de fidélité 🌱.</p>
         </div>
         <Link href="/espace" className={`${classesBouton} shrink-0 bg-feuille-700 text-white`}>
           Mon espace client ›

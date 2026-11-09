@@ -1,6 +1,6 @@
 import { cx } from "./ui";
 
-/** Carte à tampons façon papier : 10 cases, les tampons au-delà sont indiqués à part. */
+/** Carte de fidélité : 10 cases, une pousse 🌱 par graine ; au-delà, le nombre en plus. */
 export function GrilleTampons({ solde }: { solde: number }) {
   const remplis = Math.max(0, Math.min(solde, 10));
   return (
@@ -11,10 +11,10 @@ export function GrilleTampons({ solde }: { solde: number }) {
             key={i}
             className={cx(
               "flex size-8 items-center justify-center rounded-full border-2 text-sm",
-              i < remplis ? "border-marque-700 bg-marque-700 text-white" : "border-dashed border-marque-200",
+              i < remplis ? "border-feuille-700 bg-feuille-50" : "border-dashed border-marque-200",
             )}
           >
-            {i < remplis ? "✓" : i + 1 === 5 || i + 1 === 10 ? "🎁" : ""}
+            {i < remplis ? "🌱" : i + 1 === 5 || i + 1 === 10 ? "🎁" : ""}
           </span>
         ))}
       </div>

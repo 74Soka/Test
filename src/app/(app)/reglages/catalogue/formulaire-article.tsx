@@ -70,7 +70,7 @@ export function FormulaireArticle({ id, initial }: { id?: string; initial?: Donn
         aide={id ? "Le nouveau prix s'applique aux prochaines commandes ; les commandes déjà saisies gardent leur prix." : undefined}
       />
       <Champ
-        label="Tampons de fidélité gagnés (par unité livrée)"
+        label="Graines de fidélité gagnées (par unité livrée)"
         name="tampons"
         type="number"
         inputMode="numeric"

@@ -95,7 +95,7 @@ export function RecompensesCommande({
         {niveau !== "standard" && <Pastille couleur={niveau === "ultra" ? "orange" : "bleu"}>{LIBELLES_NIVEAU[niveau]}</Pastille>}
       </div>
       <p className="text-stone-700">
-        Solde : <strong className="tabular-nums">{pluriel(solde, "tampon")}</strong>
+        Solde : <strong className="tabular-nums">{pluriel(solde, "graine")}</strong>
         {valeur.length > 0 && " après les récompenses ci-dessous"}
       </p>
 
@@ -112,7 +112,7 @@ export function RecompensesCommande({
                       .join(", ") || "Rien de choisi"}
                   </p>
                   <p className="text-xs text-stone-500">
-                    {v.cout_tampons > 0 ? pluriel(v.cout_tampons, "tampon") : "Cadeau de parrainage"}
+                    {v.cout_tampons > 0 ? pluriel(v.cout_tampons, "graine") : "Cadeau de parrainage"}
                   </p>
                 </div>
                 <div className="flex shrink-0 flex-col items-end">
@@ -184,9 +184,9 @@ export function RecompensesCommande({
                   <span className="min-w-0 flex-1">
                     <span className="block font-medium">{r.nom}</span>
                     <span className="block text-sm text-stone-600">
-                      {pluriel(r.cout_tampons, "tampon")}
+                      {pluriel(r.cout_tampons, "graine")}
                       {!accessible && ` · réservé aux ${LIBELLES_NIVEAU[r.niveau]}`}
-                      {accessible && manque > 0 && ` · encore ${pluriel(manque, "tampon")}`}
+                      {accessible && manque > 0 && ` · encore ${pluriel(manque, "graine")}`}
                     </span>
                   </span>
                   <Bouton

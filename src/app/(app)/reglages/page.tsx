@@ -15,7 +15,7 @@ const LIENS = [
   { href: "/reglages/commandes-en-ligne", titre: "Commandes en ligne", detail: "Ouverture, heure de clôture, message aux clients" },
   { href: "/reglages/secteurs", titre: "Secteurs", detail: "Zones, jours et créneaux de livraison, communes couvertes" },
   { href: "/reglages/catalogue", titre: "Catalogue", detail: "Paniers et suppléments de saison, prix" },
-  { href: "/reglages/fidelite", titre: "Fidélité et parrainage", detail: "Tampons, récompenses, niveaux VIP et Ultra" },
+  { href: "/reglages/fidelite", titre: "Fidélité et parrainage", detail: "Graines 🌱, récompenses, niveaux VIP et Ultra" },
 ];
 
 export default async function PageReglages() {

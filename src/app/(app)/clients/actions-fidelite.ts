@@ -13,7 +13,7 @@ const schemaAjustement = z.object({
     .int("Nombre entier.")
     .min(-1000)
     .max(1000)
-    .refine((q) => q !== 0, "Indiquez un nombre de tampons différent de 0."),
+    .refine((q) => q !== 0, "Indiquez un nombre de graines différent de 0."),
   note: z.string().trim().min(1, "Indiquez la raison (ex. geste commercial).").max(200),
 });
 

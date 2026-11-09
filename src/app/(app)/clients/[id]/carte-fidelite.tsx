@@ -69,7 +69,7 @@ export function CarteFidelite({
       libelle: d.nom,
       detail:
         d.statut === "annulee"
-          ? "commande annulée : tampons rendus"
+          ? "commande annulée : graines rendues"
           : `commande du ${formaterDateCourte(d.date_livraison)}`,
       lien: `/commandes/${d.commande_id}`,
       barre: d.statut === "annulee",
@@ -89,7 +89,7 @@ export function CarteFidelite({
 
       <p>
         <span className="text-4xl font-bold tabular-nums">{solde}</span>{" "}
-        <span className="text-lg text-stone-700">{Math.abs(solde) > 1 ? "tampons" : "tampon"}</span>
+        <span className="text-lg text-stone-700">{Math.abs(solde) > 1 ? "graines" : "graine"} 🌱</span>
       </p>
       <GrilleTampons solde={solde} />
 
@@ -99,7 +99,7 @@ export function CarteFidelite({
           <ul className="text-sm">
             {disponibles.map((r) => (
               <li key={r.id}>
-                {r.nom} ({pluriel(r.cout_tampons, "tampon")})
+                {r.nom} ({pluriel(r.cout_tampons, "graine")})
               </li>
             ))}
           </ul>
@@ -108,7 +108,7 @@ export function CarteFidelite({
       )}
       {prochaine && (
         <p className="text-stone-700">
-          Encore <strong>{pluriel(prochaine.manque, "tampon")}</strong> pour « {prochaine.recompense.nom} ».
+          Encore <strong>{pluriel(prochaine.manque, "graine")}</strong> pour « {prochaine.recompense.nom} ».
         </p>
       )}
 

@@ -16,7 +16,7 @@ export function AjustementTampons({ clientId }: { clientId: string }) {
   if (!ouvert) {
     return (
       <Bouton variante="discret" taille="petit" className="-ml-3" onClick={() => setOuvert(true)}>
-        Ajouter ou retirer des tampons à la main…
+        Ajouter ou retirer des graines à la main…
       </Bouton>
     );
   }
@@ -39,7 +39,7 @@ export function AjustementTampons({ clientId }: { clientId: string }) {
     >
       {resultat && !resultat.ok && <MessageErreur>{resultat.erreur}</MessageErreur>}
       <Champ
-        label="Tampons (négatif pour en retirer)"
+        label="Graines (négatif pour en retirer)"
         name="quantite"
         type="number"
         inputMode="numeric"

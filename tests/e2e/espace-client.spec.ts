@@ -70,7 +70,7 @@ test("un client déjà connu crée son compte, le retrouve relié à sa fiche et
   const livraison = page.getByRole("region", { name: "Prochaine livraison" });
   await expect(livraison).toContainText(/Commandes et modifications jusqu'au vendredi .+ à 12 h/);
   await expect(page.getByRole("region", { name: "Dans les paniers" })).toContainText("pommes de terre");
-  await expect(page.getByRole("region", { name: "Ma fidélité" })).toContainText("tampon");
+  await expect(page.getByRole("region", { name: "Ma fidélité" })).toContainText("graine");
 
   // Commande (ou modification si la démo lui en a déjà une)
   await page.getByRole("link", { name: /^(Commander|Modifier ma commande)$/ }).first().click();
