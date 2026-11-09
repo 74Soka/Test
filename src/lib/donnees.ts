@@ -259,3 +259,11 @@ export async function aUnCompteEnLigne(clientId: string): Promise<boolean> {
   if (error) throw new Error(error.message);
   return (count ?? 0) > 0;
 }
+
+/** Nombre de téléphones du client abonnés aux notifications (équipe). */
+export async function compterTelephonesNotifies(clientId: string): Promise<number> {
+  const supabase = await clientSupabase();
+  const { data, error } = await supabase.rpc("abonnements_du_client", { p_client_id: clientId });
+  if (error) throw new Error(error.message);
+  return data?.length ?? 0;
+}

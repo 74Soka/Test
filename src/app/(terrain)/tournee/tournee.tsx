@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
-import { enregistrerOrdre, marquerLivraison, optimiserTournee } from "./actions";
+import { demarrerTournee, enregistrerOrdre, marquerLivraison, optimiserTournee } from "./actions";
 import { CarteTournee } from "@/components/carte-tournee";
 import { Bouton, Carte, LienExterneBouton, MessageErreur, MessageInfo, cx } from "@/components/ui";
 import { formaterPrix } from "@/lib/domaine/argent";
@@ -60,12 +60,18 @@ export function Tournee({
   secteur,
   arrets,
   estAdmin,
+  demarreeLe,
 }: {
   date: string;
   secteur: { id: string; nom: string; couleur: string; depart: { lat: number; lng: number; adresse: string } };
   arrets: ArretTournee[];
   estAdmin: boolean;
+  /** Heure de départ de la tournée (clients prévenus), ou null */
+  demarreeLe: string | null;
 }) {
+  const [depart, setDepart] = useState<{ le: string; prevenus?: number; clients?: number } | null>(
+    demarreeLe ? { le: demarreeLe } : null,
+  );
   const parId = useMemo(() => new Map(arrets.map((a) => [a.id, a])), [arrets]);
   const [ordre, setOrdre] = useState(() => arrets.map((a) => a.id));
   const [etats, setEtats] = useState<Record<string, EtatLivraison>>(() =>
@@ -239,6 +245,38 @@ export function Tournee({
         )}
         {itineraire?.cle === cleTrajet && !itineraire?.trajet && itineraire?.raison && (
           <p className="text-sm text-amber-800">Itinéraire par les routes indisponible : {itineraire.raison}</p>
+        )}
+
+        {depart ? (
+          <p role="status" className="text-sm font-medium text-feuille-800">
+            🚚 Tournée démarrée à {HEURE.format(new Date(depart.le))}
+            {depart.clients !== undefined &&
+              ` · ${depart.prevenus} client${depart.prevenus === 1 ? "" : "s"} sur ${depart.clients} prévenu${depart.prevenus === 1 ? "" : "s"} par notification`}
+            . Le client suivant est prévenu à chaque « Livré ».
+          </p>
+        ) : (
+          restants.length > 0 && (
+            <div className="space-y-1">
+              <Bouton
+                taille="grand"
+                className="w-full"
+                disabled={enCours}
+                onClick={() =>
+                  demarrer(async () => {
+                    setErreur(null);
+                    const r = await demarrerTournee(date, secteur.id);
+                    if (!r.ok) return setErreur(r.erreur);
+                    setDepart({ le: r.demarreeLe, prevenus: r.prevenus, clients: r.clients });
+                  })
+                }
+              >
+                {enCours ? "…" : "🚚 Démarrer la tournée"}
+              </Bouton>
+              <p className="text-center text-sm text-stone-600">
+                Les clients qui ont activé les notifications reçoivent leur heure d&apos;arrivée estimée.
+              </p>
+            </div>
+          )
         )}
 
         {prochain ? (

@@ -186,3 +186,34 @@ export async function supprimerMonCompte(formulaire: FormData): Promise<void> {
   await supabase.auth.signOut();
   redirect("/connexion?message=supprime");
 }
+
+// --- Notifications de livraison ---------------------------------------------------
+
+const schemaAbonnement = z.object({
+  endpoint: z.url().max(1000),
+  keys: z.object({ p256dh: z.string().min(20).max(200), auth: z.string().min(8).max(100) }),
+});
+
+/** Abonne ce téléphone aux notifications de livraison. */
+export async function enregistrerMonAbonnement(abonnement: unknown, appareil: string): Promise<Resultat> {
+  await exigerClient();
+  const saisie = schemaAbonnement.safeParse(abonnement);
+  if (!saisie.success) return { ok: false, erreur: "Ce téléphone n'a pas pu être abonné." };
+  const supabase = await clientSupabase();
+  const { error } = await supabase.rpc("enregistrer_abonnement_push", {
+    p_endpoint: saisie.data.endpoint,
+    p_p256dh: saisie.data.keys.p256dh,
+    p_auth: saisie.data.keys.auth,
+    p_appareil: appareil.slice(0, 200),
+  });
+  if (error) return { ok: false, erreur: messageErreur(error) };
+  return { ok: true };
+}
+
+export async function supprimerMonAbonnement(endpoint: string): Promise<Resultat> {
+  await exigerClient();
+  const supabase = await clientSupabase();
+  const { error } = await supabase.rpc("supprimer_abonnement_push", { p_endpoint: endpoint.slice(0, 1000) });
+  if (error) return { ok: false, erreur: messageErreur(error) };
+  return { ok: true };
+}

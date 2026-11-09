@@ -47,6 +47,8 @@ type Compte = { id: string; email: string; motDePasse: string; confirme: boolean
 /** Comptes créés par l'inscription (le compte de démo est à part) */
 const COMPTES = new Map<string, Compte>();
 const EMAILS: unknown[] = [];
+/** Notifications reçues par les faux services de push des téléphones */
+const PUSHS: { endpoint: string; ttl: string | undefined; urgence: string | undefined; octets: number }[] = [];
 
 const DEMO: Compte = { id: UTILISATEUR.id, email: UTILISATEUR.email, motDePasse: MOT_DE_PASSE_DEMO, confirme: true, meta: {} };
 
@@ -328,19 +330,27 @@ async function traiter(req: http.IncomingMessage, url: URL, db: PoolClient): Pro
     const noms = Object.keys(args);
     // Types des paramètres : un tableau Postgres (uuid[]) ne se passe pas comme du JSON
     const { rows: types } = await db.query(
-      `select a.nom, a.type from pg_proc p,
-         unnest(p.proargnames, (p.proargtypes::oid[])::regtype[]::text[]) as a(nom, type)
+      `select a.nom, a.type from pg_proc p
+         join pg_namespace n on n.oid = p.pronamespace and n.nspname = 'public',
+         unnest(coalesce(p.proargnames, '{}'), (p.proargtypes::oid[])::regtype[]::text[]) as a(nom, type)
        where p.proname = $1`,
       [fn],
     );
+    const { rows: retour } = await db.query(
+      "select p.proretset from pg_proc p join pg_namespace n on n.oid = p.pronamespace and n.nspname = 'public' where p.proname = $1",
+      [fn],
+    );
+    const ensemble = retour[0]?.proretset === true;
     const typeDe = (nom: string) => types.find((t: { nom: string }) => t.nom === nom)?.type ?? "";
     const valeur = (nom: string) => {
       const v = args[nom];
       if (Array.isArray(v) && typeDe(nom).endsWith("[]")) return v;
       return typeof v === "object" && v !== null ? JSON.stringify(v) : v;
     };
-    const sql = `select public.${ident(fn)}(${noms.map((n, i) => `${n} => $${i + 1}`).join(", ")}) as r`;
-    const r = await db.query(sql, noms.map(valeur));
+    const appel = `public.${ident(fn)}(${noms.map((n, i) => `${n} => $${i + 1}`).join(", ")})`;
+    // Fonction qui renvoie plusieurs lignes : un tableau d'objets, comme PostgREST
+    if (ensemble) return repondre(res, 200, (await db.query(`select * from ${appel}`, noms.map(valeur))).rows);
+    const r = await db.query(`select ${appel} as r`, noms.map(valeur));
     return repondre(res, 200, r.rows[0].r);
   }
 
@@ -451,6 +461,19 @@ async function demarrer() {
         return repondre(res, 200, { ok: true });
       }
       if (url.pathname === "/test/emails") return repondre(res, 200, EMAILS);
+      if (url.pathname === "/test/pushs") return repondre(res, 200, PUSHS);
+      if (url.pathname.startsWith("/push/") && req.method === "POST") {
+        const morceaux: Buffer[] = [];
+        for await (const m of req) morceaux.push(m as Buffer);
+        if (!String(req.headers.authorization ?? "").startsWith("vapid ")) return repondre(res, 401, {});
+        PUSHS.push({
+          endpoint: url.pathname,
+          ttl: req.headers.ttl as string | undefined,
+          urgence: req.headers.urgency as string | undefined,
+          octets: Buffer.concat(morceaux).length,
+        });
+        return repondre(res, 201);
+      }
       if (url.pathname === "/brevo/v3/smtp/email") {
         if (req.headers["api-key"] !== "cle-brevo-test") return repondre(res, 401, { message: "Key not found" });
         EMAILS.push(await lireCorps(req));

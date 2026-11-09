@@ -17,6 +17,9 @@ const TABLES_PRIVEES = [
   "confitures_parrain_dues",
   "comptes_clients",
   "inscriptions",
+  "abonnements_push",
+  "tournees",
+  "notifications_envoyees",
 ];
 
 /** Vitrine : catalogue actif, récompenses actives, règles, composition des paniers */

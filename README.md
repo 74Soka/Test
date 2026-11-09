@@ -147,9 +147,27 @@ commande vous-même.
 **Alertes e-mail** : à chaque commande, modification ou annulation en ligne, et à chaque nouvelle inscription, un
 e-mail part vers `EMAIL_ALERTES`, avec le détail et le lien vers la commande.
 
+### Notifications de livraison
+
+Les clients activent les notifications depuis leur espace (accueil ou *Compte*). Le jour de la livraison :
+
+- **Démarrer la tournée** (écran Tournée) : chaque client à livrer reçoit « 🚚 Votre livraison est en route ! Vous êtes
+  le 3e arrêt, arrivée estimée vers 10 h 15 ». L'heure vient du temps de route réel jusqu'à chaque arrêt, plus 4 min
+  par arrêt précédent ;
+- à chaque **« Livré »**, le client suivant reçoit « 📍 Vous êtes le prochain ! Le livreur arrive dans environ 12 min ».
+  Un appui fait hors connexion et envoyé plus de 15 min après ne prévient plus personne, pour éviter une alerte en
+  retard ;
+- chaque message ne part qu'une fois par commande, même si l'on touche deux fois le bouton.
+
+Ce sont des notifications web, gratuites, sans App Store : sur Android elles marchent dans Chrome ; sur iPhone (iOS
+16.4 ou plus récent), il faut d'abord **ajouter l'application à l'écran d'accueil** (l'espace client montre comment).
+Sur la fiche d'un client, l'équipe voit combien de téléphones sont abonnés et peut envoyer une notification de test.
+Aucun réglage : les clés de signature sont créées par l'application à la première visite de l'équipe sur la tournée.
+
 #### Mise en service de l'espace client
 
-1. **Base** : coller `supabase/migrations/20261108000000_espace_client.sql` dans l'éditeur SQL de Supabase (*Run*).
+1. **Base** : coller `supabase/migrations/20261108000000_espace_client.sql` puis
+   `supabase/migrations/20261109000000_notifications_livraison.sql` dans l'éditeur SQL de Supabase (*Run*).
 2. **Supabase → Authentication → Sign In / Providers** : activez *Allow new users to sign up* et laissez *Confirm
    email* activé. Ouvrir les inscriptions est sans risque : un compte qui n'est ni dans l'équipe ni relié à une fiche
    ne voit que le catalogue et la composition des paniers (vérifié par les tests de la base).
@@ -314,7 +332,7 @@ L'application ne connaît que l'interface `Geocodeur` (`src/lib/geocodage/types.
 
 > Les migrations ont été appliquées à la main dans l'éditeur SQL du projet. Si vous utilisez un jour la CLI
 > (`supabase db push`), marquez-les d'abord comme appliquées :
-> `npx supabase migration repair --status applied 20261106000000 20261107000000 20261107120000 20261108000000`.
+> `npx supabase migration repair --status applied 20261106000000 20261107000000 20261107120000 20261108000000 20261109000000`.
 
 Ajoutez un **nouveau** fichier dans `supabase/migrations/` (ne modifiez pas un fichier déjà appliqué). Mettez ensuite
 à jour `src/lib/supabase/database.types.ts`, par exemple avec

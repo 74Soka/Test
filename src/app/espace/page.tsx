@@ -16,7 +16,9 @@ import {
 } from "@/lib/espace-client";
 import { GrilleTampons } from "@/components/grille-tampons";
 import { Bouton, Carte, EnTetePage, LienBouton, MessageErreur, MessageInfo } from "@/components/ui";
+import { clePubliqueVapid } from "@/lib/notifications";
 import { BoutonAnnuler } from "./bouton-annuler";
+import { ActivationNotifications } from "./notifications";
 import { CompositionPaniers, RecapCommande } from "./composants";
 
 export const metadata: Metadata = { title: "Mon espace" };
@@ -69,12 +71,13 @@ export default async function PageEspace({ searchParams }: PageProps<"/espace">)
   if (situation.etat !== "client") redirect("/");
 
   const date = situation.prochaine_livraison;
-  const [catalogue, composition, commande, fidelite, recompenses] = await Promise.all([
+  const [catalogue, composition, commande, fidelite, recompenses, clePublique] = await Promise.all([
     lireCatalogue(),
     lireComposition(lundiDeLaSemaine(date ?? aujourdhui())),
     situation.commande_id ? lireCommandeClient(situation.commande_id) : Promise.resolve(null),
     lireMaFidelite(),
     lireRecompensesProposees(),
+    clePubliqueVapid(),
   ]);
   const suivante = prochaineRecompense(fidelite.solde, fidelite.niveau, recompenses);
   const peutCommander = situation.actif && situation.commandes_ouvertes && date !== null;
@@ -142,6 +145,8 @@ export default async function PageEspace({ searchParams }: PageProps<"/espace">)
             )
           )}
         </Carte>
+
+        {commande && <ActivationNotifications clePublique={clePublique} variante="accueil" />}
 
         <CompositionPaniers
           paniers={catalogue.filter((a) => a.categorie === "panier")}

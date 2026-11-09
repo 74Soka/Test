@@ -4,6 +4,7 @@ import { exigerAdmin } from "@/lib/auth";
 import {
   commandeDeLaSemaine,
   aUnCompteEnLigne,
+  compterTelephonesNotifies,
   lireClient,
   lireFideliteClient,
   lireParametresFidelite,
@@ -16,6 +17,7 @@ import { aujourdhui, formaterDate, formaterDateCourte, lundiDeLaSemaine } from "
 import { libelleTournee, prochaineLivraison } from "@/lib/domaine/secteurs";
 import { estMobile, formaterTelephone } from "@/lib/domaine/telephone";
 import { nomComplet } from "@/lib/domaine/texte";
+import { BoutonNotificationTest } from "./bouton-notification-test";
 import { Carte as CarteOsm } from "@/components/carte";
 import {
   Carte,
@@ -50,6 +52,7 @@ export default async function PageClient({ params }: PageProps<"/clients/[id]">)
       lireParametresFidelite(),
       aUnCompteEnLigne(id),
     ]);
+  const telephones = compteEnLigne ? await compterTelephonesNotifies(id) : 0;
   const secteur = secteurs.find((s) => s.id === client.secteur_id);
   const prochaine = secteur ? prochaineLivraison(secteur, aujourdhui()) : null;
   const commandeSemaine = prochaine ? await commandeDeLaSemaine(id, lundiDeLaSemaine(prochaine)) : null;
@@ -181,6 +184,17 @@ export default async function PageClient({ params }: PageProps<"/clients/[id]">)
                     : "Non (ajoutez son e-mail pour qu'il puisse créer son compte)"}
               </dd>
             </div>
+            {compteEnLigne && (
+              <div>
+                <dt className="text-sm text-stone-600">Notifications de livraison</dt>
+                <dd>
+                  {telephones > 0
+                    ? `Activées sur ${telephones} téléphone${telephones > 1 ? "s" : ""}`
+                    : "Pas activées (le client les active depuis son espace)"}
+                  {telephones > 0 && <BoutonNotificationTest clientId={client.id} />}
+                </dd>
+              </div>
+            )}
             <div>
               <dt className="text-sm text-stone-600">Client depuis le</dt>
               <dd>{formaterDate(client.date_inscription, { annee: true })}</dd>

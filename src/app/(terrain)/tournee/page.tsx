@@ -16,6 +16,8 @@ import {
 import { comparerSecteurs, LIBELLES_CRENEAU } from "@/lib/domaine/secteurs";
 import { nomComplet } from "@/lib/domaine/texte";
 import { EnTetePage, EtatVide, PointCouleur, cx } from "@/components/ui";
+import { clesVapid } from "@/lib/notifications";
+import { clientSupabase } from "@/lib/supabase/serveur";
 import { Tournee, type ArretTournee } from "./tournee";
 
 export const metadata: Metadata = { title: "Tournée" };
@@ -40,12 +42,25 @@ export default async function PageTournee({ searchParams }: PageProps<"/tournee"
   }
 
   const commandes = await listerCommandesDuJour(date);
+  // Les clés de notification sont créées à la première visite de l'équipe
+  await clesVapid().catch((e) => console.error("Clés de notification :", e));
   const secteursDuJour = secteurs.filter(
     (s) => s.jour === jourSemaine(date) || commandes.some((c) => c.client.secteur_id === s.id),
   );
   const secteurDemande = typeof sp.secteur === "string" ? sp.secteur : null;
   const secteur = secteursDuJour.find((s) => s.id === secteurDemande) ?? secteursDuJour[0];
   const joursSemaine = joursDeLaSemaine(date).filter((d) => joursTournee.has(jourSemaine(d)));
+
+  const demarreeLe = secteur
+    ? ((
+        await (await clientSupabase())
+          .from("tournees")
+          .select("demarree_le")
+          .eq("date_livraison", date)
+          .eq("secteur_id", secteur.id)
+          .maybeSingle()
+      ).data?.demarree_le ?? null)
+    : null;
 
   const arrets: ArretTournee[] = secteur
     ? commandes
@@ -137,6 +152,7 @@ export default async function PageTournee({ searchParams }: PageProps<"/tournee"
               depart: { lat: secteur.depart_lat, lng: secteur.depart_lng, adresse: secteur.depart_adresse },
             }}
             arrets={arrets}
+            demarreeLe={demarreeLe}
           />
         )}
       </div>

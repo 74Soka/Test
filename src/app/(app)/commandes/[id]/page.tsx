@@ -68,6 +68,14 @@ export default async function PageCommande({ params, searchParams }: PageProps<"
         action={<Pastille couleur={COULEUR_STATUT[commande.statut]}>{LIBELLES_STATUT[commande.statut]}</Pastille>}
       />
       <div className="space-y-4">
+        {commande.statut !== "annulee" && (
+          <Link
+            href={`/tournee?du=${commande.date_livraison}&secteur=${commande.client.secteur_id}`}
+            className="block font-semibold text-marque-800 underline"
+          >
+            Voir dans la tournée
+          </Link>
+        )}
         {commande.source === "client" && (
           <p className="text-sm font-medium text-sky-800">🌐 Commandée en ligne par le client</p>
         )}

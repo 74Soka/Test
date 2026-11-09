@@ -5,13 +5,15 @@ import { seDeconnecter } from "@/app/connexion/actions";
 import { formaterTelephone } from "@/lib/domaine/telephone";
 import { lireMaFiche } from "@/lib/espace-client";
 import { Bouton, Carte, EnTetePage, LienBouton, TitreSection } from "@/components/ui";
+import { clePubliqueVapid } from "@/lib/notifications";
+import { ActivationNotifications } from "../notifications";
 import { FormulaireCoordonnees } from "./formulaire-coordonnees";
 
 export const metadata: Metadata = { title: "Mon compte" };
 
 export default async function PageCompte() {
   const { situation, utilisateur } = await exigerClientRelie();
-  const fiche = await lireMaFiche(situation.client_id);
+  const [fiche, clePublique] = await Promise.all([lireMaFiche(situation.client_id), clePubliqueVapid()]);
 
   return (
     <>
@@ -42,6 +44,8 @@ export default async function PageCompte() {
             notesLivraison={fiche?.notes_livraison ?? ""}
           />
         </Carte>
+
+        <ActivationNotifications clePublique={clePublique} variante="compte" />
 
         <Carte className="space-y-2">
           <LienBouton href="/nouveau-mot-de-passe" variante="secondaire" className="w-full">

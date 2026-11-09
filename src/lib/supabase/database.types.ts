@@ -18,6 +18,36 @@ export type Database = {
   }
   public: {
     Tables: {
+      abonnements_push: {
+        Row: {
+          appareil: string | null
+          auth: string
+          created_at: string
+          endpoint: string
+          id: string
+          p256dh: string
+          user_id: string
+        }
+        Insert: {
+          appareil?: string | null
+          auth: string
+          created_at?: string
+          endpoint: string
+          id?: string
+          p256dh: string
+          user_id: string
+        }
+        Update: {
+          appareil?: string | null
+          auth?: string
+          created_at?: string
+          endpoint?: string
+          id?: string
+          p256dh?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       articles: {
         Row: {
           actif: boolean
@@ -430,6 +460,32 @@ export type Database = {
           },
         ]
       }
+      notifications_envoyees: {
+        Row: {
+          commande_id: string
+          envoyee_le: string
+          type: Database["public"]["Enums"]["type_notification"]
+        }
+        Insert: {
+          commande_id: string
+          envoyee_le?: string
+          type: Database["public"]["Enums"]["type_notification"]
+        }
+        Update: {
+          commande_id?: string
+          envoyee_le?: string
+          type?: Database["public"]["Enums"]["type_notification"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_envoyees_commande_id_fkey"
+            columns: ["commande_id"]
+            isOneToOne: false
+            referencedRelation: "commandes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       parametres_commandes: {
         Row: {
           cloture_heure: string
@@ -784,6 +840,32 @@ export type Database = {
           },
         ]
       }
+      tournees: {
+        Row: {
+          date_livraison: string
+          demarree_le: string
+          secteur_id: string
+        }
+        Insert: {
+          date_livraison: string
+          demarree_le?: string
+          secteur_id: string
+        }
+        Update: {
+          date_livraison?: string
+          demarree_le?: string
+          secteur_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tournees_secteur_id_fkey"
+            columns: ["secteur_id"]
+            isOneToOne: false
+            referencedRelation: "secteurs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       confitures_parrain_dues: {
@@ -858,7 +940,13 @@ export type Database = {
       }
     }
     Functions: {
+      abonnements_du_client: {
+        Args: { p_client_id: string }
+        Returns: { auth: string; endpoint: string; p256dh: string }[]
+      }
       annuler_ma_commande: { Args: { p_commande_id: string }; Returns: undefined }
+      cle_publique_push: { Args: never; Returns: string }
+      cles_push: { Args: never; Returns: Json }
       changer_statut_commande: {
         Args: {
           p_commande_id: string
@@ -866,6 +954,12 @@ export type Database = {
         }
         Returns: undefined
       }
+      demarrer_tournee: { Args: { p_date: string; p_secteur_id: string }; Returns: Json }
+      enregistrer_abonnement_push: {
+        Args: { p_appareil?: string; p_auth: string; p_endpoint: string; p_p256dh: string }
+        Returns: undefined
+      }
+      enregistrer_cles_push: { Args: { p_privee: string; p_publique: string }; Returns: undefined }
       enregistrer_ordre_tournee: {
         Args: { p_commandes: string[] }
         Returns: undefined
@@ -906,6 +1000,11 @@ export type Database = {
         }
         Returns: Json
       }
+      reserver_notifications: {
+        Args: { p_commandes: string[]; p_type: Database["public"]["Enums"]["type_notification"] }
+        Returns: string[]
+      }
+      supprimer_abonnement_push: { Args: { p_endpoint: string }; Returns: undefined }
       supprimer_mon_compte: { Args: never; Returns: undefined }
       valider_inscription: {
         Args: {
@@ -943,6 +1042,7 @@ export type Database = {
       source_position: "adresse" | "manuelle"
       statut_commande: "a_livrer" | "livree" | "annulee"
       statut_inscription: "en_attente" | "refusee"
+      type_notification: "depart" | "prochain"
       type_recompense: "tampons" | "bienvenue_filleul" | "cadeau_parrain"
     }
     CompositeTypes: {
@@ -1086,6 +1186,7 @@ export const Constants = {
       source_position: ["adresse", "manuelle"],
       statut_commande: ["a_livrer", "livree", "annulee"],
       statut_inscription: ["en_attente", "refusee"],
+      type_notification: ["depart", "prochain"],
       type_recompense: ["tampons", "bienvenue_filleul", "cadeau_parrain"],
     },
   },
