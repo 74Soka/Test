@@ -175,7 +175,7 @@ Aucun réglage : les clés de signature sont créées par l'application à la pr
   « Traité ». L'avis apparaît aussi sur la commande.
 - **Nouveaux paniers** : en enregistrant la composition d'une semaine en cours ou à venir, la case « 📣 Prévenir les
   clients » envoie « 🥕 Les paniers de la semaine sont prêts ! Au menu : … », une seule fois par semaine.
-- **Rappels du jeudi** à 12 h et 19 h (heure de Paris) : « 🧺 N'oubliez pas de commander avant vendredi 12 h », pour
+- **Rappels du jeudi** à 12 h et 18 h (heure de Paris) : « 🧺 N'oubliez pas de commander avant vendredi 12 h », pour
   les clients abonnés, actifs, sans commande pour leur prochaine livraison et dont la clôture est dans les 48 h.
   Une fois par rappel. Ils partent tout seuls : le planificateur de Supabase (`pg_cron` + `pg_net`, gratuits) appelle
   chaque heure du jeudi la page `/api/rappels` du site, avec un jeton secret gardé dans la base (schéma privé).

@@ -15,14 +15,14 @@ import { messageRappel } from "./messages";
 
 export type Moment = "midi" | "soir";
 
-/** 12 h → midi, 19 h → soir (heure de Paris) ; sinon rien à envoyer. */
+/** 12 h → midi, 18 h → soir (heure de Paris) ; sinon rien à envoyer. */
 export function momentDuRappel(maintenant: Date = new Date()): Moment | null {
   const heure = Number(
     new Intl.DateTimeFormat("fr-FR", { timeZone: "Europe/Paris", hour: "2-digit", hourCycle: "h23" })
       .formatToParts(maintenant)
       .find((p) => p.type === "hour")?.value,
   );
-  return heure === 12 ? "midi" : heure === 19 ? "soir" : null;
+  return heure === 12 ? "midi" : heure === 18 ? "soir" : null;
 }
 
 export class JetonRefuse extends Error {}

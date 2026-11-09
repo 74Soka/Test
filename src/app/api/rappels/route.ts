@@ -5,7 +5,7 @@ import { envoyerRappels, JetonRefuse, momentDuRappel } from "@/lib/notifications
 /**
  * Rappels « n'oubliez pas de commander », appelés chaque heure du jeudi par le
  * planificateur de Supabase avec le jeton secret de la base (en-tête x-jeton).
- * Seuls les appels de 12 h et 19 h (heure de Paris) envoient quelque chose.
+ * Seuls les appels de 12 h et 18 h (heure de Paris) envoient quelque chose.
  */
 export async function POST(requete: NextRequest) {
   const jeton = requete.headers.get("x-jeton") ?? "";

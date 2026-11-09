@@ -70,7 +70,7 @@ l'application.
   suppléments au choix, `recompenses.nb_offerts`), fidélité, historique, compte, suppression RGPD.
 - **Notifications web** (Web Push, VAPID en base dans `prive.cles_push`, créées à la première visite de l'équipe) :
   départ de tournée avec heure estimée (+4 min par arrêt), « vous êtes le prochain », merci après livraison, annonce de
-  la composition, rappels du jeudi 12 h et 19 h (`pg_cron` → `/api/rappels` avec un jeton secret en base). Sur
+  la composition, rappels du jeudi 12 h et 18 h (`pg_cron` → `/api/rappels` avec un jeton secret en base). Sur
   iPhone : seulement si l'application est ajoutée à l'écran d'accueil (iOS 16.4+).
 - **E-mails** (Brevo, facultatif) : alertes à l'équipe (commande, modification, annulation, inscription, avis).
   Modèles d'e-mails Supabase en français dans `supabase/templates/`.
