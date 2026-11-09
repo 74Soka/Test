@@ -372,3 +372,9 @@ test("déconnexion", async ({ page }) => {
   await page.getByRole("button", { name: "Se déconnecter" }).click();
   await expect(page).toHaveURL(/\/connexion/);
 });
+
+test("réveil du serveur : répond sans compte et sans lire la base", async ({ request }) => {
+  const r = await request.get("/api/reveil");
+  expect(r.status()).toBe(200);
+  expect(await r.json()).toEqual({ ok: true });
+});

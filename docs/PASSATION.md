@@ -47,6 +47,11 @@ l'application.
    publier avant que le propriétaire l'ait collée. Ingrédients « dans le panier / en supplément » repérés par mots
    communs (`src/lib/domaine/recettes.ts`). Données d'essai de la semaine dernière : `tests/fixtures/semaine-derniere.ts`.
 
+7. **Réveil du site** (`20261112000000_reveil_site.sql`, appliquée par le connecteur Supabase) : tâche pg_cron
+   `reveil-site`, toutes les 5 min de 7 h à 21 h (Paris) → `GET /api/reveil`. Mesures Netlify du 9 novembre :
+   médiane 0,2 à 0,3 s, pointes de 3 à 9 s = démarrages à froid. Région des fonctions (Francfort) : offre Pro
+   seulement, non retenue. Arrêt : `select cron.unschedule('reveil-site');`
+
 ## 3. Comment on travaille avec le propriétaire
 
 - Il n'a **pas d'ordinateur** : tout se fait depuis son téléphone (Supabase, Netlify, GitHub, OVH dans le navigateur).
