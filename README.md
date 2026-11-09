@@ -13,6 +13,7 @@ d'accueil.
 | 2 | Tournées optimisées (carte, ordre de passage, Google Maps / Waze, bouton « Livré » hors connexion) | ✅ livrée, à valider |
 | 3 | Fidélité et parrainage (tampons, récompenses, VIP / Ultra, cadeaux de parrainage) | ✅ livrée, à valider |
 | 4 | Espace client : inscription, composition des paniers, commande en ligne, carte de fidélité, alertes e-mail | ✅ livrée, à valider |
+| 5 | Notifications de livraison : départ de tournée avec heure estimée, « vous êtes le prochain » | ✅ livrée, à valider |
 
 ### Ce que fait la Phase 1
 
