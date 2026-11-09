@@ -3,6 +3,9 @@ import Link from "next/link";
 import { exigerAdmin } from "@/lib/auth";
 import { seDeconnecter } from "@/app/connexion/actions";
 import { Bouton, Carte, EnTetePage } from "@/components/ui";
+import { ActivationNotifications } from "@/app/espace/notifications";
+import { clePubliqueVapid } from "@/lib/notifications";
+import { abonnerTelephoneEquipe, desabonnerTelephoneEquipe } from "./actions-notifications";
 
 export const metadata: Metadata = { title: "Réglages" };
 
@@ -16,6 +19,7 @@ const LIENS = [
 
 export default async function PageReglages() {
   const utilisateur = await exigerAdmin();
+  const clePublique = await clePubliqueVapid();
 
   return (
     <>
@@ -38,6 +42,16 @@ export default async function PageReglages() {
             ))}
           </ul>
         </nav>
+
+        <ActivationNotifications
+          clePublique={clePublique}
+          variante="compte"
+          nom="Alertes de l'équipe"
+          titre="🔔 Alertes sur ce téléphone"
+          description="Une notification à chaque nouvelle inscription à valider, et à chaque commande passée, modifiée ou annulée en ligne par un client."
+          enregistrer={abonnerTelephoneEquipe}
+          supprimer={desabonnerTelephoneEquipe}
+        />
 
         <Carte>
           <p className="text-sm text-stone-600">Connecté en tant que</p>

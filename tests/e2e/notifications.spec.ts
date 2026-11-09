@@ -290,3 +290,39 @@ test("rappels du jeudi, annonce des paniers, merci après la livraison et avis d
   await page.getByRole("button", { name: "Enregistrer" }).click();
   await expect(page.getByText("✓ Enregistré")).toBeVisible();
 });
+
+test("les administrateurs sont prévenus sur leur téléphone d'une commande en ligne", async ({ page, request }) => {
+  await simulerTelephone(page, "admin");
+  const { jeton } = (await (await request.get(`${FAUX}/test/jeton-robot`)).json()) as { jeton: string };
+  const envoyer = (j: string) => request.post("/api/alertes", { headers: { "x-jeton": j } });
+
+  // L'administrateur active les alertes sur son téléphone, dans Réglages
+  await connexion(page, "admin@demo.fr", "demo-demo-demo");
+  await page.waitForURL("**/livraisons**");
+  await page.goto("/reglages");
+  const alertes = page.getByRole("region", { name: "Alertes de l'équipe" });
+  await alertes.getByRole("button", { name: "Activer les notifications" }).click();
+  await expect(alertes.getByText("✓ Activées sur ce téléphone")).toBeVisible();
+  await deconnexion(page);
+  // Les alertes laissées par les parcours précédents partent d'abord
+  await envoyer(jeton);
+  const avant = (await pushsRecus(request, "admin")).length;
+
+  // Léa modifie sa commande en ligne : une alerte attend l'envoi
+  await connexion(page, LEA.email, LEA.motDePasse);
+  await page.waitForURL("**/espace");
+  await page.getByRole("link", { name: /^(Commander|Modifier ma commande)$/ }).first().click();
+  await page.waitForURL("**/espace/commander");
+  await page.getByRole("button", { name: "Ajouter un Panier 50 €" }).click();
+  await page.getByRole("button", { name: /^(Valider ma commande|Enregistrer les modifications)$/ }).click();
+  await page.waitForURL("**/espace?commande=ok");
+
+  // La base appelle le site avec le jeton (ici à la main, sans planificateur) : l'administrateur
+  // seul est prévenu, une seule fois ; sans le bon jeton, rien
+  expect((await envoyer("faux-".repeat(10))).status()).toBe(403);
+  const r = await envoyer(jeton);
+  expect(r.ok()).toBe(true);
+  expect(await r.json()).toEqual({ alertes: 1, envoyes: 1 });
+  await expect.poll(async () => (await pushsRecus(request, "admin")).length).toBe(avant + 1);
+  expect(await (await envoyer(jeton)).json()).toEqual({ alertes: 0, envoyes: 0 });
+});

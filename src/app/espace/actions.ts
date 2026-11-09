@@ -25,7 +25,21 @@ const schemaCommande = z.object({
 
 export type DemandeCommande = z.input<typeof schemaCommande>;
 
+/** Notification sur le téléphone des administrateurs (jamais bloquante). */
+async function notifierEquipe(type: "inscription" | "commande" | "modification" | "annulation", ref: string) {
+  try {
+    const supabase = await clientSupabase();
+    const { error } = await supabase.rpc("demander_alerte_equipe", { p_type: type, p_ref: ref });
+    if (error) console.error("Notification équipe :", error.message);
+  } catch (e) {
+    console.error("Notification équipe :", e);
+  }
+}
+
+const TYPE_NOTIFICATION = { nouvelle: "commande", modifiee: "modification", annulee: "annulation" } as const;
+
 async function alerter(evenement: EvenementCommande, commandeId: string, client: string) {
+  await notifierEquipe(TYPE_NOTIFICATION[evenement], commandeId);
   const commande = await lireCommandeClient(commandeId);
   if (!commande) return;
   await envoyerAlerte({
@@ -161,6 +175,7 @@ export async function envoyerMonInscription(demande: DemandeInscription): Promis
   });
   if (error) return { ok: false, erreur: messageErreur(error) };
 
+  await notifierEquipe("inscription", utilisateur.id);
   await envoyerAlerte({
     ...alerteInscription({
       nom: nomComplet(d),

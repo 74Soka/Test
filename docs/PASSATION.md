@@ -52,6 +52,11 @@ l'application.
    médiane 0,2 à 0,3 s, pointes de 3 à 9 s = démarrages à froid. Région des fonctions (Francfort) : offre Pro
    seulement, non retenue. Arrêt : `select cron.unschedule('reveil-site');`
 
+8. **Alertes aux administrateurs** (`20261113000000_alertes_equipe.sql`, appliquée par le connecteur) : chaque
+   administrateur active « 🔔 Alertes sur ce téléphone » dans Réglages ; inscription à valider et commande
+   passée / modifiée / annulée en ligne → `demander_alerte_equipe` (vérifie que c'est bien la sienne, anti-doublon
+   2 min) → `pg_net` → `POST /api/alertes` (jeton) → push aux téléphones des admins. S'ajoute aux e-mails Brevo.
+
 ## 3. Comment on travaille avec le propriétaire
 
 - Il n'a **pas d'ordinateur** : tout se fait depuis son téléphone (Supabase, Netlify, GitHub, OVH dans le navigateur).

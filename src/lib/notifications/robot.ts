@@ -55,3 +55,36 @@ export async function envoyerRappels(jeton: string, moment: Moment): Promise<{ r
   );
   return { rappels: new Set(lignes.map((l) => l.client_id)).size, envoyes: resultats.filter((r) => r === "envoye").length };
 }
+
+/**
+ * Alertes aux administrateurs (inscription à valider, commande en ligne) :
+ * appelé par la base avec le jeton, juste après l'action du client.
+ */
+export async function envoyerAlertesEquipe(jeton: string): Promise<{ alertes: number; envoyes: number }> {
+  const { url, cle } = configSupabase();
+  const supabase = createClient<Database>(url, cle, { auth: { persistSession: false, autoRefreshToken: false } });
+
+  const { data: lignes, error } = await supabase.rpc("alertes_a_envoyer", { p_jeton: jeton });
+  if (error) {
+    if (error.code === "42501") throw new JetonRefuse();
+    throw new Error(error.message);
+  }
+  if (!lignes?.length) return { alertes: 0, envoyes: 0 };
+
+  const { data: cles, error: e2 } = await supabase.rpc("cles_push_robot", { p_jeton: jeton });
+  if (e2 || !cles) throw new Error(e2?.message ?? "Clés de notification absentes.");
+  const origine = await origineDuSite();
+  const envoyeur = creerEnvoyeurPush({
+    cles: z.object({ publique: z.string(), privee: z.string() }).parse(cles),
+    sujet: origine.startsWith("https://") ? origine : "mailto:contact@example.org",
+  });
+
+  const resultats = await Promise.all(
+    lignes.map(async (l) => {
+      const r = await envoyeur.envoyer(l, { titre: l.titre, corps: l.corps, url: l.url, tag: `equipe-${l.alerte_id}` });
+      if (r === "expire") await supabase.rpc("supprimer_abonnement_robot", { p_jeton: jeton, p_endpoint: l.endpoint });
+      return r;
+    }),
+  );
+  return { alertes: new Set(lignes.map((l) => l.alerte_id)).size, envoyes: resultats.filter((r) => r === "envoye").length };
+}

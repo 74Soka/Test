@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { enregistrerMonAbonnement, supprimerMonAbonnement } from "./actions";
 import { Bouton, Carte, MessageErreur, TitreSection } from "@/components/ui";
+import type { Resultat } from "@/lib/erreurs";
 
 type Etat = "chargement" | "non-supporte" | "ios-installer" | "refuse" | "inactif" | "actif";
 
@@ -45,10 +46,22 @@ async function enregistrement() {
 export function ActivationNotifications({
   clePublique,
   variante,
+  nom = "Notifications de livraison",
+  titre = "🔔 Prévenu le jour de la livraison",
+  description = "Une notification quand le livreur part, avec l'heure d'arrivée estimée, puis quand vous êtes le prochain.",
+  enregistrer = enregistrerMonAbonnement,
+  supprimer = supprimerMonAbonnement,
 }: {
   clePublique: string | null;
   /** accueil : invitation discrète, cachée une fois activées ; compte : réglage complet */
   variante: "accueil" | "compte";
+  /** Nom de la zone (lecteurs d'écran) */
+  nom?: string;
+  titre?: string;
+  description?: string;
+  /** Actions d'abonnement (par défaut : celles de l'espace client) */
+  enregistrer?: (abonnement: unknown, appareil: string) => Promise<Resultat>;
+  supprimer?: (endpoint: string) => Promise<Resultat>;
 }) {
   const [etat, setEtat] = useState<Etat>("chargement");
   const [erreur, setErreur] = useState<string | null>(null);
@@ -84,7 +97,7 @@ export function ActivationNotifications({
       const abonnement =
         (await reg.pushManager.getSubscription()) ??
         (await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: versOctets(clePublique) }));
-      const r = await enregistrerMonAbonnement(abonnement.toJSON(), nomAppareil());
+      const r = await enregistrer(abonnement.toJSON(), nomAppareil());
       if (!r.ok) return setErreur(r.erreur);
       setEtat("actif");
     } catch (e) {
@@ -101,7 +114,7 @@ export function ActivationNotifications({
       const reg = await enregistrement();
       const abonnement = await reg.pushManager.getSubscription();
       if (abonnement) {
-        await supprimerMonAbonnement(abonnement.endpoint);
+        await supprimer(abonnement.endpoint);
         await abonnement.unsubscribe();
       }
       setEtat("inactif");
@@ -114,12 +127,9 @@ export function ActivationNotifications({
   if (variante === "accueil" && !clePublique) return null;
 
   return (
-    <Carte aria-label="Notifications de livraison" className="space-y-3">
-      <TitreSection>🔔 Prévenu le jour de la livraison</TitreSection>
-      <p className="text-stone-700">
-        Une notification quand le livreur part, avec l&apos;heure d&apos;arrivée estimée, puis quand vous êtes le
-        prochain.
-      </p>
+    <Carte aria-label={nom} className="space-y-3">
+      <TitreSection>{titre}</TitreSection>
+      <p className="text-stone-700">{description}</p>
       {erreur && <MessageErreur>{erreur}</MessageErreur>}
 
       {!clePublique ? (

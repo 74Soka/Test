@@ -1073,6 +1073,18 @@ export type Database = {
       }
     }
     Functions: {
+      alertes_a_envoyer: {
+        Args: { p_jeton: string }
+        Returns: {
+          alerte_id: string
+          auth: string
+          corps: string
+          endpoint: string
+          p256dh: string
+          titre: string
+          url: string
+        }[]
+      }
       abonnements_clients_actifs: {
         Args: never
         Returns: { auth: string; client_id: string; endpoint: string; p256dh: string }[]
@@ -1090,6 +1102,10 @@ export type Database = {
           p_commande_id: string
           p_statut: Database["public"]["Enums"]["statut_commande"]
         }
+        Returns: undefined
+      }
+      demander_alerte_equipe: {
+        Args: { p_ref: string; p_type: string }
         Returns: undefined
       }
       donner_mon_avis: {
