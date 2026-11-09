@@ -630,6 +630,36 @@ export type Database = {
         }
         Relationships: []
       }
+      recettes: {
+        Row: {
+          astuce: string | null
+          etapes: string
+          infos: string | null
+          ingredients: string
+          semaine: string
+          titre: string
+          updated_at: string
+        }
+        Insert: {
+          astuce?: string | null
+          etapes: string
+          infos?: string | null
+          ingredients: string
+          semaine: string
+          titre: string
+          updated_at?: string
+        }
+        Update: {
+          astuce?: string | null
+          etapes?: string
+          infos?: string | null
+          ingredients?: string
+          semaine?: string
+          titre?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       rappels_envoyes: {
         Row: {
           client_id: string

@@ -32,3 +32,19 @@ describe("page publique des paniers (sans compte)", () => {
     }
   });
 });
+
+describe("recette de la semaine", () => {
+  it("sort sur la page publique, mais la table reste fermée sans compte", async () => {
+    await base.client.query(
+      // Plusieurs semaines autour d'aujourd'hui : la page choisit selon le jour (week-end = semaine suivante)
+      `insert into public.recettes (semaine, titre, infos, ingredients, etapes)
+       select s::date, 'Poêlée paysanne', '4 personnes', '3 poireaux', 'Émincez les poireaux.'
+       from generate_series(date_trunc('week', current_date) - interval '7 days',
+                            date_trunc('week', current_date) + interval '21 days', interval '7 days') s
+       on conflict (semaine) do nothing`,
+    );
+    const d = await sansCompte(async (c) => (await c.query("select public.paniers_publics() as d")).rows[0].d);
+    expect(d.recette).toEqual(expect.objectContaining({ titre: "Poêlée paysanne", ingredients: "3 poireaux" }));
+    await expect(sansCompte((c) => c.query("select * from public.recettes"))).rejects.toThrow(/permission/);
+  });
+});

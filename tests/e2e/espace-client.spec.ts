@@ -236,3 +236,41 @@ test("page publique des paniers, sans compte : composition, suppléments, livrai
   await expect(page.getByRole("link", { name: "Mon espace client ›", exact: true })).toHaveAttribute("href", "/espace");
   if (process.env.CAPTURE_PANIERS) await page.screenshot({ path: process.env.CAPTURE_PANIERS, fullPage: true });
 });
+
+test("recette de la semaine : saisie avec le panier de la semaine dernière, puis affichée sur la page publique", async ({
+  page,
+  browser,
+}) => {
+  const { PANIER_30, PANIER_50, RECETTE } = await import("../fixtures/semaine-derniere");
+  await connexion(page, ADMIN.email, ADMIN.motDePasse);
+  await page.waitForURL("**/livraisons**");
+  await page.goto("/reglages/composition");
+  await page.getByLabel("Panier 30 €").fill(PANIER_30);
+  await page.getByLabel("Panier 50 €").fill(PANIER_50);
+  await page.getByRole("button", { name: "Enregistrer la composition" }).click();
+  await expect(page.getByText("✓ Composition enregistrée")).toBeVisible();
+
+  await page.getByLabel("Nom de la recette").fill(RECETTE.titre);
+  await page.getByLabel("Infos (facultatif)").fill(RECETTE.infos);
+  await page.getByLabel("Ingrédients").fill(RECETTE.ingredients);
+  await page.getByLabel("Préparation").fill(RECETTE.etapes);
+  await page.getByLabel("Astuce (facultatif)").fill(RECETTE.astuce);
+  await page.getByRole("button", { name: "Enregistrer la recette" }).click();
+  await expect(page.getByText("✓ Recette enregistrée")).toBeVisible();
+  await page.reload();
+  await expect(page.getByLabel("Nom de la recette")).toHaveValue(RECETTE.titre);
+
+  // Un visiteur sans compte (lien du SMS)
+  const visiteur = await (await browser.newContext({ ...test.info().project.use })).newPage();
+  await visiteur.goto("/paniers");
+  const recette = visiteur.getByRole("region", { name: "Recette de la semaine" });
+  await expect(recette.getByRole("heading", { name: RECETTE.titre })).toBeVisible();
+  await expect(recette.getByText("35 min", { exact: true })).toBeVisible();
+  await expect(recette.getByText("Dans le panier")).toHaveCount(5);
+  await expect(recette.getByText("En supplément")).toHaveCount(1);
+  await expect(recette.getByText(/^Creusez 4 petits nids/)).toBeVisible();
+  await expect(visiteur.getByText("500 g clémentines", { exact: true })).toBeVisible();
+  if (process.env.CAPTURE_RECETTE) await recette.screenshot({ path: process.env.CAPTURE_RECETTE });
+  if (process.env.CAPTURE_PANIERS) await visiteur.screenshot({ path: process.env.CAPTURE_PANIERS, fullPage: true });
+  await visiteur.context().close();
+});

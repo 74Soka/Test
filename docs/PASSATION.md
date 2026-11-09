@@ -42,6 +42,10 @@ l'application.
    (informations publiques seulement) pour la page `/paniers`, lien des campagnes SMS. Numéro et Instagram dans
    `src/lib/paniers-publics.ts`. La recette de la semaine de l'ancienne page (artefact « Panier Frais et Français »)
    n'est pas reprise : pas encore de champ « recette » dans l'application.
+6. **Migration en attente** : `20261111000000_recette_semaine.sql` (table `recettes`, saisie dans Réglages →
+   Composition, affichée sur `/paniers` ; remplace `prive.paniers_publics()`). Commit `[skip netlify]` : ne pas
+   publier avant que le propriétaire l'ait collée. Ingrédients « dans le panier / en supplément » repérés par mots
+   communs (`src/lib/domaine/recettes.ts`). Données d'essai de la semaine dernière : `tests/fixtures/semaine-derniere.ts`.
 
 ## 3. Comment on travaille avec le propriétaire
 

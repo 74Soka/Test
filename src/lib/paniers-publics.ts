@@ -30,6 +30,17 @@ const schema = z.object({
   cloture_heure: z.string().nullable(),
   message: z.string().nullable(),
   parrainage_debut: z.string().nullable(),
+  recette: z
+    .object({
+      titre: z.string(),
+      infos: z.string().nullable(),
+      ingredients: z.string(),
+      etapes: z.string(),
+      astuce: z.string().nullable(),
+    })
+    .nullable()
+    .optional()
+    .transform((r) => r ?? null),
 });
 export type PaniersPublics = z.infer<typeof schema>;
 

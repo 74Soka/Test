@@ -6,6 +6,7 @@ import { ajouterJours, aujourdhui, estDateIso, formaterSemaine, jourSemaine, lun
 import { clientSupabase } from "@/lib/supabase/serveur";
 import { EnTetePage } from "@/components/ui";
 import { FormulaireComposition } from "./formulaire";
+import { FormulaireRecette } from "./formulaire-recette";
 
 export const metadata: Metadata = { title: "Composition des paniers" };
 
@@ -19,11 +20,12 @@ export default async function PageComposition({ searchParams }: PageProps<"/regl
     typeof demandee === "string" && estDateIso(demandee) ? lundiDeLaSemaine(demandee) : parDefaut;
 
   const supabase = await clientSupabase();
-  const [articles, { data: lignes }, { data: precedentes }, { data: annonce }] = await Promise.all([
+  const [articles, { data: lignes }, { data: precedentes }, { data: annonce }, { data: recette }] = await Promise.all([
     listerArticles({ actifsSeulement: true }),
     supabase.from("compositions").select("article_id, contenu").eq("semaine", semaine),
     supabase.from("compositions").select("article_id, contenu").eq("semaine", ajouterJours(semaine, -7)),
     supabase.from("annonces_composition").select("envoyee_le").eq("semaine", semaine).maybeSingle(),
+    supabase.from("recettes").select("titre, infos, ingredients, etapes, astuce").eq("semaine", semaine).maybeSingle(),
   ]);
   const paniers = articles.filter((a) => a.categorie === "panier");
   const versDico = (l: { article_id: string; contenu: string }[] | null) =>
@@ -50,6 +52,23 @@ export default async function PageComposition({ searchParams }: PageProps<"/regl
         annonceEnvoyee={annonce?.envoyee_le ?? null}
         annoncable={semaine >= lundiDeLaSemaine(ajd)}
       />
+      <div className="mt-8">
+        <FormulaireRecette
+          key={`recette-${semaine}`}
+          semaine={semaine}
+          initial={
+            recette
+              ? {
+                  titre: recette.titre,
+                  infos: recette.infos ?? "",
+                  ingredients: recette.ingredients,
+                  etapes: recette.etapes,
+                  astuce: recette.astuce ?? "",
+                }
+              : null
+          }
+        />
+      </div>
     </>
   );
 }

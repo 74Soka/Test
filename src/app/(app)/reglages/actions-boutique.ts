@@ -80,3 +80,45 @@ export async function enregistrerComposition(donnees: z.input<typeof schemaCompo
   revalidatePath("/", "layout");
   return { ok: true, prevenus };
 }
+
+const schemaRecette = z.object({
+  semaine: z.string().refine((d) => estDateIso(d) && jourSemaine(d) === 1, "Semaine invalide."),
+  titre: z.string().trim().max(200, "200 caractères au plus."),
+  infos: z.string().trim().max(200, "200 caractères au plus."),
+  ingredients: z.string().trim().max(3000, "3 000 caractères au plus."),
+  etapes: z.string().trim().max(6000, "6 000 caractères au plus."),
+  astuce: z.string().trim().max(1000, "1 000 caractères au plus."),
+});
+
+export type DonneesRecette = z.input<typeof schemaRecette>;
+
+/** Recette de la semaine (page publique /paniers). Titre vide = recette retirée. */
+export async function enregistrerRecette(donnees: DonneesRecette): Promise<Resultat> {
+  await exigerAdmin();
+  const saisie = schemaRecette.safeParse(donnees);
+  if (!saisie.success) {
+    return { ok: false, erreur: "Vérifiez les champs signalés.", champs: erreursParChamp(saisie.error.issues) };
+  }
+  const { semaine, titre, infos, ingredients, etapes, astuce } = saisie.data;
+  const supabase = await clientSupabase();
+
+  if (!titre && !ingredients && !etapes) {
+    const { error } = await supabase.from("recettes").delete().eq("semaine", semaine);
+    if (error) return { ok: false, erreur: messageErreur(error) };
+  } else {
+    const champs: Record<string, string> = {};
+    if (!titre) champs.titre = "Donnez un nom à la recette.";
+    if (!ingredients) champs.ingredients = "Indiquez les ingrédients.";
+    if (!etapes) champs.etapes = "Indiquez les étapes.";
+    if (Object.keys(champs).length) return { ok: false, erreur: "Vérifiez les champs signalés.", champs };
+    const { error } = await supabase
+      .from("recettes")
+      .upsert(
+        { semaine, titre, infos: infos || null, ingredients, etapes, astuce: astuce || null },
+        { onConflict: "semaine" },
+      );
+    if (error) return { ok: false, erreur: messageErreur(error) };
+  }
+  revalidatePath("/", "layout");
+  return { ok: true };
+}
