@@ -202,6 +202,9 @@ test("rappels du jeudi, annonce des paniers, merci après la livraison et avis d
   await request.post(`${FAUX}/test/confirmer`, { data: { email: "chloe.petit@example.org" } });
   await connexion(page, "chloe.petit@example.org", "paniers-chloe-2026");
   await page.waitForURL("**/espace");
+  // Attendre la fin de l'écran de chargement avant de regarder la page
+  await expect(page.getByText("Chargement…")).toHaveCount(0);
+  await expect(page.getByRole("link", { name: "Compte" })).toBeVisible();
   if (await page.getByRole("button", { name: "Annuler ma commande" }).isVisible()) {
     await page.getByRole("button", { name: "Annuler ma commande" }).click();
     await expect(page.getByRole("link", { name: "Commander" }).first()).toBeVisible();
