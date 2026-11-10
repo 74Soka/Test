@@ -8,6 +8,7 @@ import { Bouton, Carte, MessageErreur, TitreSection, ZoneTexte, cx } from "@/com
 import { formaterPrix } from "@/lib/domaine/argent";
 import { niveauSuffisant, pluriel, soldeDisponible, type Niveau } from "@/lib/domaine/fidelite";
 import type { ArticleCatalogue, CommandeClient, RecompenseProposeeClient } from "@/lib/espace-client";
+import { NomProduit } from "@/components/produit";
 
 type Nouvelle = { cle: number; recompense: RecompenseProposeeClient; articles: Record<string, number> };
 
@@ -144,7 +145,9 @@ export function FormulaireCommandeClient({
             {lignesRetirees.map((l) => (
               <li key={l.article_id} className="flex items-center justify-between gap-3 py-2">
                 <div className="min-w-0">
-                  <p className="font-semibold">{l.libelle}</p>
+                  <p className="font-semibold">
+                    <NomProduit nom={l.libelle} />
+                  </p>
                   <p className="text-sm text-stone-500">Plus proposé : vous pouvez seulement le retirer</p>
                 </div>
                 <Compteur

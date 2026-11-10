@@ -2,6 +2,8 @@ import { formaterPrix } from "@/lib/domaine/argent";
 import { totalCommande } from "@/lib/domaine/commandes";
 import type { ArticleCatalogue, CommandeClient } from "@/lib/espace-client";
 import { Carte, TitreSection } from "@/components/ui";
+import { ListeProduits, NomProduit } from "@/components/produit";
+import { lignesComposition } from "@/lib/domaine/produits";
 
 /** Contenu des paniers de la semaine. */
 export function CompositionPaniers({
@@ -27,15 +29,9 @@ export function CompositionPaniers({
               <span className="text-marque-800">{formaterPrix(p.prix_centimes)}</span>
             </p>
             {contenus[p.id] ? (
-              <ul className="mt-1 list-inside list-disc text-stone-700">
-                {contenus[p.id]
-                  .split("\n")
-                  .map((l) => l.trim())
-                  .filter(Boolean)
-                  .map((l, i) => (
-                    <li key={i}>{l}</li>
-                  ))}
-              </ul>
+              <div className="text-stone-700">
+                <ListeProduits lignes={lignesComposition(contenus[p.id])} />
+              </div>
             ) : (
               <p className="mt-1 text-sm text-stone-500">La composition sera bientôt publiée.</p>
             )}
@@ -56,18 +52,14 @@ export function RecapCommande({ commande }: { commande: Pick<CommandeClient, "li
       <ul className="space-y-1">
         {lignes.map((l) => (
           <li key={l.article_id} className="flex justify-between gap-2">
-            <span>
-              {l.quantite} × {l.libelle}
-            </span>
+            <NomProduit nom={l.libelle} prefixe={`${l.quantite} × `} />
             <span className="tabular-nums text-stone-700">{formaterPrix(l.quantite * l.prix_unitaire_centimes)}</span>
           </li>
         ))}
         {commande.recompenses.flatMap((r) =>
           r.cadeaux.map((c) => (
             <li key={`${r.id}-${c.article_id}`} className="flex justify-between gap-2 text-peche-700">
-              <span>
-                🎁 {c.quantite} × {c.libelle}
-              </span>
+              <NomProduit nom={c.libelle} prefixe={`🎁 ${c.quantite} × `} />
               <span>offert</span>
             </li>
           )),

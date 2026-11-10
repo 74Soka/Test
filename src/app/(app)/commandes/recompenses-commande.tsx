@@ -12,6 +12,7 @@ import {
   type Niveau,
   type RecompenseProposee,
 } from "@/lib/domaine/fidelite";
+import { NomProduit } from "@/components/produit";
 
 export type RecompenseEnCours = {
   /** Récompense déjà enregistrée sur la commande */
@@ -154,7 +155,9 @@ export function RecompensesCommande({
           <ul className="divide-y divide-stone-200">
             {articlesProposes(choix).map((a) => (
               <li key={a.id} className="flex min-h-14 items-center gap-3 py-1.5">
-                <span className="min-w-0 flex-1 font-medium">{a.nom}</span>
+                <span className="min-w-0 flex-1 font-medium">
+                  <NomProduit nom={a.nom} />
+                </span>
                 <Compteur
                   valeur={choix.articles[a.id] ?? 0}
                   libelle={`${a.nom} offert`}

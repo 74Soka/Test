@@ -53,17 +53,4 @@ export async function lirePaniersPublics(): Promise<PaniersPublics> {
   return schema.parse(data);
 }
 
-/** Une ligne de composition : « 4 pommes BIO » → texte « 4 pommes » et pastille BIO. */
-export function ligneProduit(ligne: string): { texte: string; bio: boolean } {
-  const bio = /(^|\s)bio(\s|$)/i.test(ligne);
-  const texte = bio ? ligne.replace(/(^|\s)bio(?=\s|$)/gi, " ").replace(/\s+/g, " ").trim() : ligne.trim();
-  return { texte: texte || ligne.trim(), bio };
-}
-
-/** Lignes non vides d'une composition saisie « un produit par ligne ». */
-export function lignesComposition(contenu: string | null): string[] {
-  return (contenu ?? "")
-    .split("\n")
-    .map((l) => l.trim())
-    .filter(Boolean);
-}
+export { ligneProduit, lignesComposition } from "@/lib/domaine/produits";

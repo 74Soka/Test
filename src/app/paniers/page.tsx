@@ -4,6 +4,7 @@ import { formaterPrix } from "@/lib/domaine/argent";
 import { aujourdhui, formaterSemaine, NOMS_JOURS } from "@/lib/domaine/dates";
 import { libelleTournee } from "@/lib/domaine/secteurs";
 import { RecetteSemaine } from "@/components/recette-semaine";
+import { ListeProduits, PastilleBio } from "@/components/produit";
 import {
   INSTAGRAM,
   TELEPHONE_COMMANDES,
@@ -35,30 +36,6 @@ const DATE_LONGUE = new Intl.DateTimeFormat("fr-FR", { day: "numeric", month: "l
 /** « 1er janvier 2027 » */
 function dateLongue(iso: string): string {
   return DATE_LONGUE.format(new Date(`${iso}T00:00:00Z`)).replace(/^1 /, "1er ");
-}
-
-function Bio() {
-  return (
-    <span className="shrink-0 self-center rounded-full px-2 text-xs font-extrabold tracking-wider text-feuille-700 ring-[1.5px] ring-feuille-700">
-      BIO
-    </span>
-  );
-}
-
-function ListeProduits({ lignes }: { lignes: string[] }) {
-  return (
-    <ul className="divide-y divide-dashed divide-marque-100">
-      {lignes.map((l, i) => {
-        const { texte, bio } = ligneProduit(l);
-        return (
-          <li key={i} className="flex justify-between gap-3 py-2">
-            <span>{texte}</span>
-            {bio && <Bio />}
-          </li>
-        );
-      })}
-    </ul>
-  );
 }
 
 const classesBouton =
@@ -173,7 +150,7 @@ export default async function PagePaniers() {
               return (
                 <li key={s.nom} className="grid grid-cols-[1fr_auto_4em] items-center gap-3 py-2">
                   <span>{texte}</span>
-                  <span>{bio && <Bio />}</span>
+                  <span>{bio && <PastilleBio />}</span>
                   <span className="text-right font-extrabold text-peche-600 tabular-nums">
                     {formaterPrix(s.prix_centimes)}
                   </span>

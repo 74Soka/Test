@@ -14,6 +14,7 @@ import { dateDuSecteurDansLaSemaine, libelleTournee, prochaineLivraison, type Cr
 import { oeufsDeBienvenue, type FideliteSaisie, type RecompenseProposee } from "@/lib/domaine/fidelite";
 import { nomComplet } from "@/lib/domaine/texte";
 import type { Resultat } from "@/lib/erreurs";
+import { NomProduit } from "@/components/produit";
 
 export type ArticleFormulaire = {
   id: string;
@@ -131,7 +132,9 @@ export function FormulaireCommande({
     return (
       <li key={a.id} className="flex min-h-16 items-center gap-3 py-2">
         <span className="min-w-0 flex-1">
-          <span className="block font-semibold">{a.nom}</span>
+          <span className="block font-semibold">
+            <NomProduit nom={a.nom} />
+          </span>
           <span className="block text-sm text-stone-600">
             {formaterPrix(a.prix_centimes)}
             {!a.actif && " · hors saison"}

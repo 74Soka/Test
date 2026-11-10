@@ -11,6 +11,7 @@ import {
 import { lignesComposition } from "@/lib/paniers-publics";
 import { clientSupabase } from "@/lib/supabase/serveur";
 import { RecetteSemaine } from "@/components/recette-semaine";
+import { ListeProduits } from "@/components/produit";
 import { Carte, EnTetePage, EtatVide, Pastille } from "@/components/ui";
 
 export const metadata: Metadata = { title: "Historique des paniers" };
@@ -136,13 +137,9 @@ export default async function PageHistorique() {
                                       {formaterPrix(p.prix_centimes)}
                                     </span>
                                   </p>
-                                  <ul className="mt-1 list-inside list-disc text-stone-700">
-                                    {lignesComposition(p.contenu).map(
-                                      (l, k) => (
-                                        <li key={k}>{l}</li>
-                                      ),
-                                    )}
-                                  </ul>
+                                  <div className="text-stone-700">
+                              <ListeProduits lignes={lignesComposition(p.contenu)} />
+                            </div>
                                 </div>
                               ))}
                               {recette ? (

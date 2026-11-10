@@ -87,7 +87,7 @@ test("un client déjà connu crée son compte, le retrouve relié à sa fiche et
   await page.waitForURL("**/espace?commande=ok");
   await expect(page.getByText("✅ Commande enregistrée. Merci !")).toBeVisible();
   await expect(livraison).toContainText("Panier 50 €");
-  await expect(livraison).toContainText("Œufs BIO (6)");
+  await expect(livraison).toContainText("Œufs (6)");
   await expect(livraison).toContainText("« Sonner deux fois »");
 
   // L'équipe est prévenue par e-mail, avec le lien vers la commande
@@ -189,7 +189,7 @@ test("un nouveau client s'inscrit, l'équipe valide, il commande (œufs de fille
   await page.waitForURL("**/espace?commande=ok");
   const livraison = page.getByRole("region", { name: "Prochaine livraison" });
   await expect(livraison).toContainText("Panier 30 €");
-  await expect(livraison).toContainText("🎁 1 × Œufs BIO (6)");
+  await expect(livraison).toContainText("🎁 1 × Œufs (6)");
   await expect.poll(async () => (await emails(request)).some((e) => e.subject.startsWith("Nouvelle commande : Noé Nouveau"))).toBe(true);
 
   // RGPD : il supprime son compte et ses données
@@ -287,7 +287,7 @@ test("recette de la semaine : saisie avec le panier de la semaine dernière, pui
   await page.getByRole("link", { name: /Historique des paniers/ }).click();
   await expect(page.getByText(/^Semaine \d{1,2} · \d{4}$/).first()).toBeVisible();
   await expect(page.getByText(RECETTE.titre).first()).toBeVisible();
-  await expect(page.locator("li:visible", { hasText: "500 g clémentines BIO" }).first()).toBeVisible();
+  await expect(page.locator("li:visible", { hasText: "500 g clémentines" }).first()).toBeVisible();
   await page.addStyleTag({ content: "header { position: static !important; } nav { display: none !important; }" });
   await capture(page.locator("main"), "12-historique-paniers");
 

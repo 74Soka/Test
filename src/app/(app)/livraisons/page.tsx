@@ -28,6 +28,7 @@ import {
 import { comparerSecteurs, LIBELLES_CRENEAU, secteurDeLivraison } from "@/lib/domaine/secteurs";
 import { nomComplet } from "@/lib/domaine/texte";
 import { Carte, EnTetePage, EtatVide, LienBouton, Pastille, PointCouleur, cx } from "@/components/ui";
+import { NomProduit } from "@/components/produit";
 
 export const metadata: Metadata = { title: "Livraisons" };
 
@@ -215,7 +216,7 @@ export default async function PageLivraisons({ searchParams }: PageProps<"/livra
                   {recap.map((l) => (
                     <tr key={l.article_id}>
                       <td className={cx("py-2", l.categorie === "panier" && "font-semibold")}>
-                        {l.libelle}
+                        <NomProduit nom={l.libelle} />
                         {l.offerts > 0 && (
                           <span className="block text-sm font-normal text-peche-700">dont {l.offerts} offert{l.offerts > 1 ? "s" : ""} 🎁</span>
                         )}

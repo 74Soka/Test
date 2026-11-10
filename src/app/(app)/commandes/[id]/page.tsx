@@ -19,6 +19,7 @@ import { Carte, EnTetePage, MessageInfo, Pastille, TitreSection } from "@/compon
 import { FormulaireCommande, type ArticleFormulaire } from "../formulaire-commande";
 import { ActionsStatut } from "./actions-statut";
 import { secteurDeLivraison } from "@/lib/domaine/secteurs";
+import { NomProduit } from "@/components/produit";
 
 export const metadata: Metadata = { title: "Commande" };
 
@@ -150,9 +151,7 @@ export default async function PageCommande({ params, searchParams }: PageProps<"
             <ul className="divide-y divide-stone-100">
               {commande.lignes.map((l) => (
                 <li key={l.article_id} className="flex justify-between gap-3 py-2">
-                  <span>
-                    {l.quantite} × {l.libelle}
-                  </span>
+                  <NomProduit nom={l.libelle} prefixe={`${l.quantite} × `} />
                   <span className="tabular-nums">{formaterPrix(l.quantite * l.prix_unitaire_centimes)}</span>
                 </li>
               ))}
