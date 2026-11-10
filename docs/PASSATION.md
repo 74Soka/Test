@@ -152,8 +152,10 @@ l'application.
 ## 7. Ce qui reste (demandé ou prévu)
 
 - [ ] Faire coller la migration `20261109120000` puis déployer (voir § 2).
-- [ ] **Compte livreur** : le propriétaire doit donner l'e-mail ; il crée l'utilisateur dans Supabase Auth, puis on
-      ajoute `insert into profils (id, role) values ('<uuid>', 'livreur')`.
+- [x] **Premier compte livreur** créé le 10 novembre 2026 (rôle `livreur` dans `profils`). Procédure : le
+      propriétaire crée l'utilisateur dans Supabase Auth, l'assistant ajoute la ligne `profils`.
+- [ ] **Droits des livreurs à resserrer** (proposé, en attente de réponse) : RLS limitée aux clients et commandes des
+      tournées à venir, sans e-mail, fidélité ni comptes ; éventuellement par secteur.
 - [ ] **Vraie liste de clients** à importer à la place des clients de démo (garder catalogue et réglages).
 - [ ] **Nom de domaine OVH** (en cours d'achat ; décision du 9 novembre 2026 : seul le domaine est chez OVH, le site
       reste sur Netlify, offre payante si besoin, pas de VPS) : DNS vers Netlify, `SITE_URL`, *Site URL* et *Redirect URLs* dans
