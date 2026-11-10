@@ -50,7 +50,7 @@ export default async function PagePaniers() {
       : null;
 
   return (
-    <main className="mx-auto flex max-w-3xl flex-col gap-6 px-4 pt-6 pb-[max(3rem,env(safe-area-inset-bottom))]">
+    <main data-theme-auto className="mx-auto flex max-w-3xl flex-col gap-6 px-4 pt-6 pb-[max(3rem,env(safe-area-inset-bottom))]">
       <header className="flex items-center gap-4">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
@@ -61,19 +61,19 @@ export default async function PagePaniers() {
           className="size-24 shrink-0 rounded-full bg-white p-1 shadow-[0_2px_10px_rgb(53_3_122/0.12)]"
         />
         <div className="min-w-0">
-          <h1 className="font-titre text-3xl leading-tight text-marque-800">Frais et Français</h1>
-          <p className="text-lg font-semibold text-stone-700">Les paniers de la semaine</p>
-          {d.semaine && <p className="text-stone-600">{formaterSemaine(d.semaine)}</p>}
+          <h1 className="font-titre text-3xl leading-tight text-marque-800 dark:text-marque-200">Frais et Français</h1>
+          <p className="text-lg font-semibold text-stone-700 dark:text-stone-200">Les paniers de la semaine</p>
+          {d.semaine && <p className="text-stone-600 dark:text-stone-400">{formaterSemaine(d.semaine)}</p>}
         </div>
       </header>
 
       {d.message && (
-        <p className="rounded-2xl bg-peche-50 px-4 py-3 text-lg font-semibold text-peche-900 ring-1 ring-peche-600/30">
+        <p className="rounded-2xl bg-peche-50 px-4 py-3 text-lg font-semibold text-peche-900 ring-1 ring-peche-600/30 dark:bg-peche-900/40 dark:text-peche-100">
           {d.message}
         </p>
       )}
 
-      <section aria-label="Pour commander" className="flex flex-col gap-3 rounded-3xl bg-marque-800 p-5 text-white">
+      <section aria-label="Pour commander" className="flex flex-col gap-3 rounded-3xl bg-marque-800 p-5 text-white dark:bg-marque-700">
         <div>
           <p className="text-sm font-extrabold tracking-widest uppercase opacity-85">Pour commander</p>
           <p className="font-titre text-3xl tabular-nums">{TELEPHONE_COMMANDES.affiche}</p>
@@ -96,11 +96,11 @@ export default async function PagePaniers() {
 
       <section
         aria-label="Déjà client"
-        className="flex flex-col gap-3 rounded-3xl bg-feuille-50 p-5 ring-2 ring-feuille-700 sm:flex-row sm:items-center sm:justify-between"
+        className="flex flex-col gap-3 rounded-3xl bg-feuille-50 p-5 ring-2 ring-feuille-700 dark:bg-feuille-900/50 dark:ring-feuille-600 sm:flex-row sm:items-center sm:justify-between"
       >
         <div>
-          <h2 className="font-titre text-xl text-feuille-900">Déjà client ?</h2>
-          <p className="text-stone-800">Commandez en ligne, suivez vos livraisons et vos graines de fidélité 🌱.</p>
+          <h2 className="font-titre text-xl text-feuille-900 dark:text-feuille-100">Déjà client ?</h2>
+          <p className="text-stone-800 dark:text-stone-200">Commandez en ligne, suivez vos livraisons et vos graines de fidélité 🌱.</p>
         </div>
         <Link href="/espace" className={`${classesBouton} shrink-0 bg-feuille-700 text-white`}>
           Mon espace client ›
@@ -110,7 +110,7 @@ export default async function PagePaniers() {
       {d.semaine_close && (
         <p
           role="status"
-          className="rounded-2xl bg-amber-50 px-4 py-3 text-lg font-semibold text-amber-900 ring-1 ring-amber-200"
+          className="rounded-2xl bg-amber-50 px-4 py-3 text-lg font-semibold text-amber-900 ring-1 ring-amber-200 dark:bg-amber-950/60 dark:text-amber-100 dark:ring-amber-700"
         >
           Les commandes de cette semaine sont closes : voici le panier livré ce week-end. Le panier de la semaine
           prochaine arrive très bientôt.
@@ -123,16 +123,16 @@ export default async function PagePaniers() {
           return (
             <article
               key={p.id}
-              className="flex min-w-0 flex-col gap-2 rounded-3xl bg-white p-5 ring-1 ring-marque-100"
+              className="flex min-w-0 flex-col gap-2 rounded-3xl bg-white p-5 ring-1 ring-marque-100 dark:bg-nuit-carte dark:ring-white/10"
             >
-              <h2 className="flex items-baseline justify-between gap-2 font-titre text-2xl text-marque-800">
+              <h2 className="flex items-baseline justify-between gap-2 font-titre text-2xl text-marque-800 dark:text-marque-200">
                 <span>{p.nom.replace(/\s*\d+([,.]\d+)?\s*€\s*$/, "")}</span>
-                <span className="text-3xl text-peche-600 tabular-nums">{formaterPrix(p.prix_centimes)}</span>
+                <span className="text-3xl text-peche-600 tabular-nums dark:text-peche-300">{formaterPrix(p.prix_centimes)}</span>
               </h2>
               {lignes.length > 0 ? (
                 <ListeProduits lignes={lignes} />
               ) : (
-                <p className="text-stone-600">La composition sera bientôt publiée.</p>
+                <p className="text-stone-600 dark:text-stone-400">La composition sera bientôt publiée.</p>
               )}
             </article>
           );
@@ -145,39 +145,39 @@ export default async function PagePaniers() {
       {d.recette && <RecetteSemaine recette={d.recette} paniers={d.paniers} supplements={d.supplements} />}
 
       {d.secteurs.length > 0 && (
-        <section className="flex flex-col gap-3 rounded-3xl bg-white p-5 ring-1 ring-marque-100">
-          <h2 className="font-titre text-xl text-marque-800">Livraisons à domicile</h2>
+        <section className="flex flex-col gap-3 rounded-3xl bg-white p-5 ring-1 ring-marque-100 dark:bg-nuit-carte dark:ring-white/10">
+          <h2 className="font-titre text-xl text-marque-800 dark:text-marque-200">Livraisons à domicile</h2>
           <ul className="flex flex-col gap-3">
             {d.secteurs.map((s) => (
               <li key={s.nom}>
                 <p className="font-extrabold">{libelleTournee(s)}</p>
-                <p className="text-stone-700">{s.communes.join(", ")}</p>
+                <p className="text-stone-700 dark:text-stone-300">{s.communes.join(", ")}</p>
               </li>
             ))}
           </ul>
         </section>
       )}
 
-      <section className="flex flex-col gap-3 rounded-3xl border-2 border-dashed border-marque-800 bg-marque-50 p-5">
-        <h2 className="font-titre text-xl text-marque-800">Parrainez vos proches</h2>
+      <section className="flex flex-col gap-3 rounded-3xl border-2 border-dashed border-marque-800 bg-marque-50 p-5 dark:border-marque-300 dark:bg-marque-900/40">
+        <h2 className="font-titre text-xl text-marque-800 dark:text-marque-200">Parrainez vos proches</h2>
         <div className="grid gap-3 sm:grid-cols-2">
-          <div className="rounded-2xl bg-white px-4 py-3">
-            <p className="text-xs font-extrabold tracking-wider text-stone-600 uppercase">Vous, le parrain</p>
+          <div className="rounded-2xl bg-white px-4 py-3 dark:bg-nuit-carte">
+            <p className="text-xs font-extrabold tracking-wider text-stone-600 uppercase dark:text-stone-400">Vous, le parrain</p>
             <p className="text-lg font-extrabold">1 pot de confiture artisanale offert</p>
           </div>
-          <div className="rounded-2xl bg-white px-4 py-3">
-            <p className="text-xs font-extrabold tracking-wider text-stone-600 uppercase">Votre filleul</p>
+          <div className="rounded-2xl bg-white px-4 py-3 dark:bg-nuit-carte">
+            <p className="text-xs font-extrabold tracking-wider text-stone-600 uppercase dark:text-stone-400">Votre filleul</p>
             <p className="text-lg font-extrabold">6 œufs BIO offerts dans son 1er panier</p>
           </div>
         </div>
-        <p className="text-stone-700">
+        <p className="text-stone-700 dark:text-stone-300">
           {parrainageAVenir && <strong>Dès le {dateLongue(parrainageAVenir)}. </strong>}
           Votre filleul nous donne votre nom en passant sa première commande. Votre confiture est offerte dès que son
           panier est livré. Offre réservée aux nouveaux clients, sans limite de filleuls.
         </p>
       </section>
 
-      <footer className="flex flex-col items-center gap-4 text-center text-stone-600">
+      <footer className="flex flex-col items-center gap-4 text-center text-stone-600 dark:text-stone-300">
         <a
           href={INSTAGRAM.url}
           target="_blank"
@@ -190,7 +190,7 @@ export default async function PagePaniers() {
           Au plaisir de vous lire.
           <br />
           Commandez au{" "}
-          <a href={`tel:${TELEPHONE_COMMANDES.international}`} className="font-extrabold text-marque-800 underline">
+          <a href={`tel:${TELEPHONE_COMMANDES.international}`} className="font-extrabold text-marque-800 underline dark:text-marque-200">
             {TELEPHONE_COMMANDES.affiche}
           </a>
         </p>

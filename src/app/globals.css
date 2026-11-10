@@ -7,6 +7,19 @@
  * Application utilisée surtout dehors, sur téléphone : thème clair à fort
  * contraste, textes un peu plus grands, cibles tactiles d'au moins 48 px.
  */
+/*
+ * Mode sombre (réglage « sombre » du téléphone) : pour l'instant seulement sur
+ * les pages marquées data-theme-auto (la page /paniers, en essai). Les classes
+ * dark: ne s'appliquent que là ; le reste du site reste clair.
+ */
+@custom-variant dark {
+  @media (prefers-color-scheme: dark) {
+    &:where([data-theme-auto], [data-theme-auto] *) {
+      @slot;
+    }
+  }
+}
+
 @theme {
   --font-sans: "Nunito Variable", "Nunito", system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
   --font-titre: "Alfa Slab One", Georgia, serif;
@@ -15,6 +28,7 @@
   --color-marque-50: #f7f1fe;
   --color-marque-100: #ede1fc;
   --color-marque-200: #dcc6f7;
+  --color-marque-300: #c7a6f2;
   --color-marque-600: #7b35cc;
   --color-marque-700: #4c0f9c;
   --color-marque-800: #35037a;
@@ -23,6 +37,7 @@
   /* Feuille */
   --color-feuille-50: #effaef;
   --color-feuille-100: #d9f2da;
+  --color-feuille-300: #8fdc96;
   --color-feuille-600: #3a9d45;
   --color-feuille-700: #2f7d3c;
   --color-feuille-800: #24622f;
@@ -31,12 +46,16 @@
   /* Pêche */
   --color-peche-50: #fff3f1;
   --color-peche-100: #ffe1dd;
+  --color-peche-300: #ff9e95;
   --color-peche-600: #e0594f;
   --color-peche-700: #b93f36;
   --color-peche-800: #96332c;
   --color-peche-900: #772822;
 
   --color-fond: #faf6fe;
+  /* Mode sombre : aubergine presque noire */
+  --color-nuit: #15101d;
+  --color-nuit-carte: #221a2e;
 }
 
 :root {
@@ -51,6 +70,16 @@ html {
 body {
   background: var(--color-fond);
   color: var(--color-stone-900);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:has([data-theme-auto]) {
+    color-scheme: dark;
+  }
+  body:has([data-theme-auto]) {
+    background: var(--color-nuit);
+    color: var(--color-stone-100);
+  }
 }
 
 /* Évite le zoom automatique d'iOS sur les champs */

@@ -330,6 +330,17 @@ test("recette de la semaine : saisie avec le panier de la semaine dernière, pui
   if (process.env.CAPTURE_PANIERS) await visiteur.screenshot({ path: process.env.CAPTURE_PANIERS, fullPage: true });
   await visiteur.context().close();
 
+  // Téléphone réglé en mode sombre : la page des paniers passe en sombre, le reste du site reste clair
+  const nuit = await (await browser.newContext({ ...test.info().project.use, colorScheme: "dark" })).newPage();
+  const fond = () => nuit.evaluate(() => getComputedStyle(document.body).backgroundColor);
+  await nuit.goto("/paniers");
+  await expect(nuit.getByRole("region", { name: "Recette de la semaine" })).toBeVisible();
+  expect(await fond()).toBe("rgb(21, 16, 29)");
+  if (process.env.CAPTURES) await nuit.screenshot({ path: `${process.env.CAPTURES}/14-page-paniers-sombre.png`, fullPage: true });
+  await nuit.goto("/connexion");
+  expect(await fond()).toBe("rgb(250, 246, 254)");
+  await nuit.context().close();
+
   // La même recette, sous les paniers, dans l'espace d'un client
   await page.goto("/reglages");
   await page.getByRole("button", { name: "Se déconnecter" }).click();
