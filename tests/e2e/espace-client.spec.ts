@@ -9,6 +9,11 @@ import { expect, test, type APIRequestContext, type Page } from "@playwright/tes
  */
 test.describe.configure({ mode: "serial" });
 
+/** Capture d'écran facultative (variable CAPTURES = dossier), pour montrer le rendu. */
+async function capture(cible: { screenshot: (o: { path: string }) => Promise<unknown> }, nom: string) {
+  if (process.env.CAPTURES) await cible.screenshot({ path: `${process.env.CAPTURES}/${nom}.png` });
+}
+
 const FAUX = "http://127.0.0.1:54399";
 const ADMIN = { email: "admin@demo.fr", motDePasse: "demo-demo-demo" };
 
@@ -132,10 +137,13 @@ test("un nouveau client s'inscrit, l'équipe valide, il commande (œufs de fille
   await code.fill("EMDU 0003");
   await expect(page.getByText("Code invalide, veuillez réessayer.")).toBeVisible();
   await page.getByRole("button", { name: "Envoyer mon inscription" }).click();
+  await expect(page.getByText("Vérifiez les champs signalés.")).toBeVisible();
   await expect(page).toHaveURL(/\/espace\/bienvenue/);
   await code.fill("emdu 3344");
+  await expect(page.getByText("Code invalide, veuillez réessayer.")).toHaveCount(0);
   await expect(page.getByText("✓ Code valide")).toBeVisible();
   await page.getByLabel("Comment nous avez-vous connu ? (facultatif)").selectOption("Au marché");
+  await capture(page.getByLabel("Code de parrainage (facultatif)").locator("xpath=ancestor::section[1]"), "1-inscription-code-parrainage");
   await page.getByRole("button", { name: "Envoyer mon inscription" }).click();
   await page.waitForURL("**/espace");
   await expect(page.getByText("Inscription reçue, merci !")).toBeVisible();
@@ -162,6 +170,7 @@ test("un nouveau client s'inscrit, l'équipe valide, il commande (œufs de fille
   await expect(carte).toContainText("Code EMDU 3344");
   await expect(carte).toContainText("✓ Emma Dubois");
   await expect(carte).toContainText("Nous a connusAu marché");
+  await capture(carte, "2-validation-inscription");
   await carte.getByLabel("Secteur").selectOption({ label: "Toulon Est – Hyères" });
   await carte.getByRole("button", { name: "Valider" }).click();
   await expect(page.getByText("Aucune inscription en attente.")).toBeVisible();
@@ -255,7 +264,10 @@ test("recette de la semaine : saisie avec le panier de la semaine dernière, pui
   await connexion(page, ADMIN.email, ADMIN.motDePasse);
   await page.waitForURL("**/livraisons**");
   await page.goto("/reglages/composition");
+  await page.getByLabel("Panier 30 €").clear();
   await page.getByLabel("Panier 30 €").fill(PANIER_30);
+  await expect(page.getByLabel("Panier 30 €")).toHaveValue(PANIER_30);
+  await page.getByLabel("Panier 50 €").clear();
   await page.getByLabel("Panier 50 €").fill(PANIER_50);
   await page.getByRole("button", { name: "Enregistrer la composition" }).click();
   await expect(page.getByText("✓ Composition enregistrée")).toBeVisible();
@@ -281,6 +293,21 @@ test("recette de la semaine : saisie avec le panier de la semaine dernière, pui
   await expect(recette.getByText(/^Creusez 4 petits nids/)).toBeVisible();
   await expect(visiteur.getByText("500 g clémentines", { exact: true })).toBeVisible();
   if (process.env.CAPTURE_RECETTE) await recette.screenshot({ path: process.env.CAPTURE_RECETTE });
+  await capture(visiteur.getByRole("article").first().locator("xpath=.."), "3-page-paniers-panier");
+  await capture(recette, "4-page-paniers-recette");
   if (process.env.CAPTURE_PANIERS) await visiteur.screenshot({ path: process.env.CAPTURE_PANIERS, fullPage: true });
   await visiteur.context().close();
+
+  // La même recette, sous les paniers, dans l'espace d'un client
+  await page.goto("/reglages");
+  await page.getByRole("button", { name: "Se déconnecter" }).click();
+  await page.waitForURL("**/connexion");
+  await connexion(page, "emma.dubois@example.org", "panier-emma-2026");
+  await page.waitForURL("**/espace");
+  await expect(page.getByRole("region", { name: "Recette de la semaine" })).toBeVisible();
+  await expect(page.getByRole("region", { name: "Dans les paniers" })).toContainText("500 g clémentines");
+  // En-tête fixe retiré pour la capture (il recouvrirait le haut de la recette)
+  await page.addStyleTag({ content: "header { position: static !important; } nav { display: none !important; }" });
+  await capture(page.getByRole("region", { name: "Dans les paniers" }), "5a-espace-client-paniers");
+  await capture(page.getByRole("region", { name: "Recette de la semaine" }), "5b-espace-client-recette");
 });

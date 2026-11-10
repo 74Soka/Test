@@ -50,6 +50,7 @@ export function FormulaireBienvenue({
   const [enCours, demarrer] = useTransition();
   const maj = (partiel: Partial<typeof d>) => setD((x) => ({ ...x, ...partiel }));
   const code = useEtatCode(d.parrain);
+  const [codeRefuse, setCodeRefuse] = useState<string | null>(null);
   const [choixConnu, setChoixConnu] = useState(() =>
     !d.connuPar ? "" : CONNU_PAR.includes(d.connuPar) ? d.connuPar : "Autre",
   );
@@ -61,11 +62,13 @@ export function FormulaireBienvenue({
       noValidate
       onSubmit={(e) => {
         e.preventDefault();
+        const codeEnvoye = normaliserCode(d.parrain);
         demarrer(async () => {
           const r = await envoyerMonInscription({ ...d, adresse: d.adresse ?? (undefined as unknown as Adresse) });
           if (!r.ok) {
             setErreur(r.erreur);
             setChamps(r.champs ?? {});
+            setCodeRefuse(r.champs?.parrain ? codeEnvoye : null);
             window.scrollTo({ top: 0, behavior: "smooth" });
             return;
           }
@@ -171,12 +174,13 @@ export function FormulaireBienvenue({
           autoComplete="off"
           spellCheck={false}
           value={d.parrain}
-          onChange={(e) => {
-            maj({ parrain: e.target.value });
-            setChamps(({ parrain: _ancien, ...autres }) => autres);
-          }}
+          onChange={(e) => maj({ parrain: e.target.value })}
           placeholder="Ex. EVCA 9616"
-          erreur={champs.parrain ?? (code === "invalide" ? "Code invalide, veuillez réessayer." : undefined)}
+          erreur={
+            // L'erreur du serveur ne vaut que pour le code qu'il a refusé (le client a pu le corriger entre-temps)
+            (codeRefuse !== null && codeRefuse === normaliserCode(d.parrain) ? champs.parrain : undefined) ??
+            (code === "invalide" ? "Code invalide, veuillez réessayer." : undefined)
+          }
           aide="Un client vous a parrainé ? Indiquez son code : vous en profiterez tous les deux."
         />
         {code === "verification" && <p className="text-sm text-stone-600">Vérification du code…</p>}

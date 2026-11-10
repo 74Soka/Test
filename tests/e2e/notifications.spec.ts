@@ -10,6 +10,11 @@ import { expect, test, type APIRequestContext, type Page } from "@playwright/tes
  */
 test.describe.configure({ mode: "serial" });
 
+/** Capture d'écran facultative (variable CAPTURES = dossier), pour montrer le rendu. */
+async function capture(cible: { screenshot: (o: { path: string }) => Promise<unknown> }, nom: string) {
+  if (process.env.CAPTURES) await cible.screenshot({ path: `${process.env.CAPTURES}/${nom}.png` });
+}
+
 const FAUX = "http://127.0.0.1:54399";
 const LEA = { email: "lea.robert@example.org", motDePasse: "paniers-lea-2026" };
 
@@ -253,6 +258,8 @@ test("rappels du jeudi, annonce des paniers, merci après la livraison et avis d
   // Elle donne son avis depuis son accueil
   await connexion(page, LEA.email, LEA.motDePasse);
   await page.waitForURL("**/espace");
+  await expect(page.getByText(/Reste à régler/)).toBeVisible();
+  await capture(page.getByText(/Reste à régler/), "11-espace-client-reste-a-regler");
   await page.getByRole("link", { name: /Comment était votre panier/ }).click();
   await page.getByRole("radio", { name: /^2 étoiles/ }).click();
   await page.getByLabel("Un commentaire ? (facultatif)").fill("Une salade un peu abîmée");

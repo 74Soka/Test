@@ -23,6 +23,8 @@ import { clePubliqueVapid } from "@/lib/notifications";
 import { BoutonAnnuler } from "./bouton-annuler";
 import { ActivationNotifications } from "./notifications";
 import { CompositionPaniers, RecapCommande } from "./composants";
+import { RecetteSemaine } from "@/components/recette-semaine";
+import { lirePaniersPublics } from "@/lib/paniers-publics";
 
 export const metadata: Metadata = { title: "Mon espace" };
 
@@ -32,10 +34,11 @@ export default async function PageEspace({ searchParams }: PageProps<"/espace">)
   const sp = await searchParams;
 
   if (situation.etat === "en_attente" || situation.etat === "refusee") {
-    const [catalogue, composition, inscription] = await Promise.all([
+    const [catalogue, composition, inscription, publics] = await Promise.all([
       lireCatalogue(),
       lireComposition(lundiDeLaSemaine(aujourdhui())),
       lireMonInscription(),
+      lirePaniersPublics().catch(() => null),
     ]);
     return (
       <>
@@ -57,6 +60,9 @@ export default async function PageEspace({ searchParams }: PageProps<"/espace">)
             contenus={composition.contenus}
             sousTitre={composition.semaine ? `Semaine du ${formaterDate(composition.semaine)}` : undefined}
           />
+          {publics?.recette && (
+            <RecetteSemaine recette={publics.recette} paniers={publics.paniers} supplements={publics.supplements} />
+          )}
           {situation.etat === "en_attente" && (
             <LienBouton href="/espace/bienvenue" variante="secondaire" className="w-full">
               Modifier mes informations
@@ -74,7 +80,7 @@ export default async function PageEspace({ searchParams }: PageProps<"/espace">)
   if (situation.etat !== "client") redirect("/");
 
   const date = situation.prochaine_livraison;
-  const [catalogue, composition, commande, fidelite, recompenses, clePublique, sansAvis, monSolde] = await Promise.all([
+  const [catalogue, composition, commande, fidelite, recompenses, clePublique, sansAvis, monSolde, publics] = await Promise.all([
     lireCatalogue(),
     lireComposition(lundiDeLaSemaine(date ?? aujourdhui())),
     situation.commande_id ? lireCommandeClient(situation.commande_id) : Promise.resolve(null),
@@ -83,6 +89,7 @@ export default async function PageEspace({ searchParams }: PageProps<"/espace">)
     clePubliqueVapid(),
     livraisonSansAvis(),
     lireMonSolde(),
+    lirePaniersPublics().catch(() => null),
   ]);
   const suivante = prochaineRecompense(fidelite.solde, fidelite.niveau, recompenses);
   const peutCommander = situation.actif && situation.commandes_ouvertes && date !== null;
@@ -179,6 +186,9 @@ export default async function PageEspace({ searchParams }: PageProps<"/espace">)
             composition.semaine && !composition.exacte ? `Semaine du ${formaterDate(composition.semaine)}` : undefined
           }
         />
+        {publics?.recette && (
+          <RecetteSemaine recette={publics.recette} paniers={publics.paniers} supplements={publics.supplements} />
+        )}
 
         <Carte aria-label="Ma fidélité" className="space-y-3">
           <div className="flex items-baseline justify-between gap-2">

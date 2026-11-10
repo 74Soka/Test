@@ -7,6 +7,11 @@ import { aujourdhui, ajouterJours, formaterDate, prochaineDate } from "../../src
  */
 test.describe.configure({ mode: "serial" });
 
+/** Capture d'écran facultative (variable CAPTURES = dossier), pour montrer le rendu. */
+async function capture(cible: { screenshot: (o: { path: string }) => Promise<unknown> }, nom: string) {
+  if (process.env.CAPTURES) await cible.screenshot({ path: `${process.env.CAPTURES}/${nom}.png` });
+}
+
 const MOT_DE_PASSE = "demo-demo-demo";
 
 async function seConnecter(page: Page) {
@@ -133,17 +138,21 @@ test("statut : livrée sans paiement (le compte du client le garde), puis remise
   await page.getByRole("button", { name: "Livrée", exact: true }).click();
   await expect(page.getByText(/^Livrée le .+ à \d{2}:\d{2}$/)).toBeVisible();
   await expect(page.getByText("Livrée · non payée")).toBeVisible();
+  await capture(page.locator("header").first(), "8-commande-livree-non-payee");
 
   // Le compte de Zoé : le montant de la commande est dû
   await ouvrirFiche(page, "essai", /Zoé Essai/);
   const compte = page.getByRole("region", { name: "Compte du client" });
   await expect(compte).toContainText(/\d+\s€ dus/);
+  await page.addStyleTag({ content: "header { position: static !important; } nav { display: none !important; }" });
+  await capture(compte, "9-fiche-client-compte");
   // Paiement reçu à part, puis annulé (erreur de saisie)
   await compte.getByRole("button", { name: "Noter un paiement ou corriger" }).click();
   await compte.getByLabel("Montant (€)").fill("5");
   await compte.getByLabel("Note (facultatif)").fill("Virement");
   await compte.getByRole("button", { name: "Enregistrer" }).click();
   await expect(compte).toContainText("Virement");
+  await capture(compte, "10-fiche-client-paiement-note");
   await compte.getByRole("button", { name: "Supprimer ce mouvement" }).click();
   await expect(compte).not.toContainText("Virement");
 
@@ -296,11 +305,13 @@ test("tournée : carte et temps par les routes, ordre optimisé, réorganisation
 
   // Livré : bouton, départ immédiat vers le suivant avec Waze, puis annulation
   const premier = arrets.first();
+  await capture(premier, "6-tournee-avant-livraison");
   await premier.getByRole("button", { name: "Livré", exact: true }).click();
   // Le suivant : l'arrêt n° 2 tel qu'il est affiché après l'appui
   const suivant = (await arrets.nth(1).getAttribute("aria-label"))!.replace(/^Arrêt 2 : /, "");
   await expect(premier.getByRole("button", { name: /✓ Livré · non payé à \d{2}:\d{2} · annuler/ })).toBeVisible();
   await expect(premier.getByText(/à encaisser à la prochaine livraison/)).toBeVisible();
+  await capture(premier, "7-tournee-livre-non-paye");
   const ensuite = premier.getByRole("group", { name: "Arrêt suivant" });
   await expect(ensuite.getByText(`2. ${suivant}`)).toBeVisible();
   await expect(ensuite.getByRole("link", { name: "Y aller avec Waze" })).toHaveAttribute(
