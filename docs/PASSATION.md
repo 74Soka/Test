@@ -81,6 +81,10 @@ l'application.
     enregistre la composition (`compositions`, lundi de la semaine) et rédige la recette (`recettes`) à partir du
     panier, par le connecteur Supabase, puis vérifie `/paniers`.
 
+14. **Semaine montrée aux clients** (`20261118000000_paniers_semaine_ouverte.sql`, appliquée) : `/paniers` change de
+    semaine à la clôture des commandes (comme l'espace client), plus le samedi. Les semaines passées restent en base
+    (historique) et ne sont jamais montrées ; une semaine non saisie affiche « La composition sera bientôt publiée ».
+
 ## 3. Comment on travaille avec le propriétaire
 
 - Il n'a **pas d'ordinateur** : tout se fait depuis son téléphone (Supabase, Netlify, GitHub, OVH dans le navigateur).
