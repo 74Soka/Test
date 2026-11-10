@@ -100,7 +100,7 @@ export default async function PagePaniers() {
         <div>
           <p className="text-sm font-extrabold tracking-widest uppercase opacity-85">Pour commander</p>
           <p className="font-titre text-3xl tabular-nums">{TELEPHONE_COMMANDES.affiche}</p>
-          {cloture && d.commandes_ouvertes && (
+          {cloture && d.commandes_ouvertes && !d.semaine_close && (
             <p className="font-semibold opacity-90">Avant le {cloture} pour la livraison du week-end.</p>
           )}
         </div>
@@ -129,6 +129,16 @@ export default async function PagePaniers() {
           Mon espace client ›
         </Link>
       </section>
+
+      {d.semaine_close && (
+        <p
+          role="status"
+          className="rounded-2xl bg-amber-50 px-4 py-3 text-lg font-semibold text-amber-900 ring-1 ring-amber-200"
+        >
+          Les commandes de cette semaine sont closes : voici le panier livré ce week-end. Le panier de la semaine
+          prochaine arrive très bientôt.
+        </p>
+      )}
 
       <div className="grid gap-4 sm:grid-cols-2">
         {d.paniers.map((p) => {

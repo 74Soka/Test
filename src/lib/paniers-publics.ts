@@ -26,6 +26,8 @@ const schema = z.object({
     }),
   ),
   commandes_ouvertes: z.boolean(),
+  /** Paniers d'une semaine déjà close aux commandes (affichés jusqu'au dimanche 23 h) */
+  semaine_close: z.boolean().optional().default(false),
   cloture_jour: z.number().int().min(1).max(7).nullable(),
   cloture_heure: z.string().nullable(),
   message: z.string().nullable(),

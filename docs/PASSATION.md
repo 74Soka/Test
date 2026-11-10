@@ -85,6 +85,11 @@ l'application.
     semaine à la clôture des commandes (comme l'espace client), plus le samedi. Les semaines passées restent en base
     (historique) et ne sont jamais montrées ; une semaine non saisie affiche « La composition sera bientôt publiée ».
 
+15. **Règle définitive (demande du propriétaire)** (`20261119000000_paniers_jusqu_au_dimanche.sql`, appliquée) :
+    `/paniers` montre le panier de la semaine **jusqu'au dimanche 23 h** (Paris), puis la semaine suivante dès
+    qu'elle est saisie. Après la clôture (vendredi 12 h), bandeau « Les commandes de cette semaine sont closes »
+    (`semaine_close`). L'espace client, lui, suit la semaine qu'on peut commander.
+
 ## 3. Comment on travaille avec le propriétaire
 
 - Il n'a **pas d'ordinateur** : tout se fait depuis son téléphone (Supabase, Netlify, GitHub, OVH dans le navigateur).

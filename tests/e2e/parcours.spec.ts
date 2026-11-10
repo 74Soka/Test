@@ -306,19 +306,29 @@ test("tournée : carte et temps par les routes, ordre optimisé, réorganisation
   // Livré : bouton, départ immédiat vers le suivant avec Waze, puis annulation
   const premier = arrets.first();
   await capture(premier, "6-tournee-avant-livraison");
+  const dejaLivres = await page.getByRole("button", { name: /^✓ Livré/ }).count();
   await premier.getByRole("button", { name: "Livré", exact: true }).click();
-  // Le suivant : l'arrêt n° 2 tel qu'il est affiché après l'appui
-  const suivant = (await arrets.nth(1).getAttribute("aria-label"))!.replace(/^Arrêt 2 : /, "");
+  // Le suivant : le premier arrêt après celui-ci qui n'est pas encore livré
+  // (un parcours précédent a pu en livrer un)
+  let suivant = "";
+  let rangSuivant = 0;
+  for (let k = 1; k < total; k++) {
+    if (await arrets.nth(k).getByRole("button", { name: "Livré et payé" }).count()) {
+      suivant = (await arrets.nth(k).getAttribute("aria-label"))!.replace(/^Arrêt \d+ : /, "");
+      rangSuivant = k + 1;
+      break;
+    }
+  }
   await expect(premier.getByRole("button", { name: /✓ Livré · non payé à \d{2}:\d{2} · annuler/ })).toBeVisible();
   await expect(premier.getByText(/à encaisser à la prochaine livraison/)).toBeVisible();
   await capture(premier, "7-tournee-livre-non-paye");
   const ensuite = premier.getByRole("group", { name: "Arrêt suivant" });
-  await expect(ensuite.getByText(`2. ${suivant}`)).toBeVisible();
+  await expect(ensuite.getByText(`${rangSuivant}. ${suivant}`)).toBeVisible();
   await expect(ensuite.getByRole("link", { name: "Y aller avec Waze" })).toHaveAttribute(
     "href",
     /^https:\/\/waze\.com\/ul\?ll=[\d.]+,[\d.]+&navigate=yes$/,
   );
-  await expect(page.getByText(`1 / ${total} livré`)).toBeVisible();
+  await expect(page.getByText(`${dejaLivres + 1} / ${total} livré`)).toBeVisible();
   await page.reload();
   await expect(arrets.first().getByRole("button", { name: /✓ Livré/ })).toBeVisible();
   await arrets.first().getByRole("button", { name: /✓ Livré/ }).click();
