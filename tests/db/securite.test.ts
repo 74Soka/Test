@@ -169,15 +169,36 @@ describe("compte connecté mais sans profil ni fiche client (ex. inscription en 
 });
 
 describe("livreur", () => {
-  it("lit les clients et les commandes", async () => {
-    const { rows } = await en(base.client, { role: "authenticated", userId: livreur }, (c) =>
-      c.query("select id from public.clients"),
+  it("ne lit que les clients et commandes des tournées proches (veille → 7 jours)", async () => {
+    const livre = await creerClient(base.client, secteur);
+    const autre = await creerClient(base.client, secteur);
+    const { rows: j } = await base.client.query(
+      "select ((now() at time zone 'Europe/Paris')::date + 2)::text as d, ((now() at time zone 'Europe/Paris')::date + 30)::text as loin",
     );
-    expect(rows.length).toBeGreaterThan(0);
-    const commandes = await en(base.client, { role: "authenticated", userId: livreur }, (c) =>
-      c.query("select id from public.commandes"),
+    const p = (await base.client.query("select id from public.articles where categorie = 'panier' limit 1")).rows[0].id;
+    const proche = await en(base.client, { role: "authenticated", userId: admin }, (c) =>
+      enregistrerCommande(c, { clientId: livre, date: j[0].d, lignes: [{ article_id: p, quantite: 1 }] }),
     );
-    expect(commandes.rows.length).toBeGreaterThan(0);
+    const lointaine = await en(base.client, { role: "authenticated", userId: admin }, (c) =>
+      enregistrerCommande(c, { clientId: autre, date: j[0].loin, lignes: [{ article_id: p, quantite: 1 }] }),
+    );
+    const lire = (sql: string) =>
+      en(base.client, { role: "authenticated", userId: livreur }, async (c) => (await c.query(sql)).rows.map((r) => r.id));
+
+    const clients = await lire("select id from public.clients");
+    expect(clients).toContain(livre);
+    expect(clients).not.toContain(autre);
+    const commandes = await lire("select id from public.commandes");
+    expect(commandes).toContain(proche);
+    expect(commandes).not.toContain(lointaine);
+    // Rien de la fidélité, des recettes ni des avis
+    expect(await lire("select id from public.tampons")).toEqual([]);
+    expect(await lire("select semaine as id from public.recettes")).toEqual([]);
+    // L'administrateur, lui, voit tout
+    const tous = await en(base.client, { role: "authenticated", userId: admin }, async (c) =>
+      (await c.query("select id from public.clients")).rows.map((r) => r.id),
+    );
+    expect(tous).toEqual(expect.arrayContaining([livre, autre]));
   });
 
   it("ne peut ni modifier ni supprimer un client", async () => {

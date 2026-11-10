@@ -90,7 +90,7 @@ describe("abonnements des téléphones", () => {
     const lus = await comme(compteAlice, async (c) => (await c.query("select endpoint from public.abonnements_push order by endpoint")).rows);
     expect(lus).toEqual([{ endpoint: "https://push.exemple/alice-1" }, { endpoint: "https://push.exemple/alice-2" }]);
 
-    const duClient = await comme(livreur, async (c) =>
+    const duClient = await comme(admin, async (c) =>
       (await c.query("select endpoint from public.abonnements_du_client($1) order by endpoint", [alice])).rows,
     );
     expect(duClient.map((r) => r.endpoint)).toEqual(["https://push.exemple/alice-1", "https://push.exemple/alice-2"]);
@@ -112,7 +112,7 @@ describe("abonnements des téléphones", () => {
 
   it("un téléphone passé à un autre compte change de propriétaire ; on se désabonne", async () => {
     await abonner(compteBob, "https://push.exemple/alice-2");
-    const deBob = await comme(livreur, async (c) =>
+    const deBob = await comme(admin, async (c) =>
       (await c.query("select endpoint from public.abonnements_du_client($1) order by endpoint", [bob])).rows,
     );
     expect(deBob.map((r) => r.endpoint)).toEqual(["https://push.exemple/alice-2", "https://push.exemple/bob-1"]);

@@ -410,6 +410,36 @@ test("catalogue : supplément hors saison retiré de la saisie, ajout d'un suppl
   await expect(page.getByRole("link", { name: /Miel de lavande/ })).toBeVisible();
 });
 
+test("livreur : la tournée seulement, avec les arrêts et « Livré et payé »", async ({ page }) => {
+  await page.goto("/connexion");
+  await page.getByLabel("Adresse e-mail").fill("livreur@demo.fr");
+  await page.getByLabel("Mot de passe").fill(MOT_DE_PASSE);
+  await page.getByRole("button", { name: "Se connecter" }).click();
+  await page.waitForURL("**/tournee**");
+  await expect(page.getByText("Frais et Français · livreur")).toBeVisible();
+
+  // Les arrêts du jour, avec le contenu et le montant à encaisser (droits réduits mais suffisants)
+  const arrets = page.getByRole("region", { name: /^Arrêt \d+ :/ });
+  await expect(arrets.first()).toBeVisible();
+  await expect(arrets.first().getByText(/À encaisser/)).toBeVisible();
+  // Un arrêt encore à livrer (les parcours précédents en ont livré)
+  const dernier = arrets.filter({ has: page.getByRole("button", { name: "Livré et payé" }) }).last();
+  const nom = (await dernier.getAttribute("aria-label"))!;
+  await dernier.getByRole("button", { name: "Livré et payé" }).click();
+  const arret = page.getByRole("region", { name: nom });
+  await expect(arret.getByRole("button", { name: /✓ Livré et payé/ })).toBeVisible();
+  await arret.getByRole("button", { name: /✓ Livré et payé/ }).click();
+  await expect(arret.getByRole("button", { name: "Livré et payé" })).toBeVisible();
+
+  // Aucun autre écran
+  await page.goto("/clients");
+  await page.waitForURL("**/tournee**");
+  await page.goto("/reglages");
+  await page.waitForURL("**/tournee**");
+  await page.getByRole("button", { name: "Se déconnecter" }).click();
+  await page.waitForURL("**/connexion");
+});
+
 test("déconnexion", async ({ page }) => {
   await seConnecter(page);
   await page.goto("/reglages");

@@ -414,6 +414,19 @@ async function demarrer() {
   await base.client.query("insert into public.profils (id, role) values ($1, 'admin') on conflict do nothing", [
     UTILISATEUR.id,
   ]);
+  // Un livreur de démo (livreur@demo.fr, même mot de passe) : droits réduits à la tournée
+  const livreur: Compte = {
+    id: "22222222-2222-4222-8222-222222222222",
+    email: "livreur@demo.fr",
+    motDePasse: MOT_DE_PASSE_DEMO,
+    confirme: true,
+    meta: {},
+  };
+  COMPTES.set(livreur.email, livreur);
+  await base.client.query("insert into auth.users (id, email) values ($1, $2) on conflict do nothing", [livreur.id, livreur.email]);
+  await base.client.query("insert into public.profils (id, role, nom) values ($1, 'livreur', 'Livreur démo') on conflict do nothing", [
+    livreur.id,
+  ]);
   // Pool : l'application envoie plusieurs requêtes en parallèle ; chacune a
   // sa connexion et son identité le temps de sa transaction.
   pool = new Pool({ connectionString: urlAvecBase(urlServeur(), base.nom), max: 5 });

@@ -95,8 +95,10 @@ describe("avis après livraison", () => {
     expect(await erreur(donner(autre.compte, 5, "Je triche"))).toBe("PN006");
     const vus = await comme(autre.compte, async (c) => (await c.query("select 1 from public.avis_livraison")).rows);
     expect(vus).toEqual([]);
-    const vusEquipe = await comme(livreur, async (c) => (await c.query("select note from public.avis_livraison")).rows);
+    const vusEquipe = await comme(admin, async (c) => (await c.query("select note from public.avis_livraison")).rows);
     expect(vusEquipe).toEqual([{ note: 3 }]);
+    // Les avis ne concernent pas le livreur
+    expect(await comme(livreur, async (c) => (await c.query("select note from public.avis_livraison")).rows)).toEqual([]);
     expect(await erreur(comme(livreur, (c) => c.query("select public.traiter_avis($1, true)", [commande])))).toBe("42501");
 
     // Une livraison de plus d'un mois
@@ -118,7 +120,9 @@ describe("annonce de la composition", () => {
     const { id } = await client("annonce@exemple.fr");
     const inactif = await client("inactif@exemple.fr");
     await sql("update public.clients set actif = false where id = $1", [inactif.id]);
-    const lignes = await comme(livreur, async (c) => (await c.query("select client_id from public.abonnements_clients_actifs()")).rows);
+    const lignes = await comme(admin, async (c) => (await c.query("select client_id from public.abonnements_clients_actifs()")).rows);
+    // Envoyer à tous les clients : administrateur seulement
+    expect(await erreur(comme(livreur, (c) => c.query("select * from public.abonnements_clients_actifs()")))).toBe("42501");
     expect(lignes.map((l) => l.client_id)).toContain(id);
     expect(lignes.map((l) => l.client_id)).not.toContain(inactif.id);
     const { compte } = await client("curieux@exemple.fr", false);

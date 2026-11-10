@@ -154,8 +154,10 @@ l'application.
 - [ ] Faire coller la migration `20261109120000` puis déployer (voir § 2).
 - [x] **Premier compte livreur** créé le 10 novembre 2026 (rôle `livreur` dans `profils`). Procédure : le
       propriétaire crée l'utilisateur dans Supabase Auth, l'assistant ajoute la ligne `profils`.
-- [ ] **Droits des livreurs à resserrer** (proposé, en attente de réponse) : RLS limitée aux clients et commandes des
-      tournées à venir, sans e-mail, fidélité ni comptes ; éventuellement par secteur.
+- [x] **Droits des livreurs resserrés** (`20261120000000_droits_livreurs.sql`, appliquée) : lecture limitée aux
+      commandes de la veille aux 7 jours à venir (tous secteurs), leurs lignes, cadeaux, clients et comptes ; plus rien
+      de la fidélité, des avis, recettes, rappels, annonces. Envoi à tous les clients : admin seul. Reste à faire :
+      la clé privée des notifications (`cles_push`) reste lisible par l'équipe ; la déplacer dans Netlify.
 - [ ] **Vraie liste de clients** à importer à la place des clients de démo (garder catalogue et réglages).
 - [ ] **Nom de domaine OVH** (en cours d'achat ; décision du 9 novembre 2026 : seul le domaine est chez OVH, le site
       reste sur Netlify, offre payante si besoin, pas de VPS) : DNS vers Netlify, `SITE_URL`, *Site URL* et *Redirect URLs* dans
