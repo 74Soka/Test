@@ -99,3 +99,36 @@ describe("échéance des commandes", () => {
     expect(formaterEcheance("2026-07-10T16:30:00Z")).toBe("vendredi 10 juillet à 18 h 30");
   });
 });
+
+describe("e-mails aux clients", () => {
+  it("confirment la commande avec le détail, le total et la clôture", async () => {
+    const { emailCommandeClient } = await import("@/lib/emails/clients");
+    const d = {
+      prenom: "Emma",
+      dateLivraison: "2026-11-14",
+      lignes: [
+        { libelle: "Panier 30 €", quantite: 1, prix_unitaire_centimes: 3000 },
+        { libelle: "Œufs BIO (6)", quantite: 2, prix_unitaire_centimes: 300 },
+      ],
+      offerts: [{ libelle: "Confiture artisanale – figue", quantite: 1, recompense: "Cadeau" }],
+      notes: "Sonner deux fois",
+      cloture: "vendredi 13 novembre à 12 h",
+      lien: "https://fraisetfrancais.fr/espace",
+      telephone: "06 25 50 24 87",
+    };
+    const { sujet, texte } = emailCommandeClient("nouvelle", d);
+    expect(sujet).toBe("Votre commande est confirmée · livraison Samedi 14 novembre");
+    expect(texte).toContain("Bonjour Emma,");
+    expect(texte).toContain("- 2 × Œufs BIO (6)");
+    expect(texte).toContain("Offert grâce à votre fidélité :\n- 1 × Confiture artisanale – figue");
+    expect(texte).toMatch(/Total à régler à la livraison : 36\s€/);
+    expect(texte).toContain("jusqu'au vendredi 13 novembre à 12 h : https://fraisetfrancais.fr/espace");
+    expect(texte).toContain("06 25 50 24 87");
+
+    expect(emailCommandeClient("modifiee", d).sujet).toBe("Votre commande est modifiée · livraison Samedi 14 novembre");
+    const annulee = emailCommandeClient("annulee", { ...d, prenom: "" });
+    expect(annulee.sujet).toBe("Votre commande est annulée · Samedi 14 novembre");
+    expect(annulee.texte).toMatch(/^Bonjour,\n\nVotre commande pour la livraison du samedi 14 novembre est bien annulée\./);
+    expect(annulee.texte).not.toContain("Total");
+  });
+});

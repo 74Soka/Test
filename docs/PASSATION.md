@@ -157,9 +157,12 @@ l'application.
 - [x] **Droits des livreurs resserrés** (`20261120000000_droits_livreurs.sql`, appliquée) : lecture limitée aux
       commandes de la veille aux 7 jours à venir (tous secteurs), leurs lignes, cadeaux, clients et comptes ; plus rien
       de la fidélité, des avis, recettes, rappels, annonces. Envoi à tous les clients : admin seul.
-- [ ] **Clé privée des notifications hors de la base** : le code lit `VAPID_CLE_PUBLIQUE` / `VAPID_CLE_PRIVEE` (Netlify)
-      en priorité. Une fois copiées par le propriétaire (mêmes valeurs que `prive.cles_push`, pour garder les
-      abonnements), appliquer `20261121000000_cle_privee_hors_base.sql` puis `update prive.cles_push set privee = null`.
+- [x] **Clé privée des notifications hors de la base** (10 novembre 2026) : `VAPID_CLE_PUBLIQUE` / `VAPID_CLE_PRIVEE`
+      dans Netlify (mêmes valeurs qu'avant), `20261121000000_cle_privee_hors_base.sql` appliquée, clé privée effacée
+      de `prive.cles_push`. `VAPID_CLE_PRIVEE` n'était pas marquée secrète dans Netlify : la cocher « secret ».
+- [x] **E-mails de commande** : le client reçoit « Votre commande est confirmée / modifiée / annulée » (détail, total,
+      clôture, lien vers son espace) ; l'équipe ne reçoit plus d'e-mail de commande (notifications seulement). Les
+      e-mails d'inscription et d'avis à l'équipe restent.
 - [ ] **Vraie liste de clients** à importer à la place des clients de démo (garder catalogue et réglages).
 - [ ] **Nom de domaine OVH** (en cours d'achat ; décision du 9 novembre 2026 : seul le domaine est chez OVH, le site
       reste sur Netlify, offre payante si besoin, pas de VPS) : DNS vers Netlify, `SITE_URL`, *Site URL* et *Redirect URLs* dans

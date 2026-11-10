@@ -7,7 +7,16 @@ import { exigerClient, exigerClientRelie } from "@/lib/auth";
 import { codeComplet, formaterCode, normaliserCode } from "@/lib/domaine/parrainage";
 import { normaliserTelephone } from "@/lib/domaine/telephone";
 import { nomComplet } from "@/lib/domaine/texte";
-import { alerteAvis, alerteCommande, alerteInscription, envoyerAlerte, type EvenementCommande } from "@/lib/emails";
+import {
+  alerteAvis,
+  alerteInscription,
+  emailCommandeClient,
+  envoyerAlerte,
+  envoyerAuClient,
+  type EvenementCommande,
+} from "@/lib/emails";
+import { formaterEcheance } from "@/lib/domaine/dates";
+import { TELEPHONE_COMMANDES } from "@/lib/paniers-publics";
 import { messageErreur, type Resultat } from "@/lib/erreurs";
 import { lireCommandeClient } from "@/lib/espace-client";
 import { origineDuSite } from "@/lib/site";
@@ -39,22 +48,34 @@ async function notifierEquipe(type: "inscription" | "commande" | "modification" 
 
 const TYPE_NOTIFICATION = { nouvelle: "commande", modifiee: "modification", annulee: "annulation" } as const;
 
-async function alerter(evenement: EvenementCommande, commandeId: string, client: string) {
+/**
+ * Après une commande en ligne : notification aux administrateurs (plus d'e-mail
+ * à l'équipe) et e-mail au client (confirmation, modification ou annulation).
+ */
+async function alerter(
+  evenement: EvenementCommande,
+  commandeId: string,
+  client: { prenom: string; email: string | null; cloture: string | null },
+) {
   await notifierEquipe(TYPE_NOTIFICATION[evenement], commandeId);
+  if (!client.email) return;
   const commande = await lireCommandeClient(commandeId);
   if (!commande) return;
-  await envoyerAlerte({
-    ...alerteCommande(evenement, {
-      client,
+  await envoyerAuClient(
+    client.email,
+    emailCommandeClient(evenement, {
+      prenom: client.prenom,
       dateLivraison: commande.date_livraison,
       lignes: commande.lignes,
       offerts: commande.recompenses.flatMap((r) =>
         r.cadeaux.map((c) => ({ libelle: c.libelle, quantite: c.quantite, recompense: r.nom })),
       ),
       notes: commande.notes,
-      lien: `${await origineDuSite()}/commandes/${commandeId}`,
+      cloture: client.cloture ? formaterEcheance(client.cloture) : null,
+      lien: `${await origineDuSite()}/espace`,
+      telephone: TELEPHONE_COMMANDES.affiche,
     }),
-  });
+  );
 }
 
 /** Commander, ou modifier sa commande de la semaine. */
@@ -73,7 +94,11 @@ export async function commanderEnLigne(demande: DemandeCommande): Promise<Result
   if (error) return { ok: false, erreur: messageErreur(error) };
 
   const r = z.object({ commande_id: z.uuid(), nouvelle: z.boolean() }).parse(data);
-  await alerter(r.nouvelle ? "nouvelle" : "modifiee", r.commande_id, nomCompletClient(situation, utilisateur.email));
+  await alerter(r.nouvelle ? "nouvelle" : "modifiee", r.commande_id, {
+    prenom: situation.prenom,
+    email: utilisateur.email,
+    cloture: situation.cloture,
+  });
   revalidatePath("/espace", "layout");
   return { ok: true };
 }
@@ -88,7 +113,7 @@ export async function annulerMaCommande(commandeId: string): Promise<Resultat> {
   const supabase = await clientSupabase();
   const { error } = await supabase.rpc("annuler_ma_commande", { p_commande_id: commandeId });
   if (error) return { ok: false, erreur: messageErreur(error) };
-  await alerter("annulee", commandeId, nomCompletClient(situation, utilisateur.email));
+  await alerter("annulee", commandeId, { prenom: situation.prenom, email: utilisateur.email, cloture: null });
   revalidatePath("/espace", "layout");
   return { ok: true };
 }

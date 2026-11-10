@@ -90,12 +90,17 @@ test("un client déjà connu crée son compte, le retrouve relié à sa fiche et
   await expect(livraison).toContainText("Œufs (6)");
   await expect(livraison).toContainText("« Sonner deux fois »");
 
-  // L'équipe est prévenue par e-mail, avec le lien vers la commande
+  // Emma reçoit la confirmation par e-mail ; l'équipe, plus d'e-mail de commande (la notification suffit)
   await expect
-    .poll(async () => (await emails(request)).find((e) => e.subject.includes("Emma Dubois")))
-    .toMatchObject({ to: [{ email: "equipe@exemple.fr" }] });
-  const alerte = (await emails(request)).find((e) => e.subject.includes("Emma Dubois"))!;
-  expect(alerte.textContent).toMatch(/Voir la commande : http:\/\/localhost:3100\/commandes\/[0-9a-f-]{36}/);
+    .poll(async () => (await emails(request)).find((e) => /^Votre commande est (confirmée|modifiée)/.test(e.subject)))
+    .toMatchObject({ to: [{ email: "emma.dubois@example.org" }] });
+  // (Emma avait déjà une commande saisie par l'équipe dans la démo : « modifiée »)
+  const confirmation = (await emails(request)).find((e) => /^Votre commande est (confirmée|modifiée)/.test(e.subject))!;
+  expect(confirmation.textContent).toContain("Bonjour Emma,");
+  expect(confirmation.textContent).toMatch(/\d × Panier 50 €/);
+  expect(confirmation.textContent).toMatch(/Total à régler à la livraison : \d+\s€/);
+  expect(confirmation.textContent).toContain("http://localhost:3100/espace");
+  expect((await emails(request)).some((e) => e.to.some((t) => t.email === "equipe@exemple.fr") && /commande/i.test(e.subject))).toBe(false);
 
   // Fidélité, historique, coordonnées
   await page.getByRole("link", { name: "Fidélité" }).click();
@@ -114,7 +119,9 @@ test("un client déjà connu crée son compte, le retrouve relié à sa fiche et
   await page.goto("/espace");
   await page.getByRole("button", { name: "Annuler ma commande" }).click();
   await expect(page.getByRole("link", { name: "Commander" }).first()).toBeVisible();
-  await expect.poll(async () => (await emails(request)).some((e) => e.subject.startsWith("Commande annulée : Emma Dubois"))).toBe(true);
+  await expect
+    .poll(async () => (await emails(request)).find((e) => e.subject.startsWith("Votre commande est annulée")))
+    .toMatchObject({ to: [{ email: "emma.dubois@example.org" }] });
   await deconnexionClient(page);
 });
 
@@ -190,7 +197,13 @@ test("un nouveau client s'inscrit, l'équipe valide, il commande (œufs de fille
   const livraison = page.getByRole("region", { name: "Prochaine livraison" });
   await expect(livraison).toContainText("Panier 30 €");
   await expect(livraison).toContainText("🎁 1 × Œufs (6)");
-  await expect.poll(async () => (await emails(request)).some((e) => e.subject.startsWith("Nouvelle commande : Noé Nouveau"))).toBe(true);
+  await expect
+    .poll(async () =>
+      (await emails(request)).some(
+        (e) => e.subject.startsWith("Votre commande est confirmée") && e.to.some((t) => t.email === noe.email),
+      ),
+    )
+    .toBe(true);
 
   // RGPD : il supprime son compte et ses données
   await page.getByRole("link", { name: "Compte" }).click();
