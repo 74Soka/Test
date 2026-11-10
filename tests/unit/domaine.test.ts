@@ -22,7 +22,7 @@ import {
   secteurDeLivraison,
   secteurPropose,
 } from "@/lib/domaine/secteurs";
-import { contientUnPanier, nombreDePaniers, recapitulatif, resumeLignes, totalCommande } from "@/lib/domaine/commandes";
+import { contientUnPanier, manquePourCommander, nombreDePaniers, recapitulatif, resumeLignes, totalCommande } from "@/lib/domaine/commandes";
 
 // Les espaces insécables de Intl sont remplacés par des espaces simples pour comparer.
 const espaces = (t: string) => t.replace(/[  ]/g, " ");
@@ -229,6 +229,13 @@ describe("commandes", () => {
     expect(contientUnPanier({ p30: 1 }, articles)).toBe(true);
     expect(contientUnPanier({ s1: 3 }, articles)).toBe(false);
     expect(contientUnPanier({ p30: 0, s1: 1 }, articles)).toBe(false);
+  });
+
+  it("sans panier, demande 30 € de suppléments", () => {
+    expect(manquePourCommander(true, 0)).toBeNull();
+    expect(manquePourCommander(false, 3000)).toBeNull();
+    expect(manquePourCommander(false, 0)).toBe("Choisissez au moins un panier, ou 30 € de suppléments.");
+    expect(manquePourCommander(false, 2250)).toBe(`Sans panier, 30 € de suppléments minimum : encore ${formaterPrix(750)}.`);
   });
 
   it("totalise le récapitulatif à préparer en ignorant les commandes annulées", () => {

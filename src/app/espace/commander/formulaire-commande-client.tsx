@@ -6,6 +6,7 @@ import { commanderEnLigne } from "../actions";
 import { Compteur } from "@/components/compteur";
 import { Bouton, Carte, MessageErreur, TitreSection, ZoneTexte, cx } from "@/components/ui";
 import { formaterPrix } from "@/lib/domaine/argent";
+import { manquePourCommander } from "@/lib/domaine/commandes";
 import { niveauSuffisant, pluriel, soldeDisponible, type Niveau } from "@/lib/domaine/fidelite";
 import type { ArticleCatalogue, CommandeClient, RecompenseProposeeClient } from "@/lib/espace-client";
 import { NomProduit } from "@/components/produit";
@@ -59,6 +60,7 @@ export function FormulaireCommandeClient({
     enregistrees.some(
       (r) => gardees.includes(r.id) && r.cadeaux.some((c) => c.categorie === "panier"),
     );
+  const manque = manquePourCommander(aUnPanier, total);
 
   const disponible = soldeDisponible(
     solde,
@@ -277,8 +279,8 @@ export function FormulaireCommandeClient({
           <span>Total à régler à la livraison</span>
           <span className="tabular-nums">{formaterPrix(total)}</span>
         </p>
-        {!aUnPanier && <p className="mb-2 text-sm text-amber-800">Choisissez au moins un panier.</p>}
-        <Bouton taille="grand" className="w-full" disabled={enCours || !aUnPanier} onClick={valider}>
+        {manque && <p className="mb-2 text-sm text-amber-800">{manque}</p>}
+        <Bouton taille="grand" className="w-full" disabled={enCours || Boolean(manque)} onClick={valider}>
           {enCours ? "Envoi…" : commande ? "Enregistrer les modifications" : "Valider ma commande"}
         </Bouton>
       </div>

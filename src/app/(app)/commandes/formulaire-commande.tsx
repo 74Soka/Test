@@ -8,7 +8,7 @@ import { ChoixClient, type ClientChoisissable } from "@/components/choix-client"
 import { Compteur } from "@/components/compteur";
 import { Bouton, Carte, Champ, MessageErreur, PointCouleur, Selection, ZoneTexte } from "@/components/ui";
 import { formaterPrix } from "@/lib/domaine/argent";
-import { contientUnPanier } from "@/lib/domaine/commandes";
+import { contientUnPanier, manquePourCommander } from "@/lib/domaine/commandes";
 import { formaterDate, jourSemaine, NOMS_JOURS } from "@/lib/domaine/dates";
 import { dateDuSecteurDansLaSemaine, libelleTournee, prochaineLivraison, type Creneau } from "@/lib/domaine/secteurs";
 import { oeufsDeBienvenue, type FideliteSaisie, type RecompenseProposee } from "@/lib/domaine/fidelite";
@@ -112,6 +112,7 @@ export function FormulaireCommande({
     Object.entries(r.articles).some(([id, q]) => q > 0 && articles.find((a) => a.id === id)?.categorie === "panier"),
   );
   const aUnPanier = contientUnPanier(quantites, articles) || panierOffert;
+  const manque = manquePourCommander(aUnPanier, total);
   const fideliteClient = client ? fidelite[client.id] : undefined;
   const paniers = articles.filter((a) => a.categorie === "panier");
   const supplements = articles.filter((a) => a.categorie === "supplement");
@@ -315,8 +316,8 @@ export function FormulaireCommande({
           <span className="text-stone-600">Total</span>
           <span className="text-2xl font-bold tabular-nums">{formaterPrix(total)}</span>
         </div>
-        {!aUnPanier && <p className="mb-2 text-sm font-medium text-amber-800">Ajoutez au moins un panier.</p>}
-        <Bouton type="submit" taille="grand" className="w-full" disabled={enCours || !aUnPanier || !client || !date}>
+        {manque && <p className="mb-2 text-sm font-medium text-amber-800">{manque}</p>}
+        <Bouton type="submit" taille="grand" className="w-full" disabled={enCours || Boolean(manque) || !client || !date}>
           {enCours ? "Enregistrement…" : id ? "Enregistrer les modifications" : "Enregistrer la commande"}
         </Bouton>
       </div>

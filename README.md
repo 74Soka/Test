@@ -38,7 +38,7 @@ d'accueil.
   - Bouton **« Recommander comme la dernière fois »**.
   - Statuts : à livrer, livrée (avec l'heure de livraison), annulée.
   - Règles vérifiées par la base elle-même :
-    - **au moins un panier** par commande ;
+    - **au moins un panier** par commande (acheté ou offert), ou sans panier **30 € de suppléments** minimum ;
     - **une commande par client et par semaine** ;
     - **prix figés** au moment de la commande : changer un prix au catalogue ne modifie pas les commandes déjà
       saisies.
@@ -128,7 +128,7 @@ Les clients ont leur propre compte (e-mail + mot de passe), sur le même site. I
 
 - **Accueil** : prochaine livraison (jour de leur secteur), heure de clôture, leur commande de la semaine, la
   **composition des paniers** et un résumé de leur carte de fidélité ;
-- **Commander** : paniers (avec leur contenu) et suppléments, au moins un panier. Ils peuvent utiliser leurs
+- **Commander** : paniers (avec leur contenu) et suppléments, au moins un panier ou 30 € de suppléments. Ils peuvent utiliser leurs
   récompenses : l'article prévu par la récompense, ou les suppléments de leur choix (nombre réglable par récompense).
   Les cadeaux de parrainage (œufs du filleul, confiture du parrain) s'ajoutent tout seuls quand leur article est réglé.
   Modification et annulation jusqu'à la **clôture** (vendredi 12 h par défaut). Paiement à la livraison ;

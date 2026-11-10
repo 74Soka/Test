@@ -84,10 +84,23 @@ describe("contenu d'une commande", () => {
     expect(await lignes(id)).toEqual([{ article_id: p30, quantite: 2, prix_unitaire_centimes: 3000 }]);
   });
 
-  it("refuse une commande sans panier (suppléments seuls)", async () => {
+  it("refuse une commande sans panier sous 30 € de suppléments", async () => {
     const client = await creerClient(base.client, secteur);
     await expect(
-      enregistrer({ clientId: client, date: "2026-11-07", lignes: [{ article_id: oeufs, quantite: 2 }] }),
+      enregistrer({ clientId: client, date: "2026-11-07", lignes: [{ article_id: oeufs, quantite: 5 }] }),
+    ).rejects.toSatisfy((e) => codeErreur(e) === "PN002");
+  });
+
+  it("accepte une commande sans panier à partir de 30 € de suppléments", async () => {
+    const client = await creerClient(base.client, secteur);
+    const id = await enregistrer({ clientId: client, date: "2026-11-07", lignes: [{ article_id: oeufs, quantite: 6 }] });
+    expect(await lignes(id)).toEqual([{ article_id: oeufs, quantite: 6, prix_unitaire_centimes: 500 }]);
+    // Retirer le panier d'une commande : possible seulement s'il reste 30 € de suppléments
+    await expect(
+      enregistrer({ clientId: client, date: "2026-11-07", commandeId: id, lignes: [{ article_id: oeufs, quantite: 5 }] }),
+    ).rejects.toSatisfy((e) => codeErreur(e) === "PN002");
+    await expect(
+      commeAdmin((c) => c.query("update public.lignes_commande set quantite = 5 where commande_id = $1", [id])),
     ).rejects.toSatisfy((e) => codeErreur(e) === "PN002");
   });
 

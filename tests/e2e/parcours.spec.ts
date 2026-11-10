@@ -81,7 +81,7 @@ test("création d'un client : adresse proposée, secteur déduit, parrain", asyn
   await expect(page.getByRole("link", { name: "Zoé Essai" })).toBeVisible();
 });
 
-test("commande : au moins un panier, total, date choisie", async ({ page }) => {
+test("commande : un panier ou 30 € de suppléments, total, date choisie", async ({ page }) => {
   await seConnecter(page);
   await ouvrirFiche(page, "essai", /Zoé Essai/);
   await page.getByRole("link", { name: "Nouvelle commande" }).click();
@@ -94,7 +94,7 @@ test("commande : au moins un panier, total, date choisie", async ({ page }) => {
 
   const enregistrer = page.getByRole("button", { name: "Enregistrer la commande" });
   await page.getByRole("button", { name: "Ajouter un Œufs BIO (6)", exact: true }).click();
-  await expect(page.getByText("Ajoutez au moins un panier.")).toBeVisible();
+  await expect(page.getByText(/Sans panier, 30 € de suppléments minimum : encore 27/)).toBeVisible();
   await expect(enregistrer).toBeDisabled();
 
   await page.getByRole("button", { name: "Ajouter un Panier 30 €" }).click();

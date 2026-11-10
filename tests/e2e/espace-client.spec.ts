@@ -189,7 +189,7 @@ test("un nouveau client s'inscrit, l'équipe valide, il commande (œufs de fille
   await expect(page.getByRole("heading", { name: "Bonjour Noé" })).toBeVisible();
   await page.getByRole("link", { name: "Commander" }).first().click();
   await page.waitForURL("**/espace/commander");
-  await expect(page.getByText("Choisissez au moins un panier.")).toBeVisible();
+  await expect(page.getByText("Choisissez au moins un panier, ou 30 € de suppléments.")).toBeVisible();
   await expect(page.getByRole("button", { name: "Valider ma commande" })).toBeDisabled();
   await page.getByRole("button", { name: "Ajouter un Panier 30 €" }).click();
   await page.getByRole("button", { name: "Valider ma commande" }).click();

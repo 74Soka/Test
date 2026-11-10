@@ -1,3 +1,5 @@
+import { formaterPrix } from "./argent";
+
 export type Categorie = "panier" | "supplement";
 export type Statut = "a_livrer" | "livree" | "annulee";
 
@@ -29,6 +31,20 @@ export function contientUnPanier(
   articles: { id: string; categorie: Categorie }[],
 ): boolean {
   return articles.some((a) => a.categorie === "panier" && (quantites[a.id] ?? 0) > 0);
+}
+
+/** Sans panier, une commande doit atteindre ce montant de suppléments (règle aussi vérifiée en base). */
+export const MINIMUM_SANS_PANIER_CENTIMES = 3000;
+
+/**
+ * Ce qui manque pour valider : rien (null) avec un panier ou 30 € de suppléments,
+ * sinon le message à afficher.
+ */
+export function manquePourCommander(aUnPanier: boolean, totalCentimes: number): string | null {
+  if (aUnPanier || totalCentimes >= MINIMUM_SANS_PANIER_CENTIMES) return null;
+  if (totalCentimes === 0) return "Choisissez au moins un panier, ou 30 € de suppléments.";
+  const reste = MINIMUM_SANS_PANIER_CENTIMES - totalCentimes;
+  return `Sans panier, 30 € de suppléments minimum : encore ${formaterPrix(reste)}.`;
 }
 
 /** Résumé lisible : « 2 × Panier 30 €, 1 × Œufs » */

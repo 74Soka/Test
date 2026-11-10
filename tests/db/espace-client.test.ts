@@ -302,8 +302,12 @@ describe("commander en ligne", () => {
     expect((await situation(compteAlice)).commande_id).toBe(r.commande_id);
   });
 
-  it("refuse une commande sans panier ou avec un article retiré", async () => {
-    expect(await erreur(passer(compteAlice, { lignes: [{ article_id: sup1, quantite: 2 }] }))).toBe("PN002");
+  it("refuse une commande sans panier sous 30 € ou avec un article retiré", async () => {
+    expect(await erreur(passer(compteAlice, { lignes: [{ article_id: sup1, quantite: 5 }] }))).toBe("PN002");
+    // Sans panier, à partir de 30 € de suppléments : accepté
+    const r = await passer(compteAlice, { lignes: [{ article_id: sup1, quantite: 6 }] });
+    expect(r.commande_id).toBeTruthy();
+    await passer(compteAlice, { lignes: panier30() });
     expect(
       await erreur(passer(compteAlice, { lignes: [...panier30(), { article_id: supInactif, quantite: 1 }] })),
     ).toBe("PN004");

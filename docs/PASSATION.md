@@ -105,7 +105,7 @@ l'application.
 
 - **Équipe** (`/livraisons`, `/clients`, `/commandes`, `/reglages`, `/tournee`) : clients (géocodage IGN, secteur
   déduit de la commune, parrain, RGPD), catalogue (paniers 30 € / 50 € + suppléments de saison), commandes (au moins
-  un panier, une par semaine), livraisons par secteur, tournées.
+  un panier ou 30 € de suppléments, une par semaine), livraisons par secteur, tournées.
 - **Tournées** : ordre optimal exact jusqu'à 15 arrêts (Held-Karp) sur les temps de route OpenRouteService (matrice,
   `api.heigit.org`), au-delà heuristique ; tracé routier ; « Livré » hors connexion (file d'attente locale) ; Waze /
   Google Maps ; bouton « Démarrer la tournée ».
@@ -163,6 +163,9 @@ l'application.
 - [x] **E-mails de commande** : le client reçoit « Votre commande est confirmée / modifiée / annulée » (détail, total,
       clôture, lien vers son espace) ; l'équipe ne reçoit plus d'e-mail de commande (notifications seulement). Les
       e-mails d'inscription et d'avis à l'équipe restent.
+- [x] **Commande sans panier** (`20261122000000_commande_sans_panier.sql`) : possible avec au moins 30 € de
+  suppléments achetés (les cadeaux ne comptent pas). Règle en base (`prive.minimum_sans_panier_centimes()`) et dans
+  les deux formulaires (`manquePourCommander`, `src/lib/domaine/commandes.ts`). Même code d'erreur PN002.
 - [ ] **Vraie liste de clients** à importer à la place des clients de démo (garder catalogue et réglages).
 - [ ] **Nom de domaine OVH** (en cours d'achat ; décision du 9 novembre 2026 : seul le domaine est chez OVH, le site
       reste sur Netlify, offre payante si besoin, pas de VPS) : DNS vers Netlify, `SITE_URL`, *Site URL* et *Redirect URLs* dans
