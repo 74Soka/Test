@@ -223,6 +223,7 @@ test("l'équipe publie la composition et un message, que les clients voient", as
   await page.goto("/reglages/commandes-en-ligne");
   await expect(page.getByLabel("Jour")).toHaveValue("5");
   await expect(page.getByLabel("Heure")).toHaveValue("12:00");
+  await expect(page.getByLabel("Heure")).toBeEditable();
   await page.getByLabel("Message aux clients (facultatif)").fill("Pas de livraison le 26 décembre");
   await page.getByRole("button", { name: "Enregistrer" }).click();
   await expect(page.getByText("✓ Enregistré")).toBeVisible();
@@ -236,7 +237,9 @@ test("l'équipe publie la composition et un message, que les clients voient", as
   await connexion(page, ADMIN.email, ADMIN.motDePasse);
   await page.waitForURL("**/livraisons**");
   await page.goto("/reglages/commandes-en-ligne");
-  await page.getByLabel("Message aux clients (facultatif)").fill("");
+  await expect(page.getByLabel("Message aux clients (facultatif)")).toHaveValue("Pas de livraison le 26 décembre");
+  await page.getByLabel("Message aux clients (facultatif)").clear();
+  await expect(page.getByLabel("Message aux clients (facultatif)")).toHaveValue("");
   await page.getByRole("button", { name: "Enregistrer" }).click();
   await expect(page.getByText("✓ Enregistré")).toBeVisible();
 });
@@ -300,6 +303,13 @@ test("recette de la semaine : saisie avec le panier de la semaine dernière, pui
   await expect(recette.getByText("Dans le panier")).toHaveCount(5);
   await expect(recette.getByText("En supplément")).toHaveCount(1);
   await expect(recette.getByText(/^Creusez 4 petits nids/)).toBeVisible();
+  // Ordre : paniers, puis suppléments, puis recette
+  const hauteur = async (l: ReturnType<typeof visiteur.getByRole>) => (await l.boundingBox())!.y;
+  const yPanier = await hauteur(visiteur.getByRole("article").last());
+  const ySupplements = await hauteur(visiteur.getByRole("region", { name: "En supplément" }));
+  expect(yPanier).toBeLessThan(ySupplements);
+  expect(ySupplements).toBeLessThan(await hauteur(recette));
+  if (process.env.CAPTURES) await visiteur.screenshot({ path: `${process.env.CAPTURES}/13-page-paniers-ordre.png`, fullPage: true });
   await expect(visiteur.getByText("500 g clémentines", { exact: true })).toBeVisible();
   if (process.env.CAPTURE_RECETTE) await recette.screenshot({ path: process.env.CAPTURE_RECETTE });
   await capture(visiteur.getByRole("article").first().locator("xpath=.."), "3-page-paniers-panier");

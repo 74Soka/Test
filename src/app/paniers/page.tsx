@@ -4,11 +4,11 @@ import { formaterPrix } from "@/lib/domaine/argent";
 import { aujourdhui, formaterSemaine, NOMS_JOURS } from "@/lib/domaine/dates";
 import { libelleTournee } from "@/lib/domaine/secteurs";
 import { RecetteSemaine } from "@/components/recette-semaine";
-import { ListeProduits, PastilleBio } from "@/components/produit";
+import { ListeSupplements } from "@/components/supplements";
+import { ListeProduits } from "@/components/produit";
 import {
   INSTAGRAM,
   TELEPHONE_COMMANDES,
-  ligneProduit,
   lignesComposition,
   lirePaniersPublics,
 } from "@/lib/paniers-publics";
@@ -139,27 +139,10 @@ export default async function PagePaniers() {
         })}
       </div>
 
-      {d.recette && <RecetteSemaine recette={d.recette} paniers={d.paniers} supplements={d.supplements} />}
 
-      {d.supplements.length > 0 && (
-        <section className="flex flex-col gap-2 rounded-3xl bg-white p-5 ring-1 ring-marque-100">
-          <h2 className="font-titre text-xl text-marque-800">En supplément</h2>
-          <ul className="divide-y divide-dashed divide-marque-100">
-            {d.supplements.map((s) => {
-              const { texte, bio } = ligneProduit(s.nom);
-              return (
-                <li key={s.nom} className="grid grid-cols-[1fr_auto_4em] items-center gap-3 py-2">
-                  <span>{texte}</span>
-                  <span>{bio && <PastilleBio />}</span>
-                  <span className="text-right font-extrabold text-peche-600 tabular-nums">
-                    {formaterPrix(s.prix_centimes)}
-                  </span>
-                </li>
-              );
-            })}
-          </ul>
-        </section>
-      )}
+      <ListeSupplements supplements={d.supplements} />
+
+      {d.recette && <RecetteSemaine recette={d.recette} paniers={d.paniers} supplements={d.supplements} />}
 
       {d.secteurs.length > 0 && (
         <section className="flex flex-col gap-3 rounded-3xl bg-white p-5 ring-1 ring-marque-100">

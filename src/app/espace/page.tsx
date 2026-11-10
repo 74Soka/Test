@@ -24,6 +24,7 @@ import { BoutonAnnuler } from "./bouton-annuler";
 import { ActivationNotifications } from "./notifications";
 import { CompositionPaniers, RecapCommande } from "./composants";
 import { RecetteSemaine } from "@/components/recette-semaine";
+import { ListeSupplements } from "@/components/supplements";
 import { lirePaniersPublics } from "@/lib/paniers-publics";
 
 export const metadata: Metadata = { title: "Mon espace" };
@@ -60,6 +61,7 @@ export default async function PageEspace({ searchParams }: PageProps<"/espace">)
             contenus={composition.contenus}
             sousTitre={composition.semaine ? `Semaine du ${formaterDate(composition.semaine)}` : undefined}
           />
+          {publics && <ListeSupplements supplements={publics.supplements} />}
           {publics?.recette && (
             <RecetteSemaine recette={publics.recette} paniers={publics.paniers} supplements={publics.supplements} />
           )}
@@ -186,6 +188,7 @@ export default async function PageEspace({ searchParams }: PageProps<"/espace">)
             composition.semaine && !composition.exacte ? `Semaine du ${formaterDate(composition.semaine)}` : undefined
           }
         />
+        {publics && <ListeSupplements supplements={publics.supplements} />}
         {publics?.recette && (
           <RecetteSemaine recette={publics.recette} paniers={publics.paniers} supplements={publics.supplements} />
         )}
