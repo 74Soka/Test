@@ -5,7 +5,8 @@ import { formaterEcheance } from "@/lib/domaine/dates";
 import { configSupabase } from "@/lib/env";
 import type { Database } from "@/lib/supabase/database.types";
 import { origineDuSite } from "@/lib/site";
-import { creerEnvoyeurPush } from "./envoi";
+import { clesDeNetlify } from "./cles-env";
+import { creerEnvoyeurPush, type ClesVapid } from "./envoi";
 import { messageRappel } from "./messages";
 
 /**
@@ -27,6 +28,15 @@ export function momentDuRappel(maintenant: Date = new Date()): Moment | null {
 
 export class JetonRefuse extends Error {}
 
+/** Clés de signature pour le robot : celles de Netlify, sinon celles de la base (jeton exigé). */
+async function clesDuRobot(supabase: ReturnType<typeof createClient<Database>>, jeton: string): Promise<ClesVapid> {
+  const deNetlify = clesDeNetlify();
+  if (deNetlify) return deNetlify;
+  const { data: cles, error } = await supabase.rpc("cles_push_robot", { p_jeton: jeton });
+  if (error || !cles) throw new Error(error?.message ?? "Clés de notification absentes.");
+  return z.object({ publique: z.string(), privee: z.string() }).parse(cles);
+}
+
 export async function envoyerRappels(jeton: string, moment: Moment): Promise<{ rappels: number; envoyes: number }> {
   const { url, cle } = configSupabase();
   const supabase = createClient<Database>(url, cle, { auth: { persistSession: false, autoRefreshToken: false } });
@@ -38,11 +48,9 @@ export async function envoyerRappels(jeton: string, moment: Moment): Promise<{ r
   }
   if (!lignes?.length) return { rappels: 0, envoyes: 0 };
 
-  const { data: cles, error: e2 } = await supabase.rpc("cles_push_robot", { p_jeton: jeton });
-  if (e2 || !cles) throw new Error(e2?.message ?? "Clés de notification absentes.");
   const origine = await origineDuSite();
   const envoyeur = creerEnvoyeurPush({
-    cles: z.object({ publique: z.string(), privee: z.string() }).parse(cles),
+    cles: await clesDuRobot(supabase, jeton),
     sujet: origine.startsWith("https://") ? origine : "mailto:contact@example.org",
   });
 
@@ -71,11 +79,9 @@ export async function envoyerAlertesEquipe(jeton: string): Promise<{ alertes: nu
   }
   if (!lignes?.length) return { alertes: 0, envoyes: 0 };
 
-  const { data: cles, error: e2 } = await supabase.rpc("cles_push_robot", { p_jeton: jeton });
-  if (e2 || !cles) throw new Error(e2?.message ?? "Clés de notification absentes.");
   const origine = await origineDuSite();
   const envoyeur = creerEnvoyeurPush({
-    cles: z.object({ publique: z.string(), privee: z.string() }).parse(cles),
+    cles: await clesDuRobot(supabase, jeton),
     sujet: origine.startsWith("https://") ? origine : "mailto:contact@example.org",
   });
 

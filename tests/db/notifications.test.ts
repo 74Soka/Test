@@ -68,8 +68,13 @@ describe("clés de signature", () => {
     expect(
       await erreur(comme(compteAlice, (c) => c.query("select public.enregistrer_cles_push($1, $2)", ["P".repeat(87), "S".repeat(43)]))),
     ).toBe("42501");
-    await comme(livreur, (c) => c.query("select public.enregistrer_cles_push($1, $2)", ["P".repeat(87), "S".repeat(43)]));
+    // Un livreur ne crée ni ne lit les clés (elles sont dans Netlify en production)
+    expect(
+      await erreur(comme(livreur, (c) => c.query("select public.enregistrer_cles_push($1, $2)", ["L".repeat(87), "L".repeat(43)]))),
+    ).toBe("42501");
+    await comme(admin, (c) => c.query("select public.enregistrer_cles_push($1, $2)", ["P".repeat(87), "S".repeat(43)]));
     await comme(admin, (c) => c.query("select public.enregistrer_cles_push($1, $2)", ["Q".repeat(87), "T".repeat(43)]));
+    expect(await erreur(comme(livreur, (c) => c.query("select public.cles_push()")))).toBe("42501");
 
     expect(await publique(compteAlice)).toBe("P".repeat(87));
     const cles = (await comme(admin, (c) => c.query("select public.cles_push() as k"))).rows[0].k;

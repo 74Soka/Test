@@ -14,3 +14,19 @@ describe("moment des rappels (heure de Paris)", () => {
     expect(momentDuRappel(new Date("2026-11-12T08:00:00Z"))).toBeNull();
   });
 });
+
+describe("clés de signature rangées dans Netlify", () => {
+  it("sont utilisées si les deux variables sont présentes, sinon la base prend le relais", async () => {
+    const { clesDeNetlify } = await import("@/lib/notifications/cles-env");
+    const avant = { pub: process.env.VAPID_CLE_PUBLIQUE, priv: process.env.VAPID_CLE_PRIVEE };
+    process.env.VAPID_CLE_PUBLIQUE = " BPub ";
+    delete process.env.VAPID_CLE_PRIVEE;
+    expect(clesDeNetlify()).toBeNull();
+    process.env.VAPID_CLE_PRIVEE = "priv";
+    expect(clesDeNetlify()).toEqual({ publique: "BPub", privee: "priv" });
+    if (avant.pub === undefined) delete process.env.VAPID_CLE_PUBLIQUE;
+    else process.env.VAPID_CLE_PUBLIQUE = avant.pub;
+    if (avant.priv === undefined) delete process.env.VAPID_CLE_PRIVEE;
+    else process.env.VAPID_CLE_PRIVEE = avant.priv;
+  });
+});

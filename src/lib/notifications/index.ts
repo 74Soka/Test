@@ -7,6 +7,7 @@ import { clientSupabase } from "@/lib/supabase/serveur";
 import { calculerTrajet } from "@/lib/tournees";
 import { distance } from "@/lib/tournees/geo";
 import type { Point } from "@/lib/tournees/types";
+import { clesDeNetlify } from "./cles-env";
 import { creerEnvoyeurPush, type ClesVapid } from "./envoi";
 import { NOMS_JOURS } from "@/lib/domaine/dates";
 import { secteurDeLivraison } from "@/lib/domaine/secteurs";
@@ -32,9 +33,14 @@ export const FRAICHEUR_MAX_MS = 15 * 60 * 1000;
 const schemaCles = z.object({ publique: z.string(), privee: z.string() });
 let clesEnMemoire: ClesVapid | null = null;
 
-/** Clés de signature : lues en base, créées à la première utilisation (équipe). */
+/**
+ * Clés de signature : celles rangées dans Netlify si elles y sont (la clé privée
+ * n'est alors plus en base) ; sinon lues en base, créées à la première utilisation.
+ */
 export async function clesVapid(): Promise<ClesVapid> {
   if (clesEnMemoire) return clesEnMemoire;
+  const deNetlify = clesDeNetlify();
+  if (deNetlify) return (clesEnMemoire = deNetlify);
   const supabase = await clientSupabase();
   const lire = async () => {
     const { data, error } = await supabase.rpc("cles_push");
@@ -58,6 +64,8 @@ export async function clesVapid(): Promise<ClesVapid> {
 
 /** Clé publique pour abonner un téléphone (null tant que l'équipe ne les a pas créées). */
 export async function clePubliqueVapid(): Promise<string | null> {
+  const deNetlify = clesDeNetlify();
+  if (deNetlify) return deNetlify.publique;
   const supabase = await clientSupabase();
   const { data } = await supabase.rpc("cle_publique_push");
   return data ?? null;

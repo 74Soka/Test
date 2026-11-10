@@ -10,7 +10,7 @@ travail, avec le `README.md` (fonctionnalités, mise en route, mise en service) 
 | Code | GitHub `74Soka/Test`, branche **`claude/basket-orders-app-91823x`** (c'est elle que Netlify publie) |
 | Site | https://sensational-moxie-3b258f.netlify.app (Netlify, offre gratuite, badge « Powered by Netlify ») |
 | Base | Supabase, projet `yrmscxuyehhwvimqfpwr` (région UE), clé publique dans les variables Netlify |
-| Variables Netlify | `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` ; facultatives : `ORS_API_KEY`, `BREVO_API_KEY`, `EMAIL_EXPEDITEUR`, `EMAIL_ALERTES`, `SITE_URL` |
+| Variables Netlify | `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` ; facultatives : `ORS_API_KEY`, `BREVO_API_KEY`, `EMAIL_EXPEDITEUR`, `EMAIL_ALERTES`, `SITE_URL`, `VAPID_CLE_PUBLIQUE`, `VAPID_CLE_PRIVEE` (clés des notifications, prioritaires sur la base) |
 
 Aucun secret n'est dans le dépôt. Le propriétaire a un compte administrateur (e-mail + mot de passe) dans
 l'application.
@@ -156,8 +156,10 @@ l'application.
       propriétaire crée l'utilisateur dans Supabase Auth, l'assistant ajoute la ligne `profils`.
 - [x] **Droits des livreurs resserrés** (`20261120000000_droits_livreurs.sql`, appliquée) : lecture limitée aux
       commandes de la veille aux 7 jours à venir (tous secteurs), leurs lignes, cadeaux, clients et comptes ; plus rien
-      de la fidélité, des avis, recettes, rappels, annonces. Envoi à tous les clients : admin seul. Reste à faire :
-      la clé privée des notifications (`cles_push`) reste lisible par l'équipe ; la déplacer dans Netlify.
+      de la fidélité, des avis, recettes, rappels, annonces. Envoi à tous les clients : admin seul.
+- [ ] **Clé privée des notifications hors de la base** : le code lit `VAPID_CLE_PUBLIQUE` / `VAPID_CLE_PRIVEE` (Netlify)
+      en priorité. Une fois copiées par le propriétaire (mêmes valeurs que `prive.cles_push`, pour garder les
+      abonnements), appliquer `20261121000000_cle_privee_hors_base.sql` puis `update prive.cles_push set privee = null`.
 - [ ] **Vraie liste de clients** à importer à la place des clients de démo (garder catalogue et réglages).
 - [ ] **Nom de domaine OVH** (en cours d'achat ; décision du 9 novembre 2026 : seul le domaine est chez OVH, le site
       reste sur Netlify, offre payante si besoin, pas de VPS) : DNS vers Netlify, `SITE_URL`, *Site URL* et *Redirect URLs* dans
