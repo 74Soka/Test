@@ -138,3 +138,15 @@ export function formaterEcheance(instant: string | Date): string {
     .split(":");
   return `${formaterDate(jour)} à ${Number(h)} h${m === "00" ? "" : ` ${m}`}`;
 }
+
+/**
+ * Numéro de semaine ISO (lundi → dimanche ; la semaine 1 contient le premier
+ * jeudi de l'année) et l'année à laquelle elle appartient.
+ */
+export function numeroSemaine(iso: DateIso): { semaine: number; annee: number } {
+  const jeudi = ajouterJours(lundiDeLaSemaine(iso), 3);
+  const annee = Number(jeudi.slice(0, 4));
+  const premierJeudi = prochaineDate(4, `${annee}-01-01`);
+  const ecart = (versDateUtc(jeudi).getTime() - versDateUtc(premierJeudi).getTime()) / 86_400_000;
+  return { semaine: Math.round(ecart / 7) + 1, annee };
+}

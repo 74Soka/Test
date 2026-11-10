@@ -275,3 +275,15 @@ describe("codes de parrainage (saisie)", () => {
     expect(codeComplet("Emma Dubois")).toBe(false);
   });
 });
+
+describe("numéro de semaine", () => {
+  it("suit la norme ISO (semaine 1 = celle du premier jeudi)", async () => {
+    const { numeroSemaine } = await import("@/lib/domaine/dates");
+    expect(numeroSemaine("2026-11-09")).toEqual({ semaine: 46, annee: 2026 });
+    expect(numeroSemaine("2026-11-15")).toEqual({ semaine: 46, annee: 2026 });
+    expect(numeroSemaine("2026-01-01")).toEqual({ semaine: 1, annee: 2026 });
+    expect(numeroSemaine("2025-12-29")).toEqual({ semaine: 1, annee: 2026 });
+    expect(numeroSemaine("2026-12-31")).toEqual({ semaine: 53, annee: 2026 });
+    expect(numeroSemaine("2027-01-04")).toEqual({ semaine: 1, annee: 2027 });
+  });
+});

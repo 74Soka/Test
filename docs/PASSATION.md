@@ -75,6 +75,12 @@ l'application.
 12. **« Comment nous avez-vous connu ? »** (`20261117000000_connu_par.sql`, appliquée) : liste facultative sous le
     code de parrainage, `inscriptions.connu_par`, affichée à la validation et dans l'e-mail d'alerte.
 
+13. **Historique des paniers** (administrateur seulement) : Réglages → Historique des paniers (`/reglages/historique`),
+    semaine en cours ouverte puis semaines passées, numéro de semaine ISO (`numeroSemaine`), paniers et recette ;
+    semaines à venir à part. **Chaque semaine**, le propriétaire envoie les paniers dans la conversation : l'assistant
+    enregistre la composition (`compositions`, lundi de la semaine) et rédige la recette (`recettes`) à partir du
+    panier, par le connecteur Supabase, puis vérifie `/paniers`.
+
 ## 3. Comment on travaille avec le propriétaire
 
 - Il n'a **pas d'ordinateur** : tout se fait depuis son téléphone (Supabase, Netlify, GitHub, OVH dans le navigateur).

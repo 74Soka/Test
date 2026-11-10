@@ -282,6 +282,15 @@ test("recette de la semaine : saisie avec le panier de la semaine dernière, pui
   await page.reload();
   await expect(page.getByLabel("Nom de la recette")).toHaveValue(RECETTE.titre);
 
+  // Historique (administrateur) : la semaine, numérotée, avec ses paniers et sa recette
+  await page.goto("/reglages");
+  await page.getByRole("link", { name: /Historique des paniers/ }).click();
+  await expect(page.getByText(/^Semaine \d{1,2} · \d{4}$/).first()).toBeVisible();
+  await expect(page.getByText(RECETTE.titre).first()).toBeVisible();
+  await expect(page.locator("li:visible", { hasText: "500 g clémentines BIO" }).first()).toBeVisible();
+  await page.addStyleTag({ content: "header { position: static !important; } nav { display: none !important; }" });
+  await capture(page.locator("main"), "12-historique-paniers");
+
   // Un visiteur sans compte (lien du SMS)
   const visiteur = await (await browser.newContext({ ...test.info().project.use })).newPage();
   await visiteur.goto("/paniers");

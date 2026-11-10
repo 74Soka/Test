@@ -12,6 +12,7 @@ export const metadata: Metadata = { title: "Réglages" };
 const LIENS = [
   { href: "/reglages/messages", titre: "📣 Notification aux clients", detail: "Nouveau produit, information : envoyée tout de suite" },
   { href: "/reglages/composition", titre: "Composition des paniers", detail: "Le contenu des paniers, semaine par semaine" },
+  { href: "/reglages/historique", titre: "Historique des paniers", detail: "Compositions et recettes des semaines passées (n° de semaine)" },
   { href: "/reglages/commandes-en-ligne", titre: "Commandes en ligne", detail: "Ouverture, heure de clôture, message aux clients" },
   { href: "/reglages/secteurs", titre: "Secteurs", detail: "Zones, jours et créneaux de livraison, communes couvertes" },
   { href: "/reglages/catalogue", titre: "Catalogue", detail: "Paniers et suppléments de saison, prix" },

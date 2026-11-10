@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { exigerAdmin } from "@/lib/auth";
 import { listerArticles } from "@/lib/donnees";
-import { ajouterJours, aujourdhui, estDateIso, formaterSemaine, jourSemaine, lundiDeLaSemaine } from "@/lib/domaine/dates";
+import { ajouterJours, aujourdhui, estDateIso, formaterSemaine, jourSemaine, lundiDeLaSemaine, numeroSemaine } from "@/lib/domaine/dates";
 import { clientSupabase } from "@/lib/supabase/serveur";
 import { EnTetePage } from "@/components/ui";
 import { FormulaireComposition } from "./formulaire";
@@ -34,7 +34,16 @@ export default async function PageComposition({ searchParams }: PageProps<"/regl
   const lien = (s: string) => `/reglages/composition?semaine=${s}`;
   return (
     <>
-      <EnTetePage titre="Composition des paniers" sousTitre={formaterSemaine(semaine)} retour="/reglages" />
+      <EnTetePage
+        titre="Composition des paniers"
+        sousTitre={`Semaine ${numeroSemaine(semaine).semaine} · ${formaterSemaine(semaine)}`}
+        retour="/reglages"
+        action={
+          <Link href="/reglages/historique" className="text-sm font-semibold text-marque-800 underline">
+            Historique
+          </Link>
+        }
+      />
       <div className="mb-4 flex items-center justify-between gap-2">
         <Link href={lien(ajouterJours(semaine, -7))} className="min-h-11 rounded-full bg-white px-4 py-2 font-semibold ring-1 ring-stone-300">
           ‹ Semaine précédente

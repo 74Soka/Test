@@ -38,6 +38,7 @@ const RELATIONS: Record<string, { type: "many" | "one"; fk: string }> = {
   "recompenses_utilisees>cadeaux": { type: "many", fk: "utilisation_id" },
   "tampons>commandes": { type: "one", fk: "commande_id" },
   "mouvements_compte>commandes": { type: "one", fk: "commande_id" },
+  "compositions>articles": { type: "one", fk: "article_id" },
   "tampons>clients": { type: "one", fk: "filleul_id" },
 };
 
