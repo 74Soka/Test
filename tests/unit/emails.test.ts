@@ -101,6 +101,16 @@ describe("échéance des commandes", () => {
 });
 
 describe("e-mails aux clients", () => {
+  it("préviennent le client que son compte est validé", async () => {
+    const { emailCompteValide } = await import("@/lib/emails/clients");
+    const e = emailCompteValide({ prenom: "Noé", lien: "https://fraisetfrancais.fr/espace", telephone: "06 25 50 24 87" });
+    expect(e.sujet).toBe("Votre compte Frais et Français est validé");
+    expect(e.texte).toMatch(/^Bonjour Noé,/);
+    expect(e.texte).toContain("Votre espace : https://fraisetfrancais.fr/espace");
+    expect(e.texte).toContain("06 25 50 24 87");
+    expect(emailCompteValide({ prenom: "", lien: "x", telephone: "y" }).texte).toMatch(/^Bonjour,/);
+  });
+
   it("confirment la commande avec le détail, le total et la clôture", async () => {
     const { emailCommandeClient } = await import("@/lib/emails/clients");
     const d = {

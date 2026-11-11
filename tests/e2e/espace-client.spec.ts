@@ -181,6 +181,17 @@ test("un nouveau client s'inscrit, l'équipe valide, il commande (œufs de fille
   await carte.getByLabel("Secteur").selectOption({ label: "Toulon Est – Hyères" });
   await carte.getByRole("button", { name: "Valider" }).click();
   await expect(page.getByText("Aucune inscription en attente.")).toBeVisible();
+  // Noé est prévenu par e-mail que son compte est validé
+  await expect
+    .poll(async () =>
+      (await emails(request)).some(
+        (e) =>
+          e.subject === "Votre compte Frais et Français est validé" &&
+          e.to.some((t) => t.email === noe.email) &&
+          /Bonjour Noé,/.test(e.textContent ?? ""),
+      ),
+    )
+    .toBe(true);
   await deconnexionEquipe(page);
 
   // Le client commande : ses œufs de filleul s'ajoutent tout seuls

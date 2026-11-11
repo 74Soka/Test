@@ -59,3 +59,30 @@ export function emailCommandeClient(evenement: EvenementCommande, d: DetailComma
   lignes.push("", `Une question ? Appelez-nous au ${d.telephone}.`, "", "À très vite,", "L'équipe Frais et Français");
   return { sujet: SUJETS[evenement](majuscule(date)), texte: lignes.join("\n") };
 }
+
+/** E-mail au client quand l'administrateur a validé son inscription. */
+export function emailCompteValide(d: { prenom: string; lien: string; telephone: string }): {
+  sujet: string;
+  texte: string;
+} {
+  return {
+    sujet: "Votre compte Frais et Français est validé",
+    texte: [
+      d.prenom ? `Bonjour ${d.prenom},` : "Bonjour,",
+      "",
+      "Bonne nouvelle : votre compte est validé, bienvenue chez Frais et Français !",
+      "",
+      "Depuis votre espace, vous pouvez maintenant :",
+      "- voir les paniers de la semaine et commander en ligne ;",
+      "- modifier ou annuler votre commande jusqu'à la clôture ;",
+      "- suivre vos livraisons et vos graines de fidélité 🌱.",
+      "",
+      `Votre espace : ${d.lien}`,
+      "",
+      `Une question ? Appelez-nous au ${d.telephone}.`,
+      "",
+      "À très vite,",
+      "L'équipe Frais et Français",
+    ].join("\n"),
+  };
+}

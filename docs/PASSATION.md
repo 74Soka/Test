@@ -170,6 +170,8 @@ l'application.
   (bloc `prefers-color-scheme: dark` : gris inversés, nuances claires assombries, cartes blanches et textes de
   couleur foncés éclaircis ; boutons pleins inchangés). Captures clair/sombre à la demande :
   `CAPTURES_SOMBRE=<dossier> npx playwright test tests/e2e/espace-client.spec.ts tests/e2e/zz-captures-sombre.spec.ts`.
+- [x] **E-mail « compte validé »** au client quand l'administrateur valide son inscription
+  (`emailCompteValide`, envoyé par `validerInscription`).
 - [ ] **Vraie liste de clients** à importer à la place des clients de démo (garder catalogue et réglages).
 - [ ] **Nom de domaine OVH** (en cours d'achat ; décision du 9 novembre 2026 : seul le domaine est chez OVH, le site
       reste sur Netlify, offre payante si besoin, pas de VPS) : DNS vers Netlify, `SITE_URL`, *Site URL* et *Redirect URLs* dans

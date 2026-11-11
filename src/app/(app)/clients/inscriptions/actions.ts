@@ -3,6 +3,9 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { exigerAdmin } from "@/lib/auth";
+import { emailCompteValide, envoyerAuClient } from "@/lib/emails";
+import { TELEPHONE_COMMANDES } from "@/lib/paniers-publics";
+import { origineDuSite } from "@/lib/site";
 import { messageErreur, type Resultat } from "@/lib/erreurs";
 import { clientSupabase } from "@/lib/supabase/serveur";
 
@@ -21,6 +24,11 @@ export async function validerInscription(donnees: z.input<typeof schema>): Promi
   const d = saisie.data;
   if (!d.clientId && !d.secteurId) return { ok: false, erreur: "Choisissez le secteur du client." };
   const supabase = await clientSupabase();
+  const { data: inscription } = await supabase
+    .from("inscriptions")
+    .select("email, prenom")
+    .eq("user_id", d.userId)
+    .maybeSingle();
   const { error } = await supabase.rpc("valider_inscription", {
     p_user_id: d.userId,
     p_secteur_id: d.clientId ? undefined : (d.secteurId ?? undefined),
@@ -28,6 +36,18 @@ export async function validerInscription(donnees: z.input<typeof schema>): Promi
     p_parrain_id: d.clientId ? undefined : (d.parrainId ?? undefined),
   });
   if (error) return { ok: false, erreur: messageErreur(error) };
+  // Le client est prévenu par e-mail qu'il peut commander (l'inscription validée
+  // est effacée : une seule fois)
+  if (inscription) {
+    await envoyerAuClient(
+      inscription.email,
+      emailCompteValide({
+        prenom: inscription.prenom,
+        lien: `${await origineDuSite()}/espace`,
+        telephone: TELEPHONE_COMMANDES.affiche,
+      }),
+    );
+  }
   revalidatePath("/", "layout");
   return { ok: true };
 }

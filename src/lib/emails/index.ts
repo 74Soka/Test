@@ -2,7 +2,7 @@ import "server-only";
 import { creerEnvoyeurBrevo, type Email } from "./brevo";
 
 export { alerteAvis, alerteCommande, alerteInscription, type DetailCommande, type EvenementCommande } from "./alertes";
-export { emailCommandeClient, type DetailCommandeClient } from "./clients";
+export { emailCommandeClient, emailCompteValide, type DetailCommandeClient } from "./clients";
 
 /**
  * Alerte à l'équipe (EMAIL_ALERTES, plusieurs adresses séparées par des
@@ -32,7 +32,7 @@ export async function envoyerAlerte(email: Omit<Email, "a">): Promise<boolean> {
 }
 
 /**
- * E-mail à un client (confirmation ou annulation de commande). Sans réglage
+ * E-mail à un client (commande, compte validé). Sans réglage
  * Brevo, rien n'est envoyé ; une panne ne fait jamais échouer l'action du client.
  */
 export async function envoyerAuClient(destinataire: string, email: Omit<Email, "a">): Promise<boolean> {
