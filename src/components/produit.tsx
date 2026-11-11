@@ -6,7 +6,7 @@ export function PastilleBio({ className }: { className?: string }) {
   return (
     <span
       className={cx(
-        "inline-block shrink-0 self-center rounded-full px-2 text-xs leading-5 font-extrabold tracking-wider text-feuille-700 ring-[1.5px] ring-feuille-700 dark:text-feuille-300 dark:ring-feuille-300",
+        "inline-block shrink-0 self-center rounded-full px-2 text-xs leading-5 font-extrabold tracking-wider text-feuille-700 ring-[1.5px] ring-feuille-700",
         className,
       )}
     >
@@ -38,7 +38,7 @@ export function NomProduit({
 /** Liste « un produit par ligne », pastille BIO à droite, comme la page des paniers. */
 export function ListeProduits({ lignes }: { lignes: string[] }) {
   return (
-    <ul className="divide-y divide-dashed divide-marque-100 dark:divide-white/15">
+    <ul className="divide-y divide-dashed divide-marque-100">
       {lignes.map((l, i) => {
         const { texte, bio } = ligneProduit(l);
         return (

@@ -166,6 +166,10 @@ l'application.
 - [x] **Commande sans panier** (`20261122000000_commande_sans_panier.sql`) : possible avec au moins 30 € de
   suppléments achetés (les cadeaux ne comptent pas). Règle en base (`prive.minimum_sans_panier_centimes()`) et dans
   les deux formulaires (`manquePourCommander`, `src/lib/domaine/commandes.ts`). Même code d'erreur PN002.
+- [x] **Mode sombre** sur tout le site (suit le réglage du téléphone) : tout est dans `src/app/globals.css`
+  (bloc `prefers-color-scheme: dark` : gris inversés, nuances claires assombries, cartes blanches et textes de
+  couleur foncés éclaircis ; boutons pleins inchangés). Captures clair/sombre à la demande :
+  `CAPTURES_SOMBRE=<dossier> npx playwright test tests/e2e/espace-client.spec.ts tests/e2e/zz-captures-sombre.spec.ts`.
 - [ ] **Vraie liste de clients** à importer à la place des clients de démo (garder catalogue et réglages).
 - [ ] **Nom de domaine OVH** (en cours d'achat ; décision du 9 novembre 2026 : seul le domaine est chez OVH, le site
       reste sur Netlify, offre payante si besoin, pas de VPS) : DNS vers Netlify, `SITE_URL`, *Site URL* et *Redirect URLs* dans

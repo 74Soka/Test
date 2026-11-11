@@ -7,19 +7,6 @@
  * Application utilisée surtout dehors, sur téléphone : thème clair à fort
  * contraste, textes un peu plus grands, cibles tactiles d'au moins 48 px.
  */
-/*
- * Mode sombre (réglage « sombre » du téléphone) : pour l'instant seulement sur
- * les pages marquées data-theme-auto (la page /paniers, en essai). Les classes
- * dark: ne s'appliquent que là ; le reste du site reste clair.
- */
-@custom-variant dark {
-  @media (prefers-color-scheme: dark) {
-    &:where([data-theme-auto], [data-theme-auto] *) {
-      @slot;
-    }
-  }
-}
-
 @theme {
   --font-sans: "Nunito Variable", "Nunito", system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
   --font-titre: "Alfa Slab One", Georgia, serif;
@@ -72,13 +59,108 @@ body {
   color: var(--color-stone-900);
 }
 
+/*
+ * Mode sombre : suit le réglage du téléphone (clair ou sombre), sur tout le site.
+ * Fond aubergine presque noir. Plutôt que d'ajouter une variante à chaque
+ * élément, on change ici :
+ *   1. les nuances claires (fonds teintés, bordures) et l'échelle des gris,
+ *      inversée : les textes gris deviennent clairs, les fonds gris sombres ;
+ *   2. les cartes blanches et les textes de couleur foncés, qui s'éclaircissent.
+ * Les boutons pleins (aubergine, vert, rouge) et leur texte blanc ne changent pas.
+ */
 @media (prefers-color-scheme: dark) {
-  :root:has([data-theme-auto]) {
+  :root {
     color-scheme: dark;
+
+    --color-fond: var(--color-nuit);
+
+    --color-stone-50: #1f1a27;
+    --color-stone-100: #2a2334;
+    --color-stone-200: #3a3245;
+    --color-stone-300: #524a5c;
+    --color-stone-400: #8a8291;
+    --color-stone-500: #a39cab;
+    --color-stone-600: #bdb6c4;
+    --color-stone-700: #d6d0dc;
+    --color-stone-800: #e8e3ec;
+    --color-stone-900: #f4f1f6;
+
+    --color-marque-50: #2a1d3d;
+    --color-marque-100: #3a2853;
+    --color-feuille-50: #15301b;
+    --color-feuille-100: #1d4225;
+    --color-peche-50: #3a1f1d;
+    --color-peche-100: #4d2824;
+    --color-amber-50: #3a2a0e;
+    --color-amber-100: #4a3612;
+    --color-amber-200: #6b4e1a;
+    --color-amber-300: #8a6620;
+    --color-red-50: #3d1717;
+    --color-red-100: #4f1d1d;
+    --color-red-200: #6b2525;
+    --color-sky-50: #0f2a3a;
+    --color-sky-100: #143547;
+    --color-sky-200: #1d4a63;
   }
-  body:has([data-theme-auto]) {
-    background: var(--color-nuit);
-    color: var(--color-stone-100);
+
+  .bg-white {
+    background-color: var(--color-nuit-carte);
+  }
+  /* Le logo garde son rond blanc, sinon ses lettres foncées disparaissent */
+  img[src$="logo.svg"] {
+    background-color: #fff;
+    border-radius: 9999px;
+    padding: 3px;
+  }
+  .ring-marque-100 {
+    --tw-ring-color: rgb(255 255 255 / 0.1);
+  }
+  .divide-marque-100 > :not(:last-child) {
+    border-color: rgb(255 255 255 / 0.15);
+  }
+  .text-marque-700,
+  .text-marque-800,
+  .text-marque-900 {
+    color: var(--color-marque-200);
+  }
+  .ring-marque-700,
+  .ring-marque-800,
+  .peer:checked ~ .peer-checked\:ring-marque-800 {
+    --tw-ring-color: var(--color-marque-300);
+  }
+  .border-marque-800 {
+    border-color: var(--color-marque-300);
+  }
+  .bg-marque-800 {
+    background-color: var(--color-marque-700);
+  }
+  .text-feuille-700,
+  .text-feuille-800,
+  .text-feuille-900 {
+    color: var(--color-feuille-300);
+  }
+  .ring-feuille-700 {
+    --tw-ring-color: var(--color-feuille-300);
+  }
+  .text-peche-600,
+  .text-peche-700 {
+    color: var(--color-peche-300);
+  }
+  .text-peche-800,
+  .text-peche-900 {
+    color: #ffd6d1;
+  }
+  .text-amber-800,
+  .text-amber-900 {
+    color: #fde68a;
+  }
+  .text-red-700,
+  .text-red-800 {
+    color: #fca5a5;
+  }
+  .text-sky-800,
+  .text-sky-900 {
+    color: #7dd3fc;
   }
 }
 
