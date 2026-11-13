@@ -4,6 +4,8 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { exigerAdmin } from "@/lib/auth";
+import { geocodeur } from "@/lib/geocodage";
+import { meilleurePosition, texteAdresse } from "@/lib/geocodage/localiser";
 import { clientSupabase } from "@/lib/supabase/serveur";
 import { estDateIso } from "@/lib/domaine/dates";
 import { normaliserTelephone } from "@/lib/domaine/telephone";
@@ -48,15 +50,7 @@ const schemaClient = z.object({
       source: z.enum(["adresse", "manuelle"]).nullable(),
     },
     { error: "Recherchez l'adresse du client." },
-  ).superRefine((a, ctx) => {
-    if (a.lat === null || a.lng === null) {
-      ctx.addIssue({
-        code: "custom",
-        path: ["position"],
-        message: "Position manquante : touchez la carte à l'endroit de la livraison.",
-      });
-    }
-  }),
+  ),
   complementAdresse: texteFacultatif,
   notesLivraison: texteFacultatif,
   secteurId: z.uuid("Choisissez un secteur."),
@@ -77,6 +71,23 @@ export async function enregistrerClient(donnees: DonneesClient, id?: string): Pr
     return { ok: false, erreur: "Un client ne peut pas être son propre parrain.", champs: { parrainId: "Choix impossible." } };
   }
 
+  // Pas de repère sur la carte (fiche importée, adresse saisie à la main…) :
+  // on le cherche d'après l'adresse ; introuvable, une fiche existante est
+  // enregistrée quand même (l'équipe n'a pas à le replacer pour un autre changement)
+  if (d.adresse.lat === null || d.adresse.lng === null) {
+    const trouvee = await localiser(d.adresse);
+    if (trouvee) {
+      d.adresse = { ...d.adresse, lat: trouvee.lat, lng: trouvee.lng, codeInsee: d.adresse.codeInsee ?? trouvee.codeInsee, source: "adresse" };
+    } else if (!id) {
+      // Nouvelle fiche : le repère est demandé (une fiche existante s'enregistre sans)
+      return {
+        ok: false,
+        erreur: "Vérifiez les champs signalés.",
+        champs: { "adresse.position": "Position manquante : touchez la carte à l'endroit de la livraison." },
+      };
+    }
+  }
+
   const ligne = {
     nom: d.nom,
     prenom: d.prenom,
@@ -89,7 +100,7 @@ export async function enregistrerClient(donnees: DonneesClient, id?: string): Pr
     code_insee: d.adresse.codeInsee,
     lat: d.adresse.lat,
     lng: d.adresse.lng,
-    source_position: d.adresse.source ?? "manuelle",
+    source_position: d.adresse.lat === null ? null : (d.adresse.source ?? "manuelle"),
     notes_livraison: d.notesLivraison,
     secteur_id: d.secteurId,
     parrain_id: d.parrainId,
@@ -104,6 +115,50 @@ export async function enregistrerClient(donnees: DonneesClient, id?: string): Pr
 
   revalidatePath("/", "layout");
   redirect(`/clients/${data.id}`);
+}
+
+async function localiser(a: { ligne: string; codePostal: string; commune: string }) {
+  try {
+    return meilleurePosition(a, await geocodeur.rechercherAdresses(texteAdresse(a), { limite: 3 }));
+  } catch (e) {
+    console.error("Repère automatique :", e);
+    return null;
+  }
+}
+
+/**
+ * Fiches sans repère sur la carte : on les place d'après leur adresse, par
+ * paquets (le service d'adresses répond en quelques dixièmes de seconde).
+ * Renvoie combien ont été placées, et combien restent (introuvables ou suivantes).
+ */
+export async function placerClientsSansRepere(): Promise<Resultat & { places?: number; restants?: number; introuvables?: string[] }> {
+  await exigerAdmin();
+  const supabase = await clientSupabase();
+  const { data, error } = await supabase
+    .from("clients")
+    .select("id, nom, prenom, adresse, code_postal, commune, code_insee")
+    .is("lat", null)
+    .order("nom");
+  if (error) return { ok: false, erreur: messageErreur(error) };
+
+  const paquet = data.slice(0, 25);
+  let places = 0;
+  const introuvables: string[] = [];
+  for (const c of paquet) {
+    const trouvee = await localiser({ ligne: c.adresse, codePostal: c.code_postal, commune: c.commune });
+    if (!trouvee) {
+      introuvables.push(`${c.prenom} ${c.nom}`.trim());
+      continue;
+    }
+    const maj = await supabase
+      .from("clients")
+      .update({ lat: trouvee.lat, lng: trouvee.lng, code_insee: c.code_insee ?? trouvee.codeInsee, source_position: "adresse" })
+      .eq("id", c.id)
+      .is("lat", null);
+    if (!maj.error) places++;
+  }
+  revalidatePath("/", "layout");
+  return { ok: true, places, restants: data.length - places, introuvables };
 }
 
 export async function changerActivite(id: string, actif: boolean): Promise<Resultat> {

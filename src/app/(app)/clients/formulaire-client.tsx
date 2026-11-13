@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { enregistrerClient, type DonneesClient } from "./actions";
 import { Carte as CarteOsm } from "@/components/carte";
 import { ChoixClient, type ClientChoisissable } from "@/components/choix-client";
@@ -8,6 +8,7 @@ import { RechercheAdresse } from "@/components/recherche-adresse";
 import { Bouton, Carte, Champ, MessageErreur, MessageInfo, PointCouleur, ZoneTexte, cx } from "@/components/ui";
 import { libelleTournee, secteurPropose, secteursPourCommune, type Creneau } from "@/lib/domaine/secteurs";
 import type { Resultat } from "@/lib/erreurs";
+import { meilleurePosition, texteAdresse } from "@/lib/geocodage/localiser";
 import type { AdresseTrouvee } from "@/lib/geocodage/types";
 
 export type SecteurFormulaire = {
@@ -40,6 +41,7 @@ export function FormulaireClient({
   const [rechercheOuverte, setRechercheOuverte] = useState(!initial.adresse);
   const [modeManuel, setModeManuel] = useState(false);
   const [infoSecteur, setInfoSecteur] = useState<string | null>(null);
+  const [reperePlace, setReperePlace] = useState(false);
   const [resultat, setResultat] = useState<Resultat | null>(null);
   const [enCours, demarrer] = useTransition();
   const champs = resultat && !resultat.ok ? (resultat.champs ?? {}) : {};
@@ -53,6 +55,33 @@ export function FormulaireClient({
       ? { lat: secteurs[0].depart_lat, lng: secteurs[0].depart_lng }
       : CENTRE_VAR;
   const position = adresse?.lat != null && adresse?.lng != null ? { lat: adresse.lat, lng: adresse.lng } : null;
+
+  // Fiche sans repère (importée) : on le place tout de suite d'après l'adresse,
+  // l'équipe n'a plus qu'à vérifier (et à le déplacer si besoin)
+  useEffect(() => {
+    const a = initial.adresse as Adresse | undefined;
+    if (!a?.ligne || a.lat != null || !a.codePostal) return;
+    const controle = new AbortController();
+    const params = new URLSearchParams({ q: texteAdresse({ ligne: a.ligne, codePostal: a.codePostal, commune: a.commune }), type: "adresse" });
+    fetch(`/api/geocodage?${params}`, { signal: controle.signal })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((corps: { resultats?: AdresseTrouvee[] } | null) => {
+        const trouvee = corps?.resultats ? meilleurePosition(a, corps.resultats) : null;
+        if (!trouvee) return;
+        setDonnees((d) => {
+          const actuelle = d.adresse as Adresse | undefined;
+          // L'équipe a déjà changé l'adresse ou placé le repère : on ne touche à rien
+          if (!actuelle || actuelle.lat != null || actuelle.ligne !== a.ligne) return d;
+          return {
+            ...d,
+            adresse: { ...actuelle, lat: trouvee.lat, lng: trouvee.lng, codeInsee: actuelle.codeInsee ?? trouvee.codeInsee, source: "adresse" },
+          };
+        });
+        setReperePlace(true);
+      })
+      .catch(() => {});
+    return () => controle.abort();
+  }, [initial.adresse]);
 
   function choisirAdresse(a: AdresseTrouvee) {
     maj({
@@ -249,8 +278,12 @@ export function FormulaireClient({
                 : position
                 ? adresse?.source === "manuelle"
                   ? "Position placée à la main. Faites glisser le repère pour l'ajuster."
-                  : "Faites glisser le repère si la maison est ailleurs (chemin, portail…)."
-                : "Touchez la carte pour placer le repère de livraison."}
+                  : reperePlace
+                    ? "Repère placé automatiquement d'après l'adresse : vérifiez-le, et faites-le glisser si besoin."
+                    : "Faites glisser le repère si la maison est ailleurs (chemin, portail…)."
+                : id
+                  ? "Pas encore de repère : il sera placé d'après l'adresse à l'enregistrement. Vous pouvez aussi toucher la carte."
+                  : "Touchez la carte pour placer le repère de livraison."}
             </p>
           </div>
         )}

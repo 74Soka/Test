@@ -594,6 +594,45 @@ describe("inscription d'un nouveau client", () => {
     ).toBe("PN042");
   });
 
+  it("relier à une fiche existante complète ce qui manque, sans rien écraser", async () => {
+    // Fiche importée : sans prénom, téléphone, e-mail ni repère sur la carte
+    const [{ id: fiche }] = await sql<{ id: string }>(
+      `insert into public.clients (nom, prenom, telephone, adresse, code_postal, commune, notes_livraison, secteur_id)
+       values ('Importée', '', null, '4 rue neuve', '83000', 'Toulon', 'Sonner deux fois', $1) returning id`,
+      [secteur],
+    );
+    const compte = await creerCompteEnLigne(base.client, "importee@exemple.fr");
+    await envoyer(compte);
+    await comme(admin, (c) => c.query("select public.valider_inscription($1, null, $2)", [compte, fiche]));
+    const [f] = await sql<Record<string, unknown>>(
+      `select prenom, telephone, email, adresse, code_insee, lat, lng, source_position, notes_livraison
+       from public.clients where id = $1`,
+      [fiche],
+    );
+    expect(f).toEqual({
+      prenom: "Hélène",
+      telephone: "+33612345678",
+      email: "importee@exemple.fr",
+      adresse: "4 Rue Neuve",
+      code_insee: "83137",
+      lat: 43.12,
+      lng: 5.93,
+      source_position: "adresse",
+      // Déjà rempli : gardé
+      notes_livraison: "Sonner deux fois",
+    });
+  });
+
+  it("une fiche déjà localisée garde son adresse et son repère", async () => {
+    const existante = await creerClient(base.client, secteur);
+    await sql("update public.clients set lat = 43.2, lng = 6.0, adresse = '1 Rue Test' where id = $1", [existante]);
+    const compte = await creerCompteEnLigne(base.client, "localisee@exemple.fr");
+    await envoyer(compte);
+    await comme(admin, (c) => c.query("select public.valider_inscription($1, null, $2)", [compte, existante]));
+    const [f] = await sql<Record<string, unknown>>("select adresse, lat, lng, prenom from public.clients where id = $1", [existante]);
+    expect(f).toEqual({ adresse: "1 Rue Test", lat: 43.2, lng: 6.0, prenom: "Test" });
+  });
+
   it("une inscription refusée ne peut plus être renvoyée", async () => {
     const compte = await creerCompteEnLigne(base.client, "jules@exemple.fr");
     await envoyer(compte);

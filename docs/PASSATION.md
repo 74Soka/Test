@@ -191,6 +191,13 @@ l'application.
   « Marquer comme livrée »), payé = tout est réglé. Erreur PN054.
 - [x] **« Mon solde »** dans l'espace client (onglet Compte) : « Vous devez X € » / « Frais et Français vous doit
   X € » / « À jour », et les 10 derniers mouvements.
+- [x] **Inscription reliée à une fiche existante** (`20261127000000_inscription_complete_fiche.sql`, appliquée) : la
+  fiche est complétée (e-mail, prénom, téléphone, complément, consignes, code commune) sans rien écraser ; sans
+  repère, l'adresse localisée du client est reprise si même code postal.
+- [x] **Repère automatique** (`src/lib/geocodage/localiser.ts`) : une fiche sans repère est placée d'après son
+  adresse (même code postal, même rue, précision rue ou numéro) à l'ouverture du formulaire et à l'enregistrement ;
+  une fiche existante s'enregistre même sans repère (une nouvelle fiche le demande toujours). Bouton « Les placer
+  automatiquement » dans Clients (par paquets de 25). Au 13 novembre 2026 : 104 fiches sur 111 sans repère.
 - [ ] **Tests dépendants de l'heure** : le vendredi après la clôture (12 h), deux parcours échouent
   (`espace-client` « page publique… » et `notifications` « …prochain ») car les commandes passent à la semaine
   suivante. À rendre indépendants de l'heure (horloge simulée côté serveur).

@@ -87,7 +87,7 @@ export function ValidationInscription({
           clients={clientsLibres}
           valeur={clientId}
           onChange={setClientId}
-          aide="Pour un client déjà connu qui s'est inscrit avec une autre adresse e-mail."
+          aide="Pour un client déjà connu. Ce qui manque sur sa fiche (e-mail, prénom, téléphone, repère sur la carte…) est complété avec son inscription ; rien n'est effacé."
         />
       )}
       <div className="grid grid-cols-2 gap-2">
