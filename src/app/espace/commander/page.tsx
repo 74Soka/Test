@@ -6,6 +6,7 @@ import {
   lireCommandeClient,
   lireComposition,
   lireMaFidelite,
+  lireMonSolde,
   lireRecompensesProposees,
 } from "@/lib/espace-client";
 import { EnTetePage, EtatVide, LienBouton } from "@/components/ui";
@@ -41,12 +42,13 @@ export default async function PageCommander() {
     );
   }
 
-  const [catalogue, composition, commande, fidelite, recompenses] = await Promise.all([
+  const [catalogue, composition, commande, fidelite, recompenses, soldeCompte] = await Promise.all([
     lireCatalogue(),
     lireComposition(lundiDeLaSemaine(date)),
     situation.commande_id ? lireCommandeClient(situation.commande_id) : Promise.resolve(null),
     lireMaFidelite(),
     lireRecompensesProposees(),
+    lireMonSolde(),
   ]);
 
   return (
@@ -66,6 +68,7 @@ export default async function PageCommander() {
           contenus={composition.exacte ? composition.contenus : {}}
           commande={commande}
           solde={fidelite.solde}
+          soldeCompte={soldeCompte}
           niveau={fidelite.niveau}
           recompenses={recompenses}
         />

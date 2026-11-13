@@ -15,6 +15,7 @@ import { oeufsDeBienvenue, type FideliteSaisie, type RecompenseProposee } from "
 import { nomComplet } from "@/lib/domaine/texte";
 import type { Resultat } from "@/lib/erreurs";
 import { NomProduit } from "@/components/produit";
+import { DetailARegler } from "@/components/a-regler";
 
 export type ArticleFormulaire = {
   id: string;
@@ -43,6 +44,7 @@ export function FormulaireCommande({
   fidelite,
   recompenses,
   debutParrainage,
+  soldes = {},
 }: {
   id?: string;
   clients: ClientFormulaire[];
@@ -67,6 +69,8 @@ export function FormulaireCommande({
   recompenses: RecompenseProposee[];
   /** Début de l'offre de parrainage (AAAA-MM-JJ) */
   debutParrainage: string;
+  /** Compte de chaque client : + dû, − avoir (ajouté ou déduit du montant à régler) */
+  soldes?: Record<string, number>;
 }) {
   /** Œufs de bienvenue ajoutés d'office à la première commande d'un filleul */
   function cadeauxDOffice(idClient: string | null, dateLivraison: string | null): RecompenseEnCours[] {
@@ -399,6 +403,9 @@ export function FormulaireCommande({
           <span className="text-stone-600">Total</span>
           <span className="text-2xl font-bold tabular-nums">{formaterPrix(total)}</span>
         </div>
+        {client && (soldes[client.id] ?? 0) !== 0 && (
+          <DetailARegler total={total} solde={soldes[client.id]} pour="equipe" className="mb-2 text-sm" />
+        )}
         {manque && <p className="mb-2 text-sm font-medium text-amber-800">{manque}</p>}
         {libreIncomplet && (
           <p className="mb-2 text-sm font-medium text-amber-800">Indiquez le nom et le prix de chaque supplément libre.</p>

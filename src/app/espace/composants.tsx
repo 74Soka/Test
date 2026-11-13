@@ -1,3 +1,4 @@
+import { DetailARegler } from "@/components/a-regler";
 import { formaterPrix } from "@/lib/domaine/argent";
 import { totalCommande } from "@/lib/domaine/commandes";
 import type { ArticleCatalogue, CommandeClient } from "@/lib/espace-client";
@@ -43,7 +44,14 @@ export function CompositionPaniers({
 }
 
 /** Récapitulatif d'une commande : articles, cadeaux, message, total. */
-export function RecapCommande({ commande }: { commande: Pick<CommandeClient, "lignes" | "recompenses" | "notes"> }) {
+export function RecapCommande({
+  commande,
+  soldeCompte,
+}: {
+  commande: Pick<CommandeClient, "lignes" | "recompenses" | "notes">;
+  /** Solde du client (commande à venir) : ajouté ou déduit du montant à régler */
+  soldeCompte?: number;
+}) {
   const lignes = [...commande.lignes].sort((a, b) =>
     a.categorie === b.categorie ? 0 : a.categorie === "panier" ? -1 : 1,
   );
@@ -66,10 +74,14 @@ export function RecapCommande({ commande }: { commande: Pick<CommandeClient, "li
         )}
       </ul>
       {commande.notes && <p className="text-sm text-stone-600">Votre message : « {commande.notes} »</p>}
-      <p className="flex justify-between border-t border-stone-200 pt-2 font-bold">
-        <span>À régler à la livraison</span>
-        <span className="tabular-nums">{formaterPrix(totalCommande(commande.lignes))}</span>
-      </p>
+      {soldeCompte !== undefined ? (
+        <DetailARegler total={totalCommande(commande.lignes)} solde={soldeCompte} className="border-t border-stone-200 pt-2" />
+      ) : (
+        <p className="flex justify-between border-t border-stone-200 pt-2 font-bold">
+          <span>Total</span>
+          <span className="tabular-nums">{formaterPrix(totalCommande(commande.lignes))}</span>
+        </p>
+      )}
     </div>
   );
 }

@@ -18,7 +18,7 @@ import {
 import { formaterEcheance } from "@/lib/domaine/dates";
 import { TELEPHONE_COMMANDES } from "@/lib/paniers-publics";
 import { messageErreur, type Resultat } from "@/lib/erreurs";
-import { lireCommandeClient } from "@/lib/espace-client";
+import { lireCommandeClient, lireMonSolde } from "@/lib/espace-client";
 import { origineDuSite } from "@/lib/site";
 import { clientSupabase } from "@/lib/supabase/serveur";
 
@@ -74,6 +74,7 @@ async function alerter(
       cloture: client.cloture ? formaterEcheance(client.cloture) : null,
       lien: `${await origineDuSite()}/espace`,
       telephone: TELEPHONE_COMMANDES.affiche,
+      soldeCompte: evenement === "annulee" ? 0 : await lireMonSolde().catch(() => 0),
     }),
   );
 }

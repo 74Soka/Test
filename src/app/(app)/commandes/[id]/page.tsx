@@ -8,6 +8,7 @@ import {
   listerClients,
   lireParametresFidelite,
   listerFidelite,
+  listerSoldes,
   listerRecompenses,
   listerSecteurs,
 } from "@/lib/donnees";
@@ -35,7 +36,7 @@ export default async function PageCommande({ params, searchParams }: PageProps<"
   await exigerAdmin();
   const { id } = await params;
   const { enregistree } = await searchParams;
-  const [commande, clients, secteurs, catalogue, fidelite, recompenses, parametres, avis] = await Promise.all([
+  const [commande, clients, secteurs, catalogue, fidelite, recompenses, parametres, avis, soldes] = await Promise.all([
     lireCommande(id),
     listerClients(),
     listerSecteurs(),
@@ -44,6 +45,7 @@ export default async function PageCommande({ params, searchParams }: PageProps<"
     listerRecompenses({ actifsSeulement: true }),
     lireParametresFidelite(),
     lireAvisCommande(id),
+    listerSoldes(),
   ]);
   const retour = `/livraisons?du=${commande.date_livraison}`;
 
@@ -148,6 +150,7 @@ export default async function PageCommande({ params, searchParams }: PageProps<"
               })),
             }}
             fidelite={fidelite}
+            soldes={soldes}
             recompenses={recompenses}
             debutParrainage={parametres.parrainage_cadeaux_debut}
           />

@@ -23,7 +23,7 @@ import {
   secteurDeLivraison,
   secteurPropose,
 } from "@/lib/domaine/secteurs";
-import { contientUnPanier, manquePourCommander, nombreDePaniers, recapitulatif, resumeLignes, totalCommande } from "@/lib/domaine/commandes";
+import { aReglerALaLivraison, contientUnPanier, manquePourCommander, nombreDePaniers, recapitulatif, resumeLignes, totalCommande } from "@/lib/domaine/commandes";
 
 // Les espaces insécables de Intl sont remplacés par des espaces simples pour comparer.
 const espaces = (t: string) => t.replace(/[  ]/g, " ");
@@ -241,6 +241,13 @@ describe("commandes", () => {
     expect(contientUnPanier({ p30: 1 }, articles)).toBe(true);
     expect(contientUnPanier({ s1: 3 }, articles)).toBe(false);
     expect(contientUnPanier({ p30: 0, s1: 1 }, articles)).toBe(false);
+  });
+
+  it("à régler : la commande plus ce qui est dû, ou moins l'avoir", () => {
+    expect(aReglerALaLivraison(3800, 0)).toEqual({ aRegler: 3800, avoirRestant: 0 });
+    expect(aReglerALaLivraison(3800, 1000)).toEqual({ aRegler: 4800, avoirRestant: 0 });
+    expect(aReglerALaLivraison(3800, -500)).toEqual({ aRegler: 3300, avoirRestant: 0 });
+    expect(aReglerALaLivraison(3000, -5000)).toEqual({ aRegler: 0, avoirRestant: 2000 });
   });
 
   it("sans panier, demande 30 € de suppléments", () => {

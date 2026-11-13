@@ -135,6 +135,15 @@ export async function lireFideliteClient(clientId: string) {
 export type FideliteClient = Awaited<ReturnType<typeof lireFideliteClient>>;
 
 /** Solde, niveau et cadeaux de parrainage de tous les clients (pour la saisie des commandes). */
+/** Solde de chaque client qui en a un : + dû, − avoir (centimes). */
+export async function listerSoldes(): Promise<Record<string, number>> {
+  const supabase = await clientSupabase();
+  const lignes = verifier(await supabase.from("soldes_clients").select("client_id, solde_centimes"));
+  return Object.fromEntries(
+    lignes.flatMap((l) => (l.client_id && l.solde_centimes ? [[l.client_id, l.solde_centimes]] : [])),
+  );
+}
+
 export async function listerFidelite() {
   const supabase = await clientSupabase();
   const lignes = verifier(

@@ -1,4 +1,5 @@
 import { formaterPrix } from "@/lib/domaine/argent";
+import { aReglerALaLivraison } from "@/lib/domaine/commandes";
 import { formaterDate, majuscule } from "@/lib/domaine/dates";
 import type { DetailCommande, EvenementCommande } from "./alertes";
 
@@ -13,6 +14,8 @@ export type DetailCommandeClient = Omit<DetailCommande, "client" | "lien"> & {
   cloture: string | null;
   /** Lien vers son espace */
   lien: string;
+  /** Compte du client : ce qu'il doit déjà (+) ou son avoir (−), ajouté ou déduit */
+  soldeCompte?: number;
   telephone: string;
 };
 
@@ -46,7 +49,21 @@ export function emailCommandeClient(evenement: EvenementCommande, d: DetailComma
     if (d.offerts.length) {
       lignes.push("", "Offert grâce à votre fidélité :", ...d.offerts.map((o) => `- ${o.quantite} × ${o.libelle}`));
     }
-    lignes.push("", `Total à régler à la livraison : ${formaterPrix(total)}`);
+    const solde = d.soldeCompte ?? 0;
+    if (solde === 0) {
+      lignes.push("", `Total à régler à la livraison : ${formaterPrix(total)}`);
+    } else {
+      const { aRegler, avoirRestant } = aReglerALaLivraison(total, solde);
+      lignes.push(
+        "",
+        `Votre commande : ${formaterPrix(total)}`,
+        solde > 0
+          ? `Reste dû (livraisons précédentes) : + ${formaterPrix(solde)}`
+          : `Votre avoir, déduit : − ${formaterPrix(Math.min(-solde, total))}`,
+        `Total à régler à la livraison : ${formaterPrix(aRegler)}`,
+      );
+      if (avoirRestant > 0) lignes.push(`Il vous restera ${formaterPrix(avoirRestant)} d'avoir pour la fois suivante.`);
+    }
     if (d.notes) lignes.push(`Votre message : « ${d.notes} »`);
     lignes.push(
       "",

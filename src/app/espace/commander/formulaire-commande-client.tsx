@@ -10,6 +10,7 @@ import { manquePourCommander } from "@/lib/domaine/commandes";
 import { niveauSuffisant, pluriel, soldeDisponible, type Niveau } from "@/lib/domaine/fidelite";
 import type { ArticleCatalogue, CommandeClient, RecompenseProposeeClient } from "@/lib/espace-client";
 import { NomProduit } from "@/components/produit";
+import { DetailARegler } from "@/components/a-regler";
 
 type Nouvelle = { cle: number; recompense: RecompenseProposeeClient; articles: Record<string, number> };
 
@@ -18,13 +19,17 @@ export function FormulaireCommandeClient({
   contenus,
   commande,
   solde,
+  soldeCompte,
   niveau,
   recompenses,
 }: {
   articles: ArticleCatalogue[];
   contenus: Record<string, string>;
   commande: CommandeClient | null;
+  /** Graines de fidélité */
   solde: number;
+  /** Compte : ce que le client doit déjà (+) ou son avoir (−) */
+  soldeCompte: number;
   niveau: Niveau;
   recompenses: RecompenseProposeeClient[];
 }) {
@@ -292,10 +297,7 @@ export function FormulaireCommandeClient({
       </Carte>
 
       <div className="sticky bottom-[calc(4.5rem+env(safe-area-inset-bottom))] z-10 rounded-2xl bg-white p-4 shadow-lg ring-1 ring-stone-200">
-        <p className="mb-2 flex justify-between text-lg font-bold">
-          <span>Total à régler à la livraison</span>
-          <span className="tabular-nums">{formaterPrix(total)}</span>
-        </p>
+        <DetailARegler total={total} solde={soldeCompte} libelleTotal="Ma commande" className="mb-2 text-lg" />
         {manque && <p className="mb-2 text-sm text-amber-800">{manque}</p>}
         <Bouton taille="grand" className="w-full" disabled={enCours || Boolean(manque)} onClick={valider}>
           {enCours ? "Envoi…" : commande ? "Enregistrer les modifications" : "Valider ma commande"}

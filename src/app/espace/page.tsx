@@ -163,7 +163,7 @@ export default async function PageEspace({ searchParams }: PageProps<"/espace">)
           {commande ? (
             <>
               <p className="font-semibold text-marque-800">Votre commande</p>
-              <RecapCommande commande={commande} />
+              <RecapCommande commande={commande} soldeCompte={monSolde} />
               {peutCommander && (
                 <div className="grid gap-2">
                   <LienBouton href="/espace/commander" taille="grand" className="w-full">

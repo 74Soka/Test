@@ -48,6 +48,16 @@ export function manquePourCommander(aUnPanier: boolean, totalCentimes: number): 
   return `Sans panier, 30 € de suppléments minimum : encore ${formaterPrix(reste)}.`;
 }
 
+/**
+ * À régler à la livraison : la commande, plus ce que le client doit déjà
+ * (solde +), ou moins son avoir (solde −). Un avoir plus grand que la
+ * commande n'est pas rendu : le reste sert la fois suivante.
+ */
+export function aReglerALaLivraison(totalCentimes: number, soldeCentimes: number) {
+  const net = totalCentimes + soldeCentimes;
+  return { aRegler: Math.max(0, net), avoirRestant: Math.max(0, -net) };
+}
+
 /** Résumé lisible : « 2 × Panier 30 €, 1 × Œufs » */
 export function resumeLignes(lignes: Pick<LigneAvecPrix, "libelle" | "quantite" | "categorie">[]): string {
   return [...lignes]

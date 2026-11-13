@@ -6,6 +6,7 @@ import {
   listerClients,
   lireParametresFidelite,
   listerFidelite,
+  listerSoldes,
   listerRecompenses,
   listerSecteurs,
 } from "@/lib/donnees";
@@ -21,7 +22,7 @@ export default async function PageNouvelleCommande({ searchParams }: PageProps<"
   const clientId = typeof client === "string" ? client : null;
   const depuisId = typeof depuis === "string" ? depuis : null;
 
-  const [clients, secteurs, articles, modele, fidelite, recompenses, parametres] = await Promise.all([
+  const [clients, secteurs, articles, modele, fidelite, recompenses, parametres, soldes] = await Promise.all([
     listerClients(),
     listerSecteurs(),
     listerArticles({ actifsSeulement: true }),
@@ -29,6 +30,7 @@ export default async function PageNouvelleCommande({ searchParams }: PageProps<"
     listerFidelite(),
     listerRecompenses({ actifsSeulement: true }),
     lireParametresFidelite(),
+    listerSoldes(),
   ]);
 
   // « Recommander comme la dernière fois » : on reprend les quantités des articles encore proposés
@@ -62,6 +64,7 @@ export default async function PageNouvelleCommande({ searchParams }: PageProps<"
         aujourdhui={debutCommandesEquipe()}
         initial={{ clientId: clientInitial, date: null, quantites, libres, notes: "" }}
         fidelite={fidelite}
+        soldes={soldes}
         recompenses={recompenses}
         debutParrainage={parametres.parrainage_cadeaux_debut}
       />

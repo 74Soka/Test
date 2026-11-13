@@ -198,6 +198,10 @@ l'application.
   adresse (même code postal, même rue, précision rue ou numéro) à l'ouverture du formulaire et à l'enregistrement ;
   une fiche existante s'enregistre même sans repère (une nouvelle fiche le demande toujours). Bouton « Les placer
   automatiquement » dans Clients (par paquets de 25). Au 13 novembre 2026 : 104 fiches sur 111 sans repère.
+- [x] **Solde dans le montant à régler** (`DetailARegler`, `aReglerALaLivraison`) : commande + dû, ou − avoir,
+  précisé ligne par ligne, dans l'accueil et le formulaire de l'espace client, l'e-mail de confirmation et le
+  formulaire de commande de l'équipe (la tournée le faisait déjà). Avoir plus grand que la commande : 0 € à régler,
+  le reste pour la fois suivante.
 - [ ] **Tests dépendants de l'heure** : le vendredi après la clôture (12 h), deux parcours échouent
   (`espace-client` « page publique… » et `notifications` « …prochain ») car les commandes passent à la semaine
   suivante. À rendre indépendants de l'heure (horloge simulée côté serveur).

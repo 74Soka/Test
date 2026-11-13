@@ -135,6 +135,13 @@ describe("e-mails aux clients", () => {
     expect(texte).toContain("jusqu'au vendredi 13 novembre à 12 h : https://fraisetfrancais.fr/espace");
     expect(texte).toContain("06 25 50 24 87");
 
+    // Avec le solde du client : ajouté s'il doit, déduit s'il a un avoir
+    const doit = emailCommandeClient("nouvelle", { ...d, soldeCompte: 1000 }).texte;
+    expect(doit).toMatch(/Votre commande : 36\s€\nReste dû \(livraisons précédentes\) : \+ 10\s€\nTotal à régler à la livraison : 46\s€/);
+    const avoir = emailCommandeClient("nouvelle", { ...d, soldeCompte: -5000 }).texte;
+    expect(avoir).toMatch(/Votre avoir, déduit : − 36\s€\nTotal à régler à la livraison : 0\s€/);
+    expect(avoir).toMatch(/Il vous restera 14\s€ d'avoir/);
+
     expect(emailCommandeClient("modifiee", d).sujet).toBe("Votre commande est modifiée · livraison Samedi 14 novembre");
     const annulee = emailCommandeClient("annulee", { ...d, prenom: "" });
     expect(annulee.sujet).toBe("Votre commande est annulée · Samedi 14 novembre");
