@@ -3,11 +3,16 @@
  * dans le téléphone et envoyés dès que la connexion revient.
  */
 
+export type ModePaiement = "especes" | "cheque";
+
 export type ActionLivraison = {
   commandeId: string;
   livree: boolean;
   /** Payé à la livraison (absent dans les appuis enregistrés avant : payé) */
   payee?: boolean;
+  /** « Livré et payé » : montant reçu et mode (absents : le client règle tout ce qu'il doit) */
+  montantCentimes?: number;
+  mode?: ModePaiement;
   /** Heure de l'appui (ISO), conservée comme heure de livraison */
   horodatage: string;
 };
@@ -53,7 +58,9 @@ export function lireFile(stockage: Pick<Storage, "getItem"> | undefined): Action
             typeof a?.commandeId === "string" &&
             typeof a?.livree === "boolean" &&
             typeof a?.horodatage === "string" &&
-            (a.payee === undefined || typeof a.payee === "boolean"),
+            (a.payee === undefined || typeof a.payee === "boolean") &&
+            (a.montantCentimes === undefined || (Number.isInteger(a.montantCentimes) && a.montantCentimes >= 0)) &&
+            (a.mode === undefined || a.mode === "especes" || a.mode === "cheque"),
         )
       : [];
   } catch {

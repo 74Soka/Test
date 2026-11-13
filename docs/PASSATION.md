@@ -185,6 +185,12 @@ l'application.
   de la page publique, nom caché au client (seuls date et créneau). Case « Réservé à l'équipe » dans le formulaire
   d'un secteur. Clôture le jour même à 12 h (`20261124000000_cloture_meme_jour.sql` : une livraison le jour de la
   clôture se clôture ce jour-là, plus une semaine avant).
+- [x] **Montant reçu et mode de paiement** à la livraison (`20261126000000_paiement_recu.sql`, appliquée) : sous
+  chaque arrêt, « Montant reçu (€) » (proposé : ce qui est à encaisser) et « Paiement » (Espèces / Chèque). Le compte
+  reçoit le montant réellement reçu ; la différence reste due ou devient un avoir. Sans montant (anciens appuis,
+  « Marquer comme livrée »), payé = tout est réglé. Erreur PN054.
+- [x] **« Mon solde »** dans l'espace client (onglet Compte) : « Vous devez X € » / « Frais et Français vous doit
+  X € » / « À jour », et les 10 derniers mouvements.
 - [ ] **Tests dépendants de l'heure** : le vendredi après la clôture (12 h), deux parcours échouent
   (`espace-client` « page publique… » et `notifications` « …prochain ») car les commandes passent à la semaine
   suivante. À rendre indépendants de l'heure (horloge simulée côté serveur).

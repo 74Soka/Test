@@ -438,9 +438,20 @@ test("livreur : la tournée seulement, avec les arrêts et « Livré et payé »
   // Un arrêt encore à livrer (les parcours précédents en ont livré)
   const dernier = arrets.filter({ has: page.getByRole("button", { name: "Livré et payé" }) }).last();
   const nom = (await dernier.getAttribute("aria-label"))!;
+  // Montant reçu (proposé : ce qui est à encaisser) et mode de paiement
+  const montant = dernier.getByLabel("Montant reçu (€)");
+  await expect(montant).not.toHaveValue("");
+  const propose = Number((await montant.inputValue()).replace(",", "."));
+  await montant.clear();
+  await montant.fill("1");
+  await expect(montant).toHaveValue("1");
+  await dernier.getByLabel("Paiement", { exact: true }).selectOption("cheque");
+  await expect(dernier.getByText(/resteront dus \(ajoutés au compte du client\)/)).toBeVisible();
   await dernier.getByRole("button", { name: "Livré et payé" }).click();
   const arret = page.getByRole("region", { name: nom });
   await expect(arret.getByRole("button", { name: /✓ Livré et payé/ })).toBeVisible();
+  await expect(arret.getByText(/Reçu : 1\s€ par chèque/)).toBeVisible();
+  if (propose > 1) await expect(arret.getByText(/restent dus/)).toBeVisible();
   await arret.getByRole("button", { name: /✓ Livré et payé/ }).click();
   await expect(arret.getByRole("button", { name: "Livré et payé" })).toBeVisible();
 

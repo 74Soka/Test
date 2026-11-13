@@ -11,6 +11,7 @@ type Mouvement = {
   id: string;
   montant_centimes: number;
   motif: string;
+  mode_paiement: string | null;
   note: string | null;
   created_at: string;
   commande_id: string | null;
@@ -46,7 +47,10 @@ export function CompteClient({ clientId, solde, mouvements }: { clientId: string
           {mouvements.map((m) => (
             <li key={m.id} className="flex items-center justify-between gap-2 py-2">
               <span>
-                <span className="font-medium">{LIBELLES[m.motif] ?? m.motif}</span>
+                <span className="font-medium">
+                  {LIBELLES[m.motif] ?? m.motif}
+                  {m.mode_paiement === "especes" ? " en espèces" : m.mode_paiement === "cheque" ? " par chèque" : ""}
+                </span>
                 {m.commande && ` du ${formaterDate(m.commande.date_livraison)}`}
                 {m.note && <span className="block text-stone-600">{m.note}</span>}
               </span>

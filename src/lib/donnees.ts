@@ -230,7 +230,7 @@ export async function compterCommandesClient(clientId: string): Promise<number> 
   return count ?? 0;
 }
 
-const CHAMPS_TOURNEE = `id, date_livraison, statut, livree_le, notes, ordre_tournee, secteur_id, payee,
+const CHAMPS_TOURNEE = `id, date_livraison, statut, livree_le, notes, ordre_tournee, secteur_id, payee, montant_recu_centimes, mode_paiement,
   client:clients(id, nom, prenom, adresse, complement_adresse, code_postal, commune, telephone, secteur_id, notes_livraison, lat, lng),
   lignes:lignes_commande(article_id, libelle, categorie, quantite, prix_unitaire_centimes),
   recompenses:recompenses_utilisees(id, nom, cadeaux(article_id, libelle, categorie, quantite))` as const;
@@ -305,7 +305,7 @@ export async function lireCompteClient(clientId: string) {
   const mouvements = verifier(
     await supabase
       .from("mouvements_compte")
-      .select("id, montant_centimes, motif, note, created_at, commande_id, commande:commandes(date_livraison)")
+      .select("id, montant_centimes, motif, mode_paiement, note, created_at, commande_id, commande:commandes(date_livraison)")
       .eq("client_id", clientId)
       .order("created_at", { ascending: false }),
   );

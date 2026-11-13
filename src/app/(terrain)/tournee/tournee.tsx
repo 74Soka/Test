@@ -4,8 +4,8 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { demarrerTournee, enregistrerOrdre, marquerLivraison, optimiserTournee } from "./actions";
 import { CarteTournee } from "@/components/carte-tournee";
-import { Bouton, Carte, LienExterneBouton, MessageErreur, MessageInfo, cx } from "@/components/ui";
-import { formaterPrix } from "@/lib/domaine/argent";
+import { Bouton, Carte, Champ, LienExterneBouton, MessageErreur, MessageInfo, Selection, cx } from "@/components/ui";
+import { centimesVersSaisie, formaterPrix, saisieVersCentimes } from "@/lib/domaine/argent";
 import { formaterTelephone } from "@/lib/domaine/telephone";
 import {
   ajouterALaFile,
@@ -13,6 +13,7 @@ import {
   lireFile,
   viderFile,
   type ActionLivraison,
+  type ModePaiement,
 } from "@/lib/tournees/file-attente";
 import { longueurTrajet } from "@/lib/tournees/geo";
 import {
@@ -51,9 +52,24 @@ export type ArretTournee = {
   payee: boolean | null;
   /** Ce que le client devait déjà (+) ou son avoir (−), sans cette commande */
   duAvantCentimes: number;
+  /** « Livré et payé » : montant reçu et mode, si le livreur les a saisis */
+  montantRecuCentimes: number | null;
+  modePaiement: ModePaiement | null;
 };
 
-type EtatLivraison = { livree: boolean; heure: string | null; payee: boolean | null };
+type EtatLivraison = {
+  livree: boolean;
+  heure: string | null;
+  payee: boolean | null;
+  montant?: number | null;
+  mode?: ModePaiement | null;
+};
+
+const LIBELLES_MODE: Record<ModePaiement, string> = { especes: "en espèces", cheque: "par chèque" };
+
+/** Ce que le client doit régler à cette livraison (jamais négatif). */
+const aEncaisser = (a: Pick<ArretTournee, "totalCentimes" | "duAvantCentimes">) =>
+  Math.max(0, a.totalCentimes + a.duAvantCentimes);
 
 const HEURE = new Intl.DateTimeFormat("fr-FR", { timeZone: "Europe/Paris", hour: "2-digit", minute: "2-digit" });
 
@@ -68,6 +84,19 @@ function AEncaisser({ total, duAvant }: { total: number; duAvant: number }) {
         {formaterPrix(total)} {duAvant > 0 ? `+ ${formaterPrix(duAvant)} dus (livraisons précédentes)` : `− ${formaterPrix(-duAvant)} d'avoir`}
       </span>
     </p>
+  );
+}
+
+/** Différence entre ce qui est dû et ce qui est reçu : reste dû, ou avoir pour le client. */
+function EcartPaiement({ du, recu, apres = false }: { du: number; recu: number; apres?: boolean }) {
+  if (recu === du) return apres ? null : <span className="text-stone-600">Montant exact.</span>;
+  const ecart = Math.abs(recu - du);
+  return (
+    <span className={cx("font-medium", recu < du ? "text-amber-800" : "text-feuille-700", apres && "block")}>
+      {recu < du
+        ? `${formaterPrix(ecart)} ${apres ? "restent dus" : "resteront dus"} (ajoutés au compte du client).`
+        : `${formaterPrix(ecart)} d'avoir pour le client (déduits de sa prochaine livraison).`}
+    </span>
   );
 }
 
@@ -93,8 +122,17 @@ export function Tournee({
   const parId = useMemo(() => new Map(arrets.map((a) => [a.id, a])), [arrets]);
   const [ordre, setOrdre] = useState(() => arrets.map((a) => a.id));
   const [etats, setEtats] = useState<Record<string, EtatLivraison>>(() =>
-    Object.fromEntries(arrets.map((a) => [a.id, { livree: a.livree, heure: a.livreeLe, payee: a.payee }])),
+    Object.fromEntries(
+      arrets.map((a) => [
+        a.id,
+        { livree: a.livree, heure: a.livreeLe, payee: a.payee, montant: a.montantRecuCentimes, mode: a.modePaiement },
+      ]),
+    ),
   );
+  // Montant reçu et mode saisis par le livreur, avant d'appuyer sur « Livré et payé »
+  const [saisies, setSaisies] = useState<Record<string, { montant: string; mode: ModePaiement }>>({});
+  const saisieDe = (a: ArretTournee) =>
+    saisies[a.id] ?? { montant: centimesVersSaisie(aEncaisser(a)), mode: "especes" as ModePaiement };
   const [file, setFile] = useState<ActionLivraison[]>([]);
   const [reorganiser, setReorganiser] = useState(false);
   const [infos, setInfos] = useState<{ texte: string; avertissement?: string } | null>(null);
@@ -111,7 +149,13 @@ export function Tournee({
     envoiEnCours.current = true;
     try {
       const { restantes, refus } = await viderFile(aEnvoyer, (a) =>
-        marquerLivraison(a.commandeId, a.livree, a.horodatage, a.payee ?? true),
+        marquerLivraison(
+          a.commandeId,
+          a.livree,
+          a.horodatage,
+          a.payee ?? true,
+          a.montantCentimes !== undefined ? { montantCentimes: a.montantCentimes, mode: a.mode ?? null } : undefined,
+        ),
       );
       // Des appuis ont pu arriver pendant l'envoi : on garde ceux qui ne sont pas partis
       setFile((actuelle) => {
@@ -139,6 +183,8 @@ export function Tournee({
             livree: a.livree,
             heure: a.livree ? a.horodatage : null,
             payee: a.livree ? (a.payee ?? true) : null,
+            montant: a.montantCentimes ?? null,
+            mode: a.mode ?? null,
           };
         return copie;
       });
@@ -160,15 +206,26 @@ export function Tournee({
   }, [file, vider]);
 
   /** Livré et payé, livré sans paiement, ou annulation de la livraison (payee null). */
-  function basculer(id: string, payee: boolean | null) {
+  function basculer(id: string, payee: boolean | null, paiement?: { montantCentimes: number; mode: ModePaiement }) {
     const livree = payee !== null;
+    const recu = livree && payee && paiement ? paiement : undefined;
     const action: ActionLivraison = {
       commandeId: id,
       livree,
       horodatage: new Date().toISOString(),
       ...(livree ? { payee } : {}),
+      ...(recu ? { montantCentimes: recu.montantCentimes, mode: recu.mode } : {}),
     };
-    setEtats((e) => ({ ...e, [id]: { livree, heure: livree ? action.horodatage : null, payee } }));
+    setEtats((e) => ({
+      ...e,
+      [id]: {
+        livree,
+        heure: livree ? action.horodatage : null,
+        payee,
+        montant: recu?.montantCentimes ?? null,
+        mode: recu && recu.montantCentimes > 0 ? recu.mode : null,
+      },
+    }));
     setJusteLivre(livree ? id : null);
     const suite = ajouterALaFile(file, action);
     setFile(suite);
@@ -491,18 +548,68 @@ export function Tournee({
                       )}
                     </div>
                     {etat?.livree ? (
-                      <Bouton taille="grand" variante="secondaire" className="mt-2 w-full" onClick={() => basculer(a.id, null)}>
-                        {`✓ ${etat.payee === false ? "Livré · non payé" : "Livré et payé"}${etat.heure ? ` à ${HEURE.format(new Date(etat.heure))}` : ""} · annuler`}
-                      </Bouton>
+                      <>
+                        <Bouton taille="grand" variante="secondaire" className="mt-2 w-full" onClick={() => basculer(a.id, null)}>
+                          {`✓ ${etat.payee === false ? "Livré · non payé" : "Livré et payé"}${etat.heure ? ` à ${HEURE.format(new Date(etat.heure))}` : ""} · annuler`}
+                        </Bouton>
+                        {etat.payee !== false && etat.montant != null && (
+                          <p className="mt-1 text-sm text-stone-700">
+                            Reçu : {formaterPrix(etat.montant)}
+                            {etat.mode && ` ${LIBELLES_MODE[etat.mode]}`}
+                            <EcartPaiement du={aEncaisser(a)} recu={etat.montant} apres />
+                          </p>
+                        )}
+                      </>
                     ) : (
-                      <div className="mt-2 grid grid-cols-[2fr_1fr] gap-2">
-                        <Bouton taille="grand" className="w-full" onClick={() => basculer(a.id, true)}>
-                          Livré et payé
-                        </Bouton>
-                        <Bouton taille="grand" variante="secondaire" className="w-full" onClick={() => basculer(a.id, false)}>
-                          Livré
-                        </Bouton>
-                      </div>
+                      (() => {
+                        const saisie = saisieDe(a);
+                        const montant = saisieVersCentimes(saisie.montant);
+                        const changer = (modif: Partial<typeof saisie>) =>
+                          setSaisies((ss) => ({ ...ss, [a.id]: { ...saisie, ...modif } }));
+                        return (
+                          <div role="group" aria-label={`Paiement de ${a.nom}`} className="mt-2 space-y-2">
+                            <div className="grid grid-cols-2 gap-2">
+                              <Champ
+                                label="Montant reçu (€)"
+                                name={`montant-${a.id}`}
+                                inputMode="decimal"
+                                value={saisie.montant}
+                                erreur={montant === null ? "Montant invalide" : undefined}
+                                onChange={(e) => changer({ montant: e.target.value })}
+                              />
+                              <Selection
+                                label="Paiement"
+                                name={`mode-${a.id}`}
+                                value={saisie.mode}
+                                onChange={(e) => changer({ mode: e.target.value as ModePaiement })}
+                              >
+                                <option value="especes">Espèces</option>
+                                <option value="cheque">Chèque</option>
+                              </Selection>
+                            </div>
+                            {montant !== null && (
+                              <p className="text-sm">
+                                <EcartPaiement du={aEncaisser(a)} recu={montant} />
+                              </p>
+                            )}
+                            <div className="grid grid-cols-[2fr_1fr] gap-2">
+                              <Bouton
+                                taille="grand"
+                                className="w-full"
+                                disabled={montant === null}
+                                onClick={() =>
+                                  montant !== null && basculer(a.id, true, { montantCentimes: montant, mode: saisie.mode })
+                                }
+                              >
+                                Livré et payé
+                              </Bouton>
+                              <Bouton taille="grand" variante="secondaire" className="w-full" onClick={() => basculer(a.id, false)}>
+                                Livré
+                              </Bouton>
+                            </div>
+                          </div>
+                        );
+                      })()
                     )}
                     {etat?.livree && etat.payee === false && (
                       <p className="mt-1 text-sm font-medium text-amber-800">

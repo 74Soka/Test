@@ -115,12 +115,18 @@ export default async function PageEspace({ searchParams }: PageProps<"/espace">)
         {situation.message_clients && <MessageInfo>{situation.message_clients}</MessageInfo>}
         {monSolde > 0 && (
           <p className="rounded-2xl bg-amber-50 px-4 py-3 font-medium text-amber-900 ring-1 ring-amber-200">
-            Reste à régler : {formaterPrix(monSolde)}. Il sera ajouté à votre prochaine livraison.
+            Reste à régler : {formaterPrix(monSolde)}. Il sera ajouté à votre prochaine livraison.{" "}
+            <Link href="/espace/compte" className="underline">
+              Voir mon solde
+            </Link>
           </p>
         )}
         {monSolde < 0 && (
           <p className="rounded-2xl bg-feuille-50 px-4 py-3 font-medium text-feuille-900 ring-1 ring-feuille-600/30">
-            Vous avez un avoir de {formaterPrix(-monSolde)}, déduit de votre prochaine livraison.
+            Vous avez un avoir de {formaterPrix(-monSolde)}, déduit de votre prochaine livraison.{" "}
+            <Link href="/espace/compte" className="underline">
+              Voir mon solde
+            </Link>
           </p>
         )}
         {sansAvis && (

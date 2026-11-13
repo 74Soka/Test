@@ -87,6 +87,8 @@ export default async function PageTournee({ searchParams }: PageProps<"/tournee"
             livree: c.statut === "livree",
             livreeLe: c.livree_le,
             payee: c.payee,
+            montantRecuCentimes: c.montant_recu_centimes,
+            modePaiement: c.mode_paiement === "cheque" || c.mode_paiement === "especes" ? c.mode_paiement : null,
             duAvantCentimes: dusAvant.get(c.client.id) ?? 0,
           };
         })

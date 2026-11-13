@@ -27,6 +27,16 @@ async function serie(browser: Browser, mode: "light" | "dark", compte: [string, 
     await page.waitForTimeout(600);
     const nom = chemin.replace(/\W+/g, "-").replace(/^-|-$/g, "") || "accueil";
     await page.screenshot({ path: `${DOSSIER}/${nom}-${mode}.png` });
+    if (chemin === "/tournee") {
+      const paiement = page.getByRole("group", { name: /^Paiement de / }).first();
+      if (await paiement.count()) {
+        await page.addStyleTag({ content: "header { position: static !important; } nav { display: none !important; }" });
+        await paiement.locator("xpath=..").screenshot({ path: `${DOSSIER}/paiement-livreur-${mode}.png` });
+      }
+    }
+    if (chemin === "/espace/compte") {
+      await page.getByRole("region", { name: "Mon solde" }).screenshot({ path: `${DOSSIER}/mon-solde-${mode}.png` });
+    }
     if (chemin === "/commandes/nouvelle") {
       await page.getByRole("button", { name: "+ Ajouter un supplément libre" }).click();
       const libre = page.getByRole("group", { name: "Supplément libre 1" });
@@ -56,7 +66,7 @@ test("captures clair / sombre", async ({ browser }) => {
   test.setTimeout(240_000);
   for (const mode of ["light", "dark"] as const) {
     await serie(browser, mode, null, ["/connexion"]);
-    await serie(browser, mode, ["emma.dubois@example.org", "panier-emma-2026"], ["/espace", "/espace/commander", "/espace/fidelite"]);
+    await serie(browser, mode, ["emma.dubois@example.org", "panier-emma-2026"], ["/espace", "/espace/commander", "/espace/fidelite", "/espace/compte"]);
     await serie(browser, mode, ["admin@demo.fr", "demo-demo-demo"], ["/livraisons", "/clients", "/commandes/nouvelle", "/tournee", "/reglages"]);
   }
 });

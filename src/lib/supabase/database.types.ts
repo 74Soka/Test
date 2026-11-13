@@ -287,6 +287,8 @@ export type Database = {
           date_livraison: string
           id: string
           livree_le: string | null
+          mode_paiement: string | null
+          montant_recu_centimes: number | null
           notes: string | null
           secteur_id: string | null
           semaine: string | null
@@ -302,6 +304,8 @@ export type Database = {
           date_livraison: string
           id?: string
           livree_le?: string | null
+          mode_paiement?: string | null
+          montant_recu_centimes?: number | null
           notes?: string | null
           secteur_id?: string | null
           semaine?: string | null
@@ -317,6 +321,8 @@ export type Database = {
           date_livraison?: string
           id?: string
           livree_le?: string | null
+          mode_paiement?: string | null
+          montant_recu_centimes?: number | null
           notes?: string | null
           secteur_id?: string | null
           semaine?: string | null
@@ -568,6 +574,7 @@ export type Database = {
           commande_id: string | null
           created_at: string
           id: string
+          mode_paiement: string | null
           montant_centimes: number
           motif: string
           note: string | null
@@ -578,6 +585,7 @@ export type Database = {
           commande_id?: string | null
           created_at?: string
           id?: string
+          mode_paiement?: string | null
           montant_centimes: number
           motif: string
           note?: string | null
@@ -588,6 +596,7 @@ export type Database = {
           commande_id?: string | null
           created_at?: string
           id?: string
+          mode_paiement?: string | null
           montant_centimes?: number
           motif?: string
           note?: string | null
@@ -1239,7 +1248,14 @@ export type Database = {
       ma_fidelite: { Args: never; Returns: Json }
       ma_situation: { Args: never; Returns: Json }
       marquer_livraison: {
-        Args: { p_commande_id: string; p_livree: boolean; p_livree_le?: string; p_payee?: boolean }
+        Args: {
+          p_commande_id: string
+          p_livree: boolean
+          p_livree_le?: string
+          p_mode_paiement?: string
+          p_montant_recu_centimes?: number
+          p_payee?: boolean
+        }
         Returns: undefined
       }
       modifier_mes_coordonnees: {

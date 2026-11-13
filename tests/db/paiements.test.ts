@@ -36,6 +36,49 @@ async function solde(client: string): Promise<number> {
   return rows[0]?.solde_centimes ?? 0;
 }
 
+const livrerAvecMontant = (id: string, montant: number, mode: string | null) =>
+  comme(livreur, (c) => c.query("select public.marquer_livraison($1, true, null, true, $2, $3)", [id, montant, mode]));
+
+describe("montant reçu à la livraison (espèces ou chèque)", () => {
+  it("moins que dû : le reste va au compte ; plus : un avoir ; le mode est noté", async () => {
+    const client = await creerClient(base.client, secteur);
+    const a = await commande(client, "2026-11-14");
+    const b = await commande(client, "2026-11-21");
+
+    await livrerAvecMontant(a, 2000, "especes");
+    expect(await solde(client)).toBe(1000);
+    const { rows } = await base.client.query(
+      "select montant_centimes, mode_paiement from public.mouvements_compte where commande_id = $1 and motif = 'paiement'",
+      [a],
+    );
+    expect(rows).toEqual([{ montant_centimes: -2000, mode_paiement: "especes" }]);
+
+    // Semaine suivante : 30 € + 10 € dus = 40 € ; il donne un chèque de 50 € → avoir de 10 €
+    await livrerAvecMontant(b, 5000, "cheque");
+    expect(await solde(client)).toBe(-1000);
+    const co = await base.client.query("select montant_recu_centimes, mode_paiement from public.commandes where id = $1", [b]);
+    expect(co.rows[0]).toEqual({ montant_recu_centimes: 5000, mode_paiement: "cheque" });
+
+    // Nouvel appui corrigé (40 €) : le compte est recalculé
+    await livrerAvecMontant(b, 4000, "cheque");
+    expect(await solde(client)).toBe(0);
+    // Annulé : plus de montant ni de mode
+    await annuler(b);
+    const vide = await base.client.query("select montant_recu_centimes, mode_paiement from public.commandes where id = $1", [b]);
+    expect(vide.rows[0]).toEqual({ montant_recu_centimes: null, mode_paiement: null });
+  });
+
+  it("exige espèces ou chèque dès qu'un montant est reçu", async () => {
+    const client = await creerClient(base.client, secteur);
+    const a = await commande(client, "2026-11-14");
+    await expect(livrerAvecMontant(a, 3000, null)).rejects.toMatchObject({ code: "PN054" });
+    await expect(livrerAvecMontant(a, 3000, "carte")).rejects.toMatchObject({ code: "PN054" });
+    // 0 € reçu : livré, tout reste dû
+    await livrerAvecMontant(a, 0, null);
+    expect(await solde(client)).toBe(3000);
+  });
+});
+
 describe("paiement à la livraison", () => {
   it("livré non payé : le panier s'ajoute au compte ; payé la fois suivante : tout est réglé", async () => {
     const client = await creerClient(base.client, secteur);

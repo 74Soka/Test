@@ -176,3 +176,15 @@ export async function lireMonSolde(): Promise<number> {
   if (error) throw new Error(error.message);
   return data?.solde_centimes ?? 0;
 }
+
+/** Compte du client : solde (+ dû, − avoir) et derniers mouvements (livraisons, paiements, corrections). */
+export async function lireMonCompte() {
+  const supabase = await clientSupabase();
+  const { data, error } = await supabase
+    .from("mouvements_compte")
+    .select("id, montant_centimes, motif, mode_paiement, created_at, commande:commandes(date_livraison)")
+    .order("created_at", { ascending: false });
+  if (error) throw new Error(error.message);
+  const mouvements = data ?? [];
+  return { solde: mouvements.reduce((t, m) => t + m.montant_centimes, 0), mouvements: mouvements.slice(0, 10) };
+}

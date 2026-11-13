@@ -103,9 +103,16 @@ export async function marquerLivraison(
   livree: boolean,
   horodatage?: string,
   payee = true,
+  /** « Livré et payé » : montant reçu (centimes) et mode ; absents = tout ce qui est dû est réglé */
+  paiement?: { montantCentimes: number; mode: "especes" | "cheque" | null },
 ): Promise<Resultat> {
   await exigerEquipe();
   if (!z.uuid().safeParse(commandeId).success) return { ok: false, erreur: "Commande inconnue." };
+  const saisie = z
+    .object({ montantCentimes: z.number().int().min(0).max(1_000_000), mode: z.enum(["especes", "cheque"]).nullable() })
+    .optional()
+    .safeParse(paiement);
+  if (!saisie.success) return { ok: false, erreur: "Montant reçu invalide." };
   const heure = horodatage && !Number.isNaN(Date.parse(horodatage)) ? new Date(horodatage).toISOString() : undefined;
   const supabase = await clientSupabase();
   const { error } = await supabase.rpc("marquer_livraison", {
@@ -113,6 +120,8 @@ export async function marquerLivraison(
     p_livree: livree,
     p_livree_le: heure,
     p_payee: payee,
+    p_montant_recu_centimes: livree && payee ? saisie.data?.montantCentimes : undefined,
+    p_mode_paiement: livree && payee ? (saisie.data?.mode ?? undefined) : undefined,
   });
   if (error) return { ok: false, erreur: messageErreur(error) };
 
