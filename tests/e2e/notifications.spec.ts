@@ -112,6 +112,7 @@ test("le client active les notifications, puis est prévenu au départ de la tou
 
   // Elle active les notifications depuis l'accueil
   const carte = page.getByRole("region", { name: "Notifications de livraison" });
+  await expect(carte).toContainText("Activez les notifications pour savoir quand le livreur arrive");
   await carte.getByRole("button", { name: "Activer les notifications" }).click();
   await expect(carte).toHaveCount(0);
   await page.getByRole("link", { name: "Compte" }).click();

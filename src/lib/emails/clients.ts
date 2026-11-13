@@ -53,6 +53,8 @@ export function emailCommandeClient(evenement: EvenementCommande, d: DetailComma
       d.cloture
         ? `Vous pouvez la modifier ou l'annuler depuis votre espace jusqu'au ${d.cloture} : ${d.lien}`
         : `Retrouvez-la dans votre espace : ${d.lien}`,
+      "",
+      "Astuce : activez les notifications dans votre espace pour savoir quand le livreur arrive.",
     );
   }
 

@@ -115,6 +115,9 @@ body {
   .ring-marque-100 {
     --tw-ring-color: rgb(255 255 255 / 0.1);
   }
+  .ring-marque-600 {
+    --tw-ring-color: var(--color-marque-300);
+  }
   .divide-marque-100 > :not(:last-child) {
     border-color: rgb(255 255 255 / 0.15);
   }

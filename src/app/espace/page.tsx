@@ -179,7 +179,8 @@ export default async function PageEspace({ searchParams }: PageProps<"/espace">)
           )}
         </Carte>
 
-        {commande && <ActivationNotifications clePublique={clePublique} variante="accueil" />}
+        {/* Proposé à tous tant que ce téléphone n'est pas abonné (disparaît une fois activé) */}
+        <ActivationNotifications clePublique={clePublique} variante="accueil" />
 
         <CompositionPaniers
           paniers={catalogue.filter((a) => a.categorie === "panier")}

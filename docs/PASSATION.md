@@ -172,6 +172,12 @@ l'application.
   `CAPTURES_SOMBRE=<dossier> npx playwright test tests/e2e/espace-client.spec.ts tests/e2e/zz-captures-sombre.spec.ts`.
 - [x] **E-mail « compte validé »** au client quand l'administrateur valide son inscription
   (`emailCompteValide`, envoyé par `validerInscription`).
+- [x] **Invitation aux notifications** sur l'accueil de l'espace client, pour tous les clients tant que le
+  téléphone n'est pas abonné (« Activez les notifications pour savoir quand le livreur arrive »), et une astuce
+  dans l'e-mail de confirmation de commande.
+- [ ] **Tests dépendants de l'heure** : le vendredi après la clôture (12 h), deux parcours échouent
+  (`espace-client` « page publique… » et `notifications` « …prochain ») car les commandes passent à la semaine
+  suivante. À rendre indépendants de l'heure (horloge simulée côté serveur).
 - [ ] **Vraie liste de clients** à importer à la place des clients de démo (garder catalogue et réglages).
 - [ ] **Nom de domaine OVH** (en cours d'achat ; décision du 9 novembre 2026 : seul le domaine est chez OVH, le site
       reste sur Netlify, offre payante si besoin, pas de VPS) : DNS vers Netlify, `SITE_URL`, *Site URL* et *Redirect URLs* dans

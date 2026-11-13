@@ -15,6 +15,11 @@ async function serie(browser: Browser, mode: "light" | "dark", compte: [string, 
   const ctx = await browser.newContext({ ...test.info().project.use, colorScheme: mode });
   const page = await ctx.newPage();
   await page.route("https://tile.openstreetmap.org/**", (r) => r.abort());
+  // Comme un vrai téléphone : notifications ni accordées ni refusées, aucun abonnement
+  await page.addInitScript(() => {
+    Object.defineProperty(Notification, "permission", { get: () => "default" });
+    PushManager.prototype.getSubscription = async () => null;
+  });
   if (compte) await connecter(page, ...compte);
   for (const chemin of pages) {
     await page.goto(chemin);
@@ -22,6 +27,10 @@ async function serie(browser: Browser, mode: "light" | "dark", compte: [string, 
     await page.waitForTimeout(600);
     const nom = chemin.replace(/\W+/g, "-").replace(/^-|-$/g, "") || "accueil";
     await page.screenshot({ path: `${DOSSIER}/${nom}-${mode}.png` });
+    const invitation = page.getByRole("region", { name: "Notifications de livraison" });
+    if (chemin === "/espace" && (await invitation.isVisible())) {
+      await invitation.screenshot({ path: `${DOSSIER}/invitation-notifications-${mode}.png` });
+    }
   }
   await ctx.close();
 }
