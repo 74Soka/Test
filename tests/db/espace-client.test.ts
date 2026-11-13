@@ -40,6 +40,7 @@ const comme = <T>(userId: string, fn: (c: ClientBase) => Promise<T>) =>
 type Situation = {
   etat: string;
   client_id?: string;
+  secteur?: string | null;
   prochaine_livraison?: string;
   cloture?: string;
   commande_id?: string | null;
@@ -335,6 +336,42 @@ describe("commander en ligne", () => {
       expect(r).toMatchObject({ nouvelle: true, date_livraison: dansHuitJours });
     } finally {
       await cloture("23:59:59");
+    }
+  });
+
+  it("clôture vendredi 12 h : le vendredi même pour une livraison le vendredi, le vendredi d'avant pour le week-end", async () => {
+    await sql("update public.parametres_commandes set cloture_jour = 5, cloture_heure = '12:00'");
+    try {
+      const lignes = await sql<{ d: string; fin: string }>(`
+        select to_char(d, 'YYYY-MM-DD') as d,
+               to_char(prive.cloture_commandes(d) at time zone 'Europe/Paris', 'YYYY-MM-DD HH24:MI') as fin
+        from unnest(array['2026-11-20', '2026-11-21', '2026-11-22', '2026-11-23']::date[]) d`);
+      expect(lignes).toEqual([
+        { d: "2026-11-20", fin: "2026-11-20 12:00" },
+        { d: "2026-11-21", fin: "2026-11-20 12:00" },
+        { d: "2026-11-22", fin: "2026-11-20 12:00" },
+        { d: "2026-11-23", fin: "2026-11-20 12:00" },
+      ]);
+    } finally {
+      await cloture("23:59:59");
+    }
+  });
+
+  it("secteur réservé à l'équipe : nom caché au client, absent de la page publique", async () => {
+    await sql("update public.secteurs set interne = true where id = $1", [secteur]);
+    try {
+      const s = await situation(compteAlice);
+      expect(s.secteur).toBeNull();
+      expect(s.prochaine_livraison).toBe(demain);
+      const lus = await comme(compteAlice, async (c) => (await c.query("select id from public.secteurs")).rows);
+      expect(lus).toHaveLength(0);
+      const [{ nom }] = await sql<{ nom: string }>("select nom from public.secteurs where id = $1", [secteur]);
+      const publics = await en(base.client, { role: "anon" }, async (c) =>
+        (await c.query("select public.paniers_publics() -> 'secteurs' as s")).rows[0].s as { nom: string }[],
+      );
+      expect(publics.map((p) => p.nom)).not.toContain(nom);
+    } finally {
+      await sql("update public.secteurs set interne = false where id = $1", [secteur]);
     }
   });
 

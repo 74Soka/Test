@@ -180,6 +180,11 @@ l'application.
   article (`article_id` vide ; clé primaire `id`, unicité (commande, article) pour le catalogue). Compte dans le
   total, le compte client et les 30 € ; pas de graines. Le client le voit sans pouvoir le modifier ; sa
   modification en ligne le garde (`p_libres` null). Erreur PN053.
+- [x] **Secteur V** (vendredi après-midi, vert, créé le 13 novembre 2026, sans commune : clients rattachés un par
+  un depuis leur fiche). **Réservé à l'équipe** (`secteurs.interne`, `20261125000000_secteurs_internes.sql`) : absent
+  de la page publique, nom caché au client (seuls date et créneau). Case « Réservé à l'équipe » dans le formulaire
+  d'un secteur. Clôture le jour même à 12 h (`20261124000000_cloture_meme_jour.sql` : une livraison le jour de la
+  clôture se clôture ce jour-là, plus une semaine avant).
 - [ ] **Tests dépendants de l'heure** : le vendredi après la clôture (12 h), deux parcours échouent
   (`espace-client` « page publique… » et `notifications` « …prochain ») car les commandes passent à la semaine
   suivante. À rendre indépendants de l'heure (horloge simulée côté serveur).

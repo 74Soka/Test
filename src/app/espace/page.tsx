@@ -100,7 +100,7 @@ export default async function PageEspace({ searchParams }: PageProps<"/espace">)
     <>
       <EnTetePage
         titre={`Bonjour ${situation.prenom || situation.nom}`}
-        sousTitre={libelleSecteur(situation.secteur)}
+        sousTitre={situation.secteur ? libelleSecteur(situation.secteur) : undefined}
         action={
           // eslint-disable-next-line @next/next/no-img-element
           <img src="/logo.svg" alt="Frais et Français" width={48} height={48} className="shrink-0" />

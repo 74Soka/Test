@@ -33,7 +33,7 @@ export default async function PageCompte() {
             {fiche?.code_postal} {fiche?.commune}
           </p>
           <p className="mt-2 text-sm text-stone-600">
-            {libelleSecteur(situation.secteur)}. Pour changer d&apos;adresse, contactez-nous : nous vérifierons le jour de
+            {situation.secteur && `${libelleSecteur(situation.secteur)}. `}Pour changer d&apos;adresse, contactez-nous : nous vérifierons le jour de
             livraison.
           </p>
         </Carte>

@@ -23,6 +23,7 @@ export default async function PageModifierSecteur({ params }: PageProps<"/reglag
           jour: secteur.jour,
           creneau: secteur.creneau as Creneau,
           couleur: secteur.couleur,
+          interne: secteur.interne,
           depart: { adresse: secteur.depart_adresse, lat: secteur.depart_lat, lng: secteur.depart_lng },
           communes: secteur.communes,
         }}

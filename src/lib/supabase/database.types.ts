@@ -950,6 +950,7 @@ export type Database = {
           depart_lat: number
           depart_lng: number
           id: string
+          interne: boolean
           jour: number
           nom: string
           updated_at: string
@@ -962,6 +963,7 @@ export type Database = {
           depart_lat: number
           depart_lng: number
           id?: string
+          interne?: boolean
           jour: number
           nom: string
           updated_at?: string
@@ -974,6 +976,7 @@ export type Database = {
           depart_lat?: number
           depart_lng?: number
           id?: string
+          interne?: boolean
           jour?: number
           nom?: string
           updated_at?: string

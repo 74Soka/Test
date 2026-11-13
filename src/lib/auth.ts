@@ -59,7 +59,8 @@ const schemaSituation = z.discriminatedUnion("etat", [
     prenom: z.string(),
     nom: z.string(),
     actif: z.boolean(),
-    secteur: z.string(),
+    /** Vide pour un secteur réservé à l'équipe (nom non montré au client) */
+    secteur: z.string().nullable(),
     creneau: z.enum(["matin", "apres_midi", "journee"]),
     prochaine_livraison: z.string().nullable(),
     cloture: z.string().nullable(),

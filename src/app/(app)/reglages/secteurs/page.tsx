@@ -37,6 +37,11 @@ export default async function PageSecteurs() {
                 <div className="flex items-center gap-2">
                   <PointCouleur couleur={s.couleur} />
                   <span className="font-semibold">{s.nom}</span>
+                  {s.interne && (
+                    <span className="rounded-full bg-stone-100 px-2 py-0.5 text-xs font-bold text-stone-700">
+                      Équipe seulement
+                    </span>
+                  )}
                   <span className="ml-auto text-sm text-stone-600">{comptes[s.id] ?? 0} clients</span>
                 </div>
                 <p className="mt-1 text-stone-700">{libelleTournee(s)}</p>

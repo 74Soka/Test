@@ -12,6 +12,8 @@ const schemaSecteur = z.object({
   jour: z.number().int().min(1).max(7),
   creneau: z.enum(["matin", "apres_midi", "journee"]),
   couleur: z.string().regex(/^#[0-9a-fA-F]{6}$/, "Couleur invalide."),
+  /** Réservé à l'équipe : absent de la page publique, nom caché aux clients */
+  interne: z.boolean().default(false),
   depart: z.object(
     {
       adresse: z.string().trim().min(1),

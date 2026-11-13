@@ -29,6 +29,7 @@ export function FormulaireSecteur({
       jour: 6,
       creneau: "matin",
       couleur: COULEURS[0],
+      interne: false,
       depart: undefined as unknown as DonneesSecteur["depart"],
       communes: [],
     },
@@ -122,6 +123,22 @@ export function FormulaireSecteur({
             ))}
           </div>
         </fieldset>
+        <label className="flex min-h-12 cursor-pointer items-start gap-3">
+          <input
+            type="checkbox"
+            name="interne"
+            checked={donnees.interne ?? false}
+            onChange={(e) => maj({ interne: e.target.checked })}
+            className="mt-1 size-5 shrink-0 accent-marque-700"
+          />
+          <span>
+            <span className="block font-medium text-stone-800">Réservé à l&apos;équipe</span>
+            <span className="block text-sm text-stone-600">
+              Visible seulement par l&apos;administrateur et les livreurs : absent de la page des paniers, et les
+              clients de ce secteur ne voient que leur jour de livraison.
+            </span>
+          </span>
+        </label>
       </Carte>
 
       <Carte className="space-y-3">

@@ -43,6 +43,8 @@ const classesBouton =
 
 export default async function PagePaniers() {
   const d = await lirePaniersPublics();
+  // Un secteur sans commune (ex. Secteur V, clients choisis un par un) n'est pas affiché
+  const secteursAffiches = d.secteurs.filter((s) => s.communes.length > 0);
   const parrainageAVenir = d.parrainage_debut && d.parrainage_debut > aujourdhui() ? d.parrainage_debut : null;
   const cloture =
     d.cloture_jour && d.cloture_heure
@@ -144,11 +146,11 @@ export default async function PagePaniers() {
 
       {d.recette && <RecetteSemaine recette={d.recette} paniers={d.paniers} supplements={d.supplements} />}
 
-      {d.secteurs.length > 0 && (
+      {secteursAffiches.length > 0 && (
         <section className="flex flex-col gap-3 rounded-3xl bg-white p-5 ring-1 ring-marque-100">
           <h2 className="font-titre text-xl text-marque-800">Livraisons à domicile</h2>
           <ul className="flex flex-col gap-3">
-            {d.secteurs.map((s) => (
+            {secteursAffiches.map((s) => (
               <li key={s.nom}>
                 <p className="font-extrabold">{libelleTournee(s)}</p>
                 <p className="text-stone-700">{s.communes.join(", ")}</p>
