@@ -129,6 +129,67 @@ describe("contenu d'une commande", () => {
     expect(await lignes(id)).toHaveLength(2);
   });
 
+  it("supplément libre : nom et prix saisis, plusieurs par commande, gardés si on ne les précise pas", async () => {
+    const client = await creerClient(base.client, secteur);
+    const fraises = { libelle: "Fraises (500 g)", quantite: 2, prix_unitaire_centimes: 450 };
+    const miel = { libelle: "Miel du voisin", quantite: 1, prix_unitaire_centimes: 900 };
+    const id = await enregistrer({
+      clientId: client,
+      date: "2026-11-07",
+      lignes: [{ article_id: p30, quantite: 1 }],
+      libres: [fraises, miel],
+    });
+    const libres = async () =>
+      (
+        await base.client.query(
+          "select libelle, categorie, quantite, prix_unitaire_centimes from public.lignes_commande where commande_id = $1 and article_id is null order by libelle",
+          [id],
+        )
+      ).rows;
+    expect(await libres()).toEqual([
+      { libelle: "Fraises (500 g)", categorie: "supplement", quantite: 2, prix_unitaire_centimes: 450 },
+      { libelle: "Miel du voisin", categorie: "supplement", quantite: 1, prix_unitaire_centimes: 900 },
+    ]);
+    // Modifiée sans préciser les libres (comme le client en ligne) : ils restent
+    await enregistrer({ clientId: client, date: "2026-11-07", commandeId: id, lignes: [{ article_id: p50, quantite: 1 }] });
+    expect(await libres()).toHaveLength(2);
+    // Liste vide : retirés
+    await enregistrer({ clientId: client, date: "2026-11-07", commandeId: id, lignes: [{ article_id: p50, quantite: 1 }], libres: [] });
+    expect(await libres()).toHaveLength(0);
+    // Nom vide ou prix trop élevé : refusés
+    for (const mauvais of [{ ...fraises, libelle: "  " }, { ...fraises, prix_unitaire_centimes: 60000 }]) {
+      await expect(
+        enregistrer({ clientId: client, date: "2026-11-07", commandeId: id, lignes: [{ article_id: p50, quantite: 1 }], libres: [mauvais] }),
+      ).rejects.toSatisfy((e) => codeErreur(e) === "PN053");
+    }
+  });
+
+  it("supplément libre : compte dans les 30 € sans panier et dans le compte du client, sans graines", async () => {
+    const client = await creerClient(base.client, secteur);
+    const id = await enregistrer({
+      clientId: client,
+      date: "2026-11-07",
+      lignes: [{ article_id: oeufs, quantite: 2 }],
+      libres: [{ libelle: "Fraises", quantite: 4, prix_unitaire_centimes: 500 }],
+    });
+    await changerStatut(id, "livree");
+    const { rows } = await base.client.query(
+      "select sum(montant_centimes)::int as total from public.mouvements_compte where commande_id = $1 and motif = 'livraison'",
+      [id],
+    );
+    expect(rows[0].total).toBe(3000);
+    const t = await base.client.query("select count(*)::int as n from public.tampons where commande_id = $1", [id]);
+    expect(t.rows[0].n).toBe(0);
+    await expect(
+      enregistrer({
+        clientId: client,
+        date: "2026-11-14",
+        lignes: [{ article_id: oeufs, quantite: 1 }],
+        libres: [{ libelle: "Fraises", quantite: 1, prix_unitaire_centimes: 500 }],
+      }),
+    ).rejects.toSatisfy((e) => codeErreur(e) === "PN002");
+  });
+
   it("refuse plus de 99 exemplaires d'un article", async () => {
     const client = await creerClient(base.client, secteur);
     await expect(

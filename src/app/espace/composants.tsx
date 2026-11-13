@@ -51,7 +51,7 @@ export function RecapCommande({ commande }: { commande: Pick<CommandeClient, "li
     <div className="space-y-2">
       <ul className="space-y-1">
         {lignes.map((l) => (
-          <li key={l.article_id} className="flex justify-between gap-2">
+          <li key={l.article_id ?? `libre-${l.libelle}`} className="flex justify-between gap-2">
             <NomProduit nom={l.libelle} prefixe={`${l.quantite} × `} />
             <span className="tabular-nums text-stone-700">{formaterPrix(l.quantite * l.prix_unitaire_centimes)}</span>
           </li>

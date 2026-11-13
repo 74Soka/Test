@@ -10,7 +10,8 @@ export const LIBELLES_STATUT: Record<Statut, string> = {
 };
 
 export type LigneAvecPrix = {
-  article_id: string;
+  /** Vide pour un supplément libre (nom et prix saisis par l'équipe) */
+  article_id: string | null;
   libelle: string;
   categorie: Categorie;
   quantite: number;
@@ -56,7 +57,9 @@ export function resumeLignes(lignes: Pick<LigneAvecPrix, "libelle" | "quantite" 
 }
 
 export type LigneRecap = {
-  article_id: string;
+  /** Identifiant de la ligne du récapitulatif (l'article, ou « libre: » + nom pour un supplément libre) */
+  cle: string;
+  article_id: string | null;
   libelle: string;
   categorie: Categorie;
   quantite: number;
@@ -80,12 +83,15 @@ export function recapitulatif(
 ): LigneRecap[] {
   const parArticle = new Map<string, LigneRecap>();
   const ajouter = (l: ArticleCompte, offert: boolean) => {
-    const existant = parArticle.get(l.article_id);
+    // Les suppléments libres de même nom sont regroupés
+    const cle = l.article_id ?? `libre:${l.libelle.trim().toLocaleLowerCase("fr")}`;
+    const existant = parArticle.get(cle);
     if (existant) {
       existant.quantite += l.quantite;
       if (offert) existant.offerts += l.quantite;
     } else {
-      parArticle.set(l.article_id, {
+      parArticle.set(cle, {
+        cle,
         article_id: l.article_id,
         libelle: l.libelle,
         categorie: l.categorie,

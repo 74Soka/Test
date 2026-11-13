@@ -214,7 +214,7 @@ export default async function PageLivraisons({ searchParams }: PageProps<"/livra
               <table className="w-full">
                 <tbody className="divide-y divide-stone-100">
                   {recap.map((l) => (
-                    <tr key={l.article_id}>
+                    <tr key={l.cle}>
                       <td className={cx("py-2", l.categorie === "panier" && "font-semibold")}>
                         <NomProduit nom={l.libelle} />
                         {l.offerts > 0 && (

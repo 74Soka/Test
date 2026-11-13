@@ -101,12 +101,25 @@ test("commande : un panier ou 30 € de suppléments, total, date choisie", asyn
   await page.getByRole("button", { name: "Ajouter un Panier 30 €" }).click();
   await expect(page.getByText("63 €")).toBeVisible();
 
+  // Supplément libre : nom et prix saisis à la main
+  await page.getByRole("button", { name: "+ Ajouter un supplément libre" }).click();
+  const libre = page.getByRole("group", { name: "Supplément libre 1" });
+  await expect(page.getByText("Indiquez le nom et le prix de chaque supplément libre.")).toBeVisible();
+  await expect(enregistrer).toBeDisabled();
+  await libre.getByLabel("Supplément (nom)").fill("Fraises (500 g)");
+  await libre.getByLabel("Prix (€)").fill("4,50");
+  await expect(page.getByText(/^67,50\s€$/)).toBeVisible();
+
   // Commande pour la semaine suivante (la semaine en cours servira à « recommander »)
   await page.getByRole("button", { name: "Changer la date" }).click();
   await page.getByLabel("Date de livraison").fill(ajouterJours(samedi, 7));
   await enregistrer.click();
   await expect(page.getByText("Commande enregistrée.")).toBeVisible();
   await expect(page.getByText(formaterDate(ajouterJours(samedi, 7), { annee: true }))).toBeVisible();
+  // Le supplément libre est gardé, modifiable
+  const garde = page.getByRole("group", { name: "Supplément libre 1" });
+  await expect(garde.getByLabel("Supplément (nom)")).toHaveValue("Fraises (500 g)");
+  await expect(garde.getByLabel("Prix (€)")).toHaveValue("4,50");
 });
 
 test("recommander comme la dernière fois, puis doublon de semaine refusé", async ({ page }) => {

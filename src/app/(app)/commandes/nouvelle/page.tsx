@@ -11,7 +11,7 @@ import {
 } from "@/lib/donnees";
 import { debutCommandesEquipe } from "@/lib/domaine/dates";
 import { EnTetePage, MessageInfo } from "@/components/ui";
-import { FormulaireCommande } from "../formulaire-commande";
+import { FormulaireCommande, type LigneLibre } from "../formulaire-commande";
 
 export const metadata: Metadata = { title: "Nouvelle commande" };
 
@@ -34,8 +34,10 @@ export default async function PageNouvelleCommande({ searchParams }: PageProps<"
   // « Recommander comme la dernière fois » : on reprend les quantités des articles encore proposés
   const quantites: Record<string, number> = {};
   const indisponibles: string[] = [];
+  const libres: LigneLibre[] = [];
   for (const ligne of modele?.lignes ?? []) {
-    if (articles.some((a) => a.id === ligne.article_id)) quantites[ligne.article_id] = ligne.quantite;
+    if (!ligne.article_id) libres.push({ libelle: ligne.libelle, quantite: ligne.quantite, prix_unitaire_centimes: ligne.prix_unitaire_centimes });
+    else if (articles.some((a) => a.id === ligne.article_id)) quantites[ligne.article_id] = ligne.quantite;
     else indisponibles.push(ligne.libelle);
   }
 
@@ -58,7 +60,7 @@ export default async function PageNouvelleCommande({ searchParams }: PageProps<"
         secteurs={secteurs}
         articles={articles}
         aujourdhui={debutCommandesEquipe()}
-        initial={{ clientId: clientInitial, date: null, quantites, notes: "" }}
+        initial={{ clientId: clientInitial, date: null, quantites, libres, notes: "" }}
         fidelite={fidelite}
         recompenses={recompenses}
         debutParrainage={parametres.parrainage_cadeaux_debut}

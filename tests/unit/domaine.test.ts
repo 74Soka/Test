@@ -277,8 +277,25 @@ describe("commandes", () => {
       },
     ]);
     expect(recap).toEqual([
-      { article_id: "p30", libelle: "Panier 30 €", categorie: "panier", quantite: 2, offerts: 0 },
-      { article_id: "s1", libelle: "Œufs", categorie: "supplement", quantite: 1, offerts: 1 },
+      { cle: "p30", article_id: "p30", libelle: "Panier 30 €", categorie: "panier", quantite: 2, offerts: 0 },
+      { cle: "s1", article_id: "s1", libelle: "Œufs", categorie: "supplement", quantite: 1, offerts: 1 },
+    ]);
+  });
+
+  it("regroupe les suppléments libres de même nom", () => {
+    const libre = (libelle: string, quantite: number) => ({
+      article_id: null,
+      libelle,
+      categorie: "supplement" as const,
+      quantite,
+    });
+    const recap = recapitulatif([
+      { statut: "a_livrer", lignes: [libre("Fraises", 2)] },
+      { statut: "a_livrer", lignes: [libre("fraises ", 1), libre("Miel", 1)] },
+    ]);
+    expect(recap.map((l) => [l.libelle, l.quantite])).toEqual([
+      ["Fraises", 3],
+      ["Miel", 1],
     ]);
   });
 });

@@ -16,6 +16,17 @@ const schemaCommande = z.object({
   secteurId: z.uuid("Secteur inconnu.").nullable().optional(),
   quantites: z.record(z.uuid(), z.number().int().min(0).max(99)),
   notes: z.string().max(1000).optional(),
+  /** Suppléments libres (nom et prix saisis à la main) */
+  libres: z
+    .array(
+      z.object({
+        libelle: z.string().trim().min(1, "Nom du supplément manquant.").max(60),
+        quantite: z.number().int().min(1).max(99),
+        prix_unitaire_centimes: z.number().int().min(0, "Prix invalide.").max(50000, "Prix trop élevé (500 € maximum)."),
+      }),
+    )
+    .max(20)
+    .default([]),
   recompenses: z
     .array(
       z.object({
@@ -36,7 +47,7 @@ export async function enregistrerCommande(donnees: DonneesCommande, id?: string)
   if (!saisie.success) {
     return { ok: false, erreur: "Vérifiez les champs signalés.", champs: erreursParChamp(saisie.error.issues) };
   }
-  const { clientId, date, secteurId, quantites, notes, recompenses } = saisie.data;
+  const { clientId, date, secteurId, quantites, notes, recompenses, libres } = saisie.data;
   const lignes = Object.entries(quantites)
     .filter(([, q]) => q > 0)
     .map(([article_id, quantite]) => ({ article_id, quantite }));
@@ -49,6 +60,7 @@ export async function enregistrerCommande(donnees: DonneesCommande, id?: string)
     p_notes: notes || undefined,
     p_commande_id: id,
     p_recompenses: recompenses.map((r) => ({ id: r.id ?? null, recompense_id: r.recompense_id, articles: r.articles })),
+    p_libres: libres,
   });
 
   if (error) {

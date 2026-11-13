@@ -61,7 +61,12 @@ export default async function PageCommande({ params, searchParams }: PageProps<"
         actif: a.actif,
       };
     });
-  const quantites = Object.fromEntries(commande.lignes.map((l) => [l.article_id, l.quantite]));
+  const quantites = Object.fromEntries(
+    commande.lignes.flatMap((l) => (l.article_id ? [[l.article_id, l.quantite]] : [])),
+  );
+  const libres = commande.lignes
+    .filter((l) => !l.article_id)
+    .map((l) => ({ libelle: l.libelle, quantite: l.quantite, prix_unitaire_centimes: l.prix_unitaire_centimes }));
 
   return (
     <>
@@ -132,6 +137,7 @@ export default async function PageCommande({ params, searchParams }: PageProps<"
               date: commande.date_livraison,
               secteurId: commande.secteur_id,
               quantites,
+              libres,
               notes: commande.notes ?? "",
               recompenses: commande.recompenses.map((r) => ({
                 id: r.id,
@@ -150,7 +156,7 @@ export default async function PageCommande({ params, searchParams }: PageProps<"
             <TitreSection>Contenu</TitreSection>
             <ul className="divide-y divide-stone-100">
               {commande.lignes.map((l) => (
-                <li key={l.article_id} className="flex justify-between gap-3 py-2">
+                <li key={l.article_id ?? `libre-${l.libelle}`} className="flex justify-between gap-3 py-2">
                   <NomProduit nom={l.libelle} prefixe={`${l.quantite} × `} />
                   <span className="tabular-nums">{formaterPrix(l.quantite * l.prix_unitaire_centimes)}</span>
                 </li>

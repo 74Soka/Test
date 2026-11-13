@@ -175,6 +175,11 @@ l'application.
 - [x] **Invitation aux notifications** sur l'accueil de l'espace client, pour tous les clients tant que le
   téléphone n'est pas abonné (« Activez les notifications pour savoir quand le livreur arrive »), et une astuce
   dans l'e-mail de confirmation de commande.
+- [x] **Supplément libre** (`20261123000000_supplement_libre.sql`, appliquée) : l'équipe ajoute sur une commande
+  un supplément hors catalogue, nom et prix saisis (« + Ajouter un supplément libre »). Ligne de commande sans
+  article (`article_id` vide ; clé primaire `id`, unicité (commande, article) pour le catalogue). Compte dans le
+  total, le compte client et les 30 € ; pas de graines. Le client le voit sans pouvoir le modifier ; sa
+  modification en ligne le garde (`p_libres` null). Erreur PN053.
 - [ ] **Tests dépendants de l'heure** : le vendredi après la clôture (12 h), deux parcours échouent
   (`espace-client` « page publique… » et `notifications` « …prochain ») car les commandes passent à la semaine
   suivante. À rendre indépendants de l'heure (horloge simulée côté serveur).

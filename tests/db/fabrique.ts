@@ -63,10 +63,12 @@ export async function enregistrerCommande(
     notes?: string | null;
     commandeId?: string | null;
     recompenses?: RecompenseDemandee[];
+    /** Suppléments libres ; absent = ceux déjà sur la commande sont gardés */
+    libres?: { libelle: string; quantite: number; prix_unitaire_centimes: number }[];
   },
 ) {
   const { rows } = await client.query<{ id: string }>(
-    "select public.enregistrer_commande($1, $2, $3::jsonb, $4, $5, $6::jsonb) as id",
+    "select public.enregistrer_commande($1, $2, $3::jsonb, $4, $5, $6::jsonb, $7::jsonb) as id",
     [
       p.clientId,
       p.date,
@@ -74,6 +76,7 @@ export async function enregistrerCommande(
       p.notes ?? null,
       p.commandeId ?? null,
       JSON.stringify(p.recompenses ?? []),
+      p.libres ? JSON.stringify(p.libres) : null,
     ],
   );
   return rows[0].id;

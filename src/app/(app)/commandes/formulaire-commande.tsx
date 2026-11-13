@@ -7,7 +7,7 @@ import { RecompensesCommande, type RecompenseEnCours } from "./recompenses-comma
 import { ChoixClient, type ClientChoisissable } from "@/components/choix-client";
 import { Compteur } from "@/components/compteur";
 import { Bouton, Carte, Champ, MessageErreur, PointCouleur, Selection, ZoneTexte } from "@/components/ui";
-import { formaterPrix } from "@/lib/domaine/argent";
+import { centimesVersSaisie, formaterPrix, saisieVersCentimes } from "@/lib/domaine/argent";
 import { contientUnPanier, manquePourCommander } from "@/lib/domaine/commandes";
 import { formaterDate, jourSemaine, NOMS_JOURS } from "@/lib/domaine/dates";
 import { dateDuSecteurDansLaSemaine, libelleTournee, prochaineLivraison, type Creneau } from "@/lib/domaine/secteurs";
@@ -23,6 +23,10 @@ export type ArticleFormulaire = {
   prix_centimes: number;
   actif: boolean;
 };
+
+/** Supplément libre : nom et prix saisis à la main (hors catalogue). */
+export type LigneLibre = { libelle: string; quantite: number; prix_unitaire_centimes: number };
+type LibreEnCours = { cle: number; libelle: string; quantite: number; prix: string };
 
 export type ClientFormulaire = ClientChoisissable & { secteur_id: string };
 
@@ -54,6 +58,7 @@ export function FormulaireCommande({
     /** Secteur choisi pour cette livraison seulement (vide : secteur du client) */
     secteurId?: string | null;
     recompenses?: (RecompenseEnCours & { id: string })[];
+    libres?: LigneLibre[];
   };
   clientFixe?: boolean;
   /** Fidélité de chaque client (solde, niveau, cadeaux de parrainage) */
@@ -83,6 +88,15 @@ export function FormulaireCommande({
   const [modifierSecteur, setModifierSecteur] = useState(Boolean(initial.secteurId));
   const [quantites, setQuantites] = useState<Record<string, number>>(initial.quantites);
   const [notes, setNotes] = useState(initial.notes);
+  const [libres, setLibres] = useState<LibreEnCours[]>(() =>
+    (initial.libres ?? []).map((l, i) => ({
+      cle: i,
+      libelle: l.libelle,
+      quantite: l.quantite,
+      prix: centimesVersSaisie(l.prix_unitaire_centimes),
+    })),
+  );
+  const [prochaineCleLibre, setProchaineCleLibre] = useState((initial.libres ?? []).length);
   const [recompensesEnCours, setRecompensesEnCours] = useState<RecompenseEnCours[]>(
     () => initial.recompenses ?? cadeauxDOffice(initial.clientId, initial.date ?? dateProposee(initial.clientId)),
   );
@@ -104,10 +118,13 @@ export function FormulaireCommande({
   const date = dateDeBase && secteurPonctuel ? dateDuSecteurDansLaSemaine(secteurPonctuel, dateDeBase) : dateDeBase;
   const horsJour = Boolean(!secteurPonctuel && secteur && date && jourSemaine(date) !== secteur.jour);
 
+  const totalLibres = libres.reduce((t, l) => t + l.quantite * (saisieVersCentimes(l.prix) ?? 0), 0);
   const total = useMemo(
     () => articles.reduce((t, a) => t + (quantites[a.id] ?? 0) * a.prix_centimes, 0),
     [articles, quantites],
-  );
+  ) + totalLibres;
+  // Un supplément libre doit avoir un nom et un prix valides
+  const libreIncomplet = libres.some((l) => !l.libelle.trim() || saisieVersCentimes(l.prix) === null);
   const panierOffert = recompensesEnCours.some((r) =>
     Object.entries(r.articles).some(([id, q]) => q > 0 && articles.find((a) => a.id === id)?.categorie === "panier"),
   );
@@ -126,6 +143,10 @@ export function FormulaireCommande({
       // Les récompenses dépendent du client ; œufs d'office pour la 1re commande d'un filleul
       setRecompensesEnCours(cadeauxDOffice(nouveau, dateProposee(nouveau)));
     }
+  }
+
+  function changerLibre(cle: number, modif: Partial<LibreEnCours>) {
+    setLibres((ls) => ls.map((l) => (l.cle === cle ? { ...l, ...modif } : l)));
   }
 
   function ligneArticle(a: ArticleFormulaire) {
@@ -160,6 +181,11 @@ export function FormulaireCommande({
                 secteurId: secteurPonctuel?.id ?? null,
                 quantites,
                 notes,
+                libres: libres.map((l) => ({
+                  libelle: l.libelle.trim(),
+                  quantite: l.quantite,
+                  prix_unitaire_centimes: saisieVersCentimes(l.prix) ?? -1,
+                })),
                 recompenses: recompensesEnCours.map((r) => ({
                   id: r.id ?? null,
                   recompense_id: r.recompense_id,
@@ -268,12 +294,69 @@ export function FormulaireCommande({
         {paniers.length === 0 && <p className="text-stone-600">Aucun panier au catalogue (Réglages › Catalogue).</p>}
       </Carte>
 
-      {supplements.length > 0 && (
-        <Carte>
-          <h2 className="text-lg font-bold">Suppléments</h2>
-          <ul className="divide-y divide-stone-100">{supplements.map(ligneArticle)}</ul>
-        </Carte>
-      )}
+      <Carte aria-label="Suppléments">
+        <h2 className="text-lg font-bold">Suppléments</h2>
+        {supplements.length > 0 && <ul className="divide-y divide-stone-100">{supplements.map(ligneArticle)}</ul>}
+        {libres.map((l, i) => {
+          const prixInvalide = l.prix.trim() !== "" && saisieVersCentimes(l.prix) === null;
+          return (
+            <div
+              key={l.cle}
+              role="group"
+              aria-label={`Supplément libre ${i + 1}`}
+              className="mt-3 space-y-3 rounded-2xl bg-marque-50 p-3 ring-1 ring-marque-100"
+            >
+              <Champ
+                label="Supplément (nom)"
+                name={`libre-nom-${l.cle}`}
+                value={l.libelle}
+                maxLength={60}
+                placeholder="Ex. Fraises (500 g)"
+                onChange={(e) => changerLibre(l.cle, { libelle: e.target.value })}
+              />
+              <div className="flex items-end gap-3">
+                <Champ
+                  label="Prix (€)"
+                  name={`libre-prix-${l.cle}`}
+                  inputMode="decimal"
+                  value={l.prix}
+                  placeholder="Ex. 4,50"
+                  className="w-28"
+                  erreur={prixInvalide ? "Prix invalide" : undefined}
+                  onChange={(e) => changerLibre(l.cle, { prix: e.target.value })}
+                />
+                <div className="ml-auto pb-1">
+                  <Compteur
+                    valeur={l.quantite}
+                    libelle={l.libelle || "supplément libre"}
+                    onChange={(v) =>
+                      v <= 0 ? setLibres((ls) => ls.filter((x) => x.cle !== l.cle)) : changerLibre(l.cle, { quantite: v })
+                    }
+                  />
+                </div>
+              </div>
+              <Bouton
+                variante="discret"
+                taille="petit"
+                className="-ml-3"
+                onClick={() => setLibres((ls) => ls.filter((x) => x.cle !== l.cle))}
+              >
+                Retirer ce supplément
+              </Bouton>
+            </div>
+          );
+        })}
+        <Bouton
+          variante="secondaire"
+          className="mt-3 w-full"
+          onClick={() => {
+            setLibres((ls) => [...ls, { cle: prochaineCleLibre, libelle: "", quantite: 1, prix: "" }]);
+            setProchaineCleLibre((c) => c + 1);
+          }}
+        >
+          + Ajouter un supplément libre
+        </Bouton>
+      </Carte>
 
       {client && fideliteClient && (
         <RecompensesCommande
@@ -317,7 +400,15 @@ export function FormulaireCommande({
           <span className="text-2xl font-bold tabular-nums">{formaterPrix(total)}</span>
         </div>
         {manque && <p className="mb-2 text-sm font-medium text-amber-800">{manque}</p>}
-        <Bouton type="submit" taille="grand" className="w-full" disabled={enCours || Boolean(manque) || !client || !date}>
+        {libreIncomplet && (
+          <p className="mb-2 text-sm font-medium text-amber-800">Indiquez le nom et le prix de chaque supplément libre.</p>
+        )}
+        <Bouton
+          type="submit"
+          taille="grand"
+          className="w-full"
+          disabled={enCours || Boolean(manque) || libreIncomplet || !client || !date}
+        >
           {enCours ? "Enregistrement…" : id ? "Enregistrer les modifications" : "Enregistrer la commande"}
         </Bouton>
       </div>

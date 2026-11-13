@@ -27,6 +27,23 @@ async function serie(browser: Browser, mode: "light" | "dark", compte: [string, 
     await page.waitForTimeout(600);
     const nom = chemin.replace(/\W+/g, "-").replace(/^-|-$/g, "") || "accueil";
     await page.screenshot({ path: `${DOSSIER}/${nom}-${mode}.png` });
+    if (chemin === "/commandes/nouvelle") {
+      await page.getByRole("button", { name: "+ Ajouter un supplément libre" }).click();
+      const libre = page.getByRole("group", { name: "Supplément libre 1" });
+      await libre.getByLabel("Supplément (nom)").fill("Fraises (500 g)");
+      await libre.getByLabel("Prix (€)").fill("4,50");
+      await page.addStyleTag({ content: "header { position: static !important; } nav { display: none !important; }" });
+      await libre.locator("xpath=..").locator("> :nth-last-child(-n+2)").first().scrollIntoViewIfNeeded();
+      const zone = await libre.boundingBox();
+      const bouton = await page.getByRole("button", { name: "+ Ajouter un supplément libre" }).boundingBox();
+      if (zone && bouton) {
+        await page.screenshot({
+          path: `${DOSSIER}/supplement-libre-${mode}.png`,
+          fullPage: true,
+          clip: { x: 0, y: zone.y - 16 + (await page.evaluate(() => window.scrollY)), width: 412, height: bouton.y + bouton.height - zone.y + 32 },
+        });
+      }
+    }
     const invitation = page.getByRole("region", { name: "Notifications de livraison" });
     if (chemin === "/espace" && (await invitation.isVisible())) {
       await invitation.screenshot({ path: `${DOSSIER}/invitation-notifications-${mode}.png` });

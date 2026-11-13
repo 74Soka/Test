@@ -32,7 +32,7 @@ export function FormulaireCommandeClient({
   const [enCours, demarrer] = useTransition();
   const [erreur, setErreur] = useState<string | null>(null);
   const [quantites, setQuantites] = useState<Record<string, number>>(() =>
-    Object.fromEntries((commande?.lignes ?? []).map((l) => [l.article_id, l.quantite])),
+    Object.fromEntries((commande?.lignes ?? []).flatMap((l) => (l.article_id ? [[l.article_id, l.quantite]] : []))),
   );
   const [notes, setNotes] = useState(commande?.notes ?? "");
 
@@ -49,11 +49,16 @@ export function FormulaireCommandeClient({
   const prixParId = useMemo(() => new Map(articles.map((a) => [a.id, a])), [articles]);
 
   // Une ligne existante dont l'article a été retiré du catalogue reste affichée
-  const lignesRetirees = (commande?.lignes ?? []).filter((l) => !prixParId.has(l.article_id));
+  const lignesRetirees = (commande?.lignes ?? []).flatMap((l) =>
+    l.article_id && !prixParId.has(l.article_id) ? [{ ...l, article_id: l.article_id }] : [],
+  );
+  // Suppléments ajoutés par l'équipe (nom et prix saisis à la main) : gardés tels quels
+  const libres = (commande?.lignes ?? []).filter((l) => !l.article_id);
 
   const total =
     articles.reduce((t, a) => t + (quantites[a.id] ?? 0) * a.prix_centimes, 0) +
-    lignesRetirees.reduce((t, l) => t + (quantites[l.article_id] ?? 0) * l.prix_unitaire_centimes, 0);
+    lignesRetirees.reduce((t, l) => t + (quantites[l.article_id] ?? 0) * l.prix_unitaire_centimes, 0) +
+    libres.reduce((t, l) => t + l.quantite * l.prix_unitaire_centimes, 0);
   const aUnPanier =
     paniers.some((p) => (quantites[p.id] ?? 0) > 0) ||
     nouvelles.some((n) => n.recompense.article_id && prixParId.get(n.recompense.article_id)?.categorie === "panier") ||
@@ -131,7 +136,7 @@ export function FormulaireCommandeClient({
         </div>
       </Carte>
 
-      {supplements.length > 0 && (
+      {(supplements.length > 0 || libres.length > 0) && (
         <Carte aria-label="Suppléments">
           <TitreSection>Suppléments</TitreSection>
           <ul className="divide-y divide-stone-100">
@@ -158,6 +163,18 @@ export function FormulaireCommandeClient({
                   max={l.quantite}
                   onChange={(v) => maj(l.article_id, v)}
                 />
+              </li>
+            ))}
+            {libres.map((l, i) => (
+              <li key={`libre-${i}`} className="flex items-center justify-between gap-3 py-2">
+                <div className="min-w-0">
+                  <p className="font-semibold">
+                    {l.quantite} × {l.libelle}
+                  </p>
+                  <p className="text-sm text-stone-600">
+                    {formaterPrix(l.quantite * l.prix_unitaire_centimes)} · ajouté par notre équipe
+                  </p>
+                </div>
               </li>
             ))}
           </ul>

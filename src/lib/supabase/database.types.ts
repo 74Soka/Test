@@ -489,25 +489,28 @@ export type Database = {
       }
       lignes_commande: {
         Row: {
-          article_id: string
+          article_id: string | null
           categorie: Database["public"]["Enums"]["categorie_article"]
           commande_id: string
+          id: string
           libelle: string
           prix_unitaire_centimes: number
           quantite: number
         }
         Insert: {
-          article_id: string
+          article_id?: string | null
           categorie: Database["public"]["Enums"]["categorie_article"]
           commande_id: string
+          id?: string
           libelle: string
           prix_unitaire_centimes: number
           quantite: number
         }
         Update: {
-          article_id?: string
+          article_id?: string | null
           categorie?: Database["public"]["Enums"]["categorie_article"]
           commande_id?: string
+          id?: string
           libelle?: string
           prix_unitaire_centimes?: number
           quantite?: number
@@ -1289,6 +1292,7 @@ export type Database = {
           p_commande_id?: string
           p_date_livraison: string
           p_lignes: Json
+          p_libres?: Json
           p_notes?: string
           p_recompenses?: Json
         }
