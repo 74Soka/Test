@@ -191,9 +191,10 @@ l'application.
   « Marquer comme livrée »), payé = tout est réglé. Erreur PN054.
 - [x] **« Mon solde »** dans l'espace client (onglet Compte) : « Vous devez X € » / « Frais et Français vous doit
   X € » / « À jour », et les 10 derniers mouvements.
-- [x] **Inscription reliée à une fiche existante** (`20261127000000_inscription_complete_fiche.sql`, appliquée) : la
-  fiche est complétée (e-mail, prénom, téléphone, complément, consignes, code commune) sans rien écraser ; sans
-  repère, l'adresse localisée du client est reprise si même code postal.
+- [x] **Inscription reliée à une fiche existante** (`20261127…` puis `20261128000000_inscription_met_a_jour_fiche.sql`,
+  appliquées) : les informations de l'inscription remplacent celles de la fiche (nom, prénom, e-mail, téléphone,
+  adresse et repère, consignes) ; ce que le client a laissé vide garde la valeur de la fiche. Nouvelle adresse
+  sans repère : l'ancien repère est retiré. Secteur et parrain inchangés.
 - [x] **Repère automatique** (`src/lib/geocodage/localiser.ts`) : une fiche sans repère est placée d'après son
   adresse (même code postal, même rue, précision rue ou numéro) à l'ouverture du formulaire et à l'enregistrement ;
   une fiche existante s'enregistre même sans repère (une nouvelle fiche le demande toujours). Bouton « Les placer

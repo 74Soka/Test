@@ -594,43 +594,49 @@ describe("inscription d'un nouveau client", () => {
     ).toBe("PN042");
   });
 
-  it("relier à une fiche existante complète ce qui manque, sans rien écraser", async () => {
-    // Fiche importée : sans prénom, téléphone, e-mail ni repère sur la carte
+  it("relier à une fiche existante : complète ce qui manque et remplace ce qui a changé", async () => {
+    // Fiche importée : sans prénom, téléphone, e-mail ni repère, ancienne adresse et consignes
     const [{ id: fiche }] = await sql<{ id: string }>(
-      `insert into public.clients (nom, prenom, telephone, adresse, code_postal, commune, notes_livraison, secteur_id)
-       values ('Importée', '', null, '4 rue neuve', '83000', 'Toulon', 'Sonner deux fois', $1) returning id`,
+      `insert into public.clients (nom, prenom, telephone, adresse, complement_adresse, code_postal, commune, notes_livraison, secteur_id)
+       values ('Importée', '', null, '9 ancienne rue', 'Bât. B', '83000', 'Toulon', 'Sonner deux fois', $1) returning id`,
       [secteur],
     );
     const compte = await creerCompteEnLigne(base.client, "importee@exemple.fr");
     await envoyer(compte);
     await comme(admin, (c) => c.query("select public.valider_inscription($1, null, $2)", [compte, fiche]));
     const [f] = await sql<Record<string, unknown>>(
-      `select prenom, telephone, email, adresse, code_insee, lat, lng, source_position, notes_livraison
+      `select nom, prenom, telephone, email, adresse, complement_adresse, code_insee, lat, lng, source_position,
+              notes_livraison, secteur_id
        from public.clients where id = $1`,
       [fiche],
     );
     expect(f).toEqual({
+      nom: "Nouvelle",
       prenom: "Hélène",
       telephone: "+33612345678",
       email: "importee@exemple.fr",
       adresse: "4 Rue Neuve",
+      // Laissé vide à l'inscription : la fiche garde le sien
+      complement_adresse: "Bât. B",
       code_insee: "83137",
       lat: 43.12,
       lng: 5.93,
       source_position: "adresse",
-      // Déjà rempli : gardé
-      notes_livraison: "Sonner deux fois",
+      notes_livraison: "Portail vert",
+      secteur_id: secteur,
     });
   });
 
-  it("une fiche déjà localisée garde son adresse et son repère", async () => {
+  it("nouvelle adresse sans repère (saisie à la main) : l'ancien repère est retiré", async () => {
     const existante = await creerClient(base.client, secteur);
-    await sql("update public.clients set lat = 43.2, lng = 6.0, adresse = '1 Rue Test' where id = $1", [existante]);
-    const compte = await creerCompteEnLigne(base.client, "localisee@exemple.fr");
-    await envoyer(compte);
+    const compte = await creerCompteEnLigne(base.client, "manuelle@exemple.fr");
+    await envoyer(compte, formulaire.map((v, i) => (i === 8 || i === 9 ? null : v)));
     await comme(admin, (c) => c.query("select public.valider_inscription($1, null, $2)", [compte, existante]));
-    const [f] = await sql<Record<string, unknown>>("select adresse, lat, lng, prenom from public.clients where id = $1", [existante]);
-    expect(f).toEqual({ adresse: "1 Rue Test", lat: 43.2, lng: 6.0, prenom: "Test" });
+    const [f] = await sql<Record<string, unknown>>(
+      "select adresse, lat, lng, source_position from public.clients where id = $1",
+      [existante],
+    );
+    expect(f).toEqual({ adresse: "4 Rue Neuve", lat: null, lng: null, source_position: null });
   });
 
   it("une inscription refusée ne peut plus être renvoyée", async () => {
