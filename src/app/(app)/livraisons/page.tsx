@@ -2,7 +2,14 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { exigerAdmin } from "@/lib/auth";
 import { preparerNotifications } from "@/lib/notifications";
-import { listerCommandes, listerSecteurs, type CommandeDetaillee, type SecteurAvecCommunes } from "@/lib/donnees";
+import {
+  commandesPourEncaissements,
+  listerCommandes,
+  listerSecteurs,
+  type CommandeDetaillee,
+  type SecteurAvecCommunes,
+} from "@/lib/donnees";
+import { RecapEncaissements } from "@/components/recap-encaissements";
 import { formaterPrix } from "@/lib/domaine/argent";
 import {
   articlesOfferts,
@@ -78,6 +85,7 @@ export default async function PageLivraisons({ searchParams }: PageProps<"/livra
   );
   const actives = commandes.filter((c) => c.statut !== "annulee");
   const recap = recapitulatif(commandes);
+  const encaissements = await commandesPourEncaissements(commandes);
 
   // Groupes date → secteur
   const groupes: { date: string; secteur: SecteurAvecCommunes | undefined; commandes: CommandeDetaillee[] }[] = [];
@@ -227,6 +235,12 @@ export default async function PageLivraisons({ searchParams }: PageProps<"/livra
                 </tbody>
               </table>
             </Carte>
+
+            <RecapEncaissements
+              commandes={encaissements}
+              secteurs={[...secteurs].sort(comparerSecteurs)}
+              titre={`💶 Encaissements ${jour ? "du jour" : "de la semaine"}`}
+            />
 
             {groupes.map((g) => {
               const actifsGroupe = g.commandes.filter((c) => c.statut !== "annulee");

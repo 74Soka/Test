@@ -4,6 +4,7 @@ import { clientSupabase } from "@/lib/supabase/serveur";
 import { comparerSecteurs } from "@/lib/domaine/secteurs";
 import type { DateIso } from "@/lib/domaine/dates";
 import type { FideliteSaisie } from "@/lib/domaine/fidelite";
+import type { CommandeEncaissement } from "@/lib/domaine/encaissements";
 
 /**
  * Lectures de la base, faites avec la session de l'utilisateur (RLS appliquée).
@@ -188,7 +189,7 @@ export async function listerArticles(options: { actifsSeulement?: boolean } = {}
 }
 export type Article = Awaited<ReturnType<typeof listerArticles>>[number];
 
-const CHAMPS_COMMANDE = `id, client_id, date_livraison, statut, livree_le, notes, source, secteur_id, payee,
+const CHAMPS_COMMANDE = `id, client_id, date_livraison, statut, livree_le, notes, source, secteur_id, payee, montant_recu_centimes, mode_paiement,
   client:clients(id, nom, prenom, adresse, complement_adresse, code_postal, commune, telephone, secteur_id, notes_livraison, actif),
   lignes:lignes_commande(article_id, libelle, categorie, quantite, prix_unitaire_centimes),
   recompenses:recompenses_utilisees(id, recompense_id, nom, cout_tampons, cadeaux(article_id, libelle, categorie, quantite))` as const;
@@ -306,6 +307,35 @@ export async function soldesAvant(clientIds: string[], commandeIds: string[]): P
     resultat.set(l.client_id, (resultat.get(l.client_id) ?? 0) + l.montant_centimes);
   }
   return resultat;
+}
+
+/** Commandes au format du récapitulatif des encaissements (soldes avant chacune). */
+export async function commandesPourEncaissements(
+  commandes: {
+    id: string;
+    statut: "a_livrer" | "livree" | "annulee";
+    payee: boolean | null;
+    montant_recu_centimes: number | null;
+    mode_paiement: string | null;
+    secteur_id: string | null;
+    client: { id: string; secteur_id: string };
+    lignes: { quantite: number; prix_unitaire_centimes: number }[];
+  }[],
+) {
+  const actives = commandes.filter((c) => c.statut !== "annulee");
+  const soldes = await soldesAvant(
+    [...new Set(actives.map((c) => c.client.id))],
+    actives.map((c) => c.id),
+  );
+  return actives.map((c): CommandeEncaissement => ({
+    secteurId: c.secteur_id ?? c.client.secteur_id,
+    totalCentimes: c.lignes.reduce((t, l) => t + l.quantite * l.prix_unitaire_centimes, 0),
+    statut: c.statut,
+    payee: c.payee,
+    montantRecuCentimes: c.montant_recu_centimes,
+    modePaiement: c.mode_paiement === "especes" || c.mode_paiement === "cheque" ? c.mode_paiement : null,
+    soldeAvantCentimes: soldes.get(c.client.id) ?? 0,
+  }));
 }
 
 /** Compte d'un client : solde et derniers mouvements. */

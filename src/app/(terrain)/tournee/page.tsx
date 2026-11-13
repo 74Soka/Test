@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { exigerEquipe } from "@/lib/auth";
-import { listerCommandesDuJour, listerSecteurs, soldesAvant } from "@/lib/donnees";
+import { commandesPourEncaissements, listerCommandesDuJour, listerSecteurs, soldesAvant } from "@/lib/donnees";
+import { RecapEncaissements } from "@/components/recap-encaissements";
 import { resumeLignes, totalCommande, articlesOfferts } from "@/lib/domaine/commandes";
 import {
   ajouterJours,
@@ -63,6 +64,8 @@ export default async function PageTournee({ searchParams }: PageProps<"/tournee"
     : null;
 
   const duSecteur = secteur ? commandes.filter((c) => secteurDeLivraison(c) === secteur.id) : [];
+  // Argent du jour, tous les secteurs livrés ce jour-là
+  const encaissements = await commandesPourEncaissements(commandes);
   const dusAvant = await soldesAvant(
     duSecteur.map((c) => c.client.id),
     duSecteur.map((c) => c.id),
@@ -163,6 +166,11 @@ export default async function PageTournee({ searchParams }: PageProps<"/tournee"
             demarreeLe={demarreeLe}
           />
         )}
+        <RecapEncaissements
+          commandes={encaissements}
+          secteurs={secteursDuJour}
+          titre={`💶 Encaissements du ${formaterDate(date)}`}
+        />
       </div>
     </>
   );

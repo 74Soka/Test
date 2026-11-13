@@ -452,6 +452,12 @@ test("livreur : la tournée seulement, avec les arrêts et « Livré et payé »
   await expect(arret.getByRole("button", { name: /✓ Livré et payé/ })).toBeVisible();
   await expect(arret.getByText(/Reçu : 1\s€ par chèque/)).toBeVisible();
   if (propose > 1) await expect(arret.getByText(/restent dus/)).toBeVisible();
+  // Récapitulatif de l'argent du jour : le chèque y est, et tout retombe sur les commandes
+  await page.reload();
+  const recapArgent = page.getByRole("region", { name: "Encaissements", exact: true });
+  await expect(recapArgent).toContainText(/Chèques/);
+  await expect(recapArgent).toContainText("✓");
+  await expect(recapArgent).not.toContainText("⚠");
   await arret.getByRole("button", { name: /✓ Livré et payé/ }).click();
   await expect(arret.getByRole("button", { name: "Livré et payé" })).toBeVisible();
 

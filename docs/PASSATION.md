@@ -202,6 +202,10 @@ l'application.
   précisé ligne par ligne, dans l'accueil et le formulaire de l'espace client, l'e-mail de confirmation et le
   formulaire de commande de l'équipe (la tournée le faisait déjà). Avoir plus grand que la commande : 0 € à régler,
   le reste pour la fois suivante.
+- [x] **Récapitulatif des encaissements** (`src/lib/domaine/encaissements.ts`, `RecapEncaissements`) : espèces,
+  chèques, avoirs déduits, reste dû, pas encore livré, encaissé en plus ; par secteur et tous secteurs. Page
+  Livraisons (semaine ou jour, administrateur) et Tournée (le jour, livreur et administrateur). Vérification
+  affichée : retombe sur le montant des commandes à préparer.
 - [ ] **Tests dépendants de l'heure** : le vendredi après la clôture (12 h), deux parcours échouent
   (`espace-client` « page publique… » et `notifications` « …prochain ») car les commandes passent à la semaine
   suivante. À rendre indépendants de l'heure (horloge simulée côté serveur).

@@ -34,6 +34,13 @@ async function serie(browser: Browser, mode: "light" | "dark", compte: [string, 
         await paiement.locator("xpath=..").screenshot({ path: `${DOSSIER}/paiement-livreur-${mode}.png` });
       }
     }
+    if (chemin === "/livraisons" || chemin === "/tournee") {
+      const argent = page.getByRole("region", { name: "Encaissements", exact: true });
+      if (await argent.count()) {
+        await page.addStyleTag({ content: "header { position: static !important; } nav { display: none !important; }" });
+        await argent.screenshot({ path: `${DOSSIER}/encaissements${chemin.replace("/", "-")}-${mode}.png` });
+      }
+    }
     if (chemin === "/espace/compte") {
       await page.getByRole("region", { name: "Mon solde" }).screenshot({ path: `${DOSSIER}/mon-solde-${mode}.png` });
     }
