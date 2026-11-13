@@ -9,7 +9,7 @@ import {
   listerRecompenses,
   listerSecteurs,
 } from "@/lib/donnees";
-import { aujourdhui } from "@/lib/domaine/dates";
+import { debutCommandesEquipe } from "@/lib/domaine/dates";
 import { EnTetePage, MessageInfo } from "@/components/ui";
 import { FormulaireCommande } from "../formulaire-commande";
 
@@ -57,7 +57,7 @@ export default async function PageNouvelleCommande({ searchParams }: PageProps<"
         clients={actifs}
         secteurs={secteurs}
         articles={articles}
-        aujourdhui={aujourdhui()}
+        aujourdhui={debutCommandesEquipe()}
         initial={{ clientId: clientInitial, date: null, quantites, notes: "" }}
         fidelite={fidelite}
         recompenses={recompenses}

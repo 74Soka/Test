@@ -14,7 +14,7 @@ import {
 } from "@/lib/donnees";
 import { formaterPrix } from "@/lib/domaine/argent";
 import { LIBELLES_STATUT, resumeLignes, totalCommande, type Statut } from "@/lib/domaine/commandes";
-import { aujourdhui, formaterDate, formaterDateCourte, lundiDeLaSemaine } from "@/lib/domaine/dates";
+import { debutCommandesEquipe, formaterDate, formaterDateCourte, lundiDeLaSemaine } from "@/lib/domaine/dates";
 import { libelleTournee, prochaineLivraison } from "@/lib/domaine/secteurs";
 import { estMobile, formaterTelephone } from "@/lib/domaine/telephone";
 import { nomComplet } from "@/lib/domaine/texte";
@@ -58,7 +58,7 @@ export default async function PageClient({ params }: PageProps<"/clients/[id]">)
     ]);
   const telephones = compteEnLigne ? await compterTelephonesNotifies(id) : 0;
   const secteur = secteurs.find((s) => s.id === client.secteur_id);
-  const prochaine = secteur ? prochaineLivraison(secteur, aujourdhui()) : null;
+  const prochaine = secteur ? prochaineLivraison(secteur, debutCommandesEquipe()) : null;
   const commandeSemaine = prochaine ? await commandeDeLaSemaine(id, lundiDeLaSemaine(prochaine)) : null;
   const derniere = commandes.find((c) => c.statut !== "annulee");
   const position = client.lat !== null && client.lng !== null ? { lat: client.lat, lng: client.lng } : null;

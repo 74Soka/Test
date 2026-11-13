@@ -178,6 +178,9 @@ l'application.
 - [ ] **Tests dépendants de l'heure** : le vendredi après la clôture (12 h), deux parcours échouent
   (`espace-client` « page publique… » et `notifications` « …prochain ») car les commandes passent à la semaine
   suivante. À rendre indépendants de l'heure (horloge simulée côté serveur).
+- [x] **Commandes de l'équipe jusqu'au dimanche 12 h** : la base ne bloque pas l'équipe (seuls les clients
+  s'arrêtent à la clôture du vendredi). La date proposée par défaut à l'équipe reste la semaine en cours jusqu'au
+  dimanche 12 h, puis passe à la semaine suivante (`debutCommandesEquipe`, `src/lib/domaine/dates.ts`).
 - [ ] **Vraie liste de clients** à importer à la place des clients de démo (garder catalogue et réglages).
 - [ ] **Nom de domaine OVH** (en cours d'achat ; décision du 9 novembre 2026 : seul le domaine est chez OVH, le site
       reste sur Netlify, offre payante si besoin, pas de VPS) : DNS vers Netlify, `SITE_URL`, *Site URL* et *Redirect URLs* dans

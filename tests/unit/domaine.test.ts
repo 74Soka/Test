@@ -10,6 +10,7 @@ import {
   jourSemaine,
   lundiDeLaSemaine,
   prochaineDate,
+  debutCommandesEquipe,
 } from "@/lib/domaine/dates";
 import { estMobile, formaterTelephone, normaliserTelephone } from "@/lib/domaine/telephone";
 import { centimesVersSaisie, formaterPrix, saisieVersCentimes } from "@/lib/domaine/argent";
@@ -28,6 +29,17 @@ import { contientUnPanier, manquePourCommander, nombreDePaniers, recapitulatif, 
 const espaces = (t: string) => t.replace(/[  ]/g, " ");
 
 describe("dates", () => {
+  it("l'équipe commande pour la semaine en cours jusqu'au dimanche 12 h", () => {
+    // Vendredi 13 novembre 2026, 14 h à Paris : encore la semaine en cours (samedi 14, dimanche 15)
+    expect(debutCommandesEquipe(new Date("2026-11-13T13:00:00Z"))).toBe("2026-11-13");
+    expect(prochaineDate(6, debutCommandesEquipe(new Date("2026-11-13T13:00:00Z")))).toBe("2026-11-14");
+    // Dimanche 15, 11 h 59 : la tournée du dimanche reste proposée
+    expect(prochaineDate(7, debutCommandesEquipe(new Date("2026-11-15T10:59:00Z")))).toBe("2026-11-15");
+    // Dimanche 15, 12 h : semaine suivante
+    expect(debutCommandesEquipe(new Date("2026-11-15T11:00:00Z"))).toBe("2026-11-16");
+    expect(prochaineDate(7, debutCommandesEquipe(new Date("2026-11-15T11:00:00Z")))).toBe("2026-11-22");
+  });
+
   it("donne le jour ISO (lundi = 1, dimanche = 7)", () => {
     expect(jourSemaine("2026-11-02")).toBe(1);
     expect(jourSemaine("2026-11-07")).toBe(6);

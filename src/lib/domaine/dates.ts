@@ -64,6 +64,21 @@ export function jourSemaine(iso: DateIso): number {
 }
 
 /** Première date ≥ `aPartirDe` qui tombe le jour ISO `jour`. */
+/**
+ * Jour à partir duquel l'équipe propose une livraison : aujourd'hui, jusqu'au
+ * dimanche 12 h (heure de Paris) ; ensuite la semaine est terminée et on part
+ * du lundi suivant. (Les clients, eux, s'arrêtent à la clôture du vendredi.)
+ */
+export function debutCommandesEquipe(maintenant: Date = new Date()): DateIso {
+  const jour = aujourdhui(maintenant);
+  const heure = Number(
+    new Intl.DateTimeFormat("fr-FR", { timeZone: "Europe/Paris", hour: "numeric", hourCycle: "h23" })
+      .formatToParts(maintenant)
+      .find((p) => p.type === "hour")?.value,
+  );
+  return jourSemaine(jour) === 7 && heure >= 12 ? ajouterJours(jour, 1) : jour;
+}
+
 export function prochaineDate(jour: number, aPartirDe: DateIso): DateIso {
   const ecart = (jour - jourSemaine(aPartirDe) + 7) % 7;
   return ajouterJours(aPartirDe, ecart);
