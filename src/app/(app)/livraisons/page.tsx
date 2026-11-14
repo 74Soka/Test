@@ -10,12 +10,12 @@ import {
   type SecteurAvecCommunes,
 } from "@/lib/donnees";
 import { RecapEncaissements } from "@/components/recap-encaissements";
+import { APreparer } from "@/components/a-preparer";
 import { formaterPrix } from "@/lib/domaine/argent";
 import {
   articlesOfferts,
   LIBELLES_STATUT,
   nombreDePaniers,
-  recapitulatif,
   resumeLignes,
   totalCommande,
   type Statut,
@@ -34,8 +34,7 @@ import {
 } from "@/lib/domaine/dates";
 import { comparerSecteurs, LIBELLES_CRENEAU, secteurDeLivraison } from "@/lib/domaine/secteurs";
 import { nomComplet } from "@/lib/domaine/texte";
-import { Carte, EnTetePage, EtatVide, LienBouton, Pastille, PointCouleur, cx } from "@/components/ui";
-import { NomProduit } from "@/components/produit";
+import { EnTetePage, EtatVide, LienBouton, Pastille, PointCouleur, cx } from "@/components/ui";
 
 export const metadata: Metadata = { title: "Livraisons" };
 
@@ -83,8 +82,6 @@ export default async function PageLivraisons({ searchParams }: PageProps<"/livra
   const commandes = commandesSemaine.filter(
     (c) => (!jour || c.date_livraison === jour) && (!secteurFiltre || secteurDeLivraison(c) === secteurFiltre),
   );
-  const actives = commandes.filter((c) => c.statut !== "annulee");
-  const recap = recapitulatif(commandes);
   const encaissements = await commandesPourEncaissements(commandes);
 
   // Groupes date → secteur
@@ -211,30 +208,7 @@ export default async function PageLivraisons({ searchParams }: PageProps<"/livra
           </EtatVide>
         ) : (
           <>
-            <Carte aria-labelledby="titre-recap">
-              <h2 id="titre-recap" className="text-lg font-bold">
-                À préparer
-              </h2>
-              <p className="mb-3 text-stone-600">
-                {actives.length} commande{actives.length > 1 ? "s" : ""} ·{" "}
-                {formaterPrix(actives.reduce((t, c) => t + totalCommande(c.lignes), 0))}
-              </p>
-              <table className="w-full">
-                <tbody className="divide-y divide-stone-100">
-                  {recap.map((l) => (
-                    <tr key={l.cle}>
-                      <td className={cx("py-2", l.categorie === "panier" && "font-semibold")}>
-                        <NomProduit nom={l.libelle} />
-                        {l.offerts > 0 && (
-                          <span className="block text-sm font-normal text-peche-700">dont {l.offerts} offert{l.offerts > 1 ? "s" : ""} 🎁</span>
-                        )}
-                      </td>
-                      <td className="py-2 text-right text-xl font-bold tabular-nums">{l.quantite}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </Carte>
+            <APreparer commandes={commandes} />
 
             <RecapEncaissements
               commandes={encaissements}

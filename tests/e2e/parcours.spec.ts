@@ -435,6 +435,10 @@ test("livreur : la tournée seulement, avec les arrêts et « Livré et payé »
   const arrets = page.getByRole("region", { name: /^Arrêt \d+ :/ });
   await expect(arrets.first()).toBeVisible();
   await expect(arrets.first().getByText(/À encaisser/)).toBeVisible();
+  // « À préparer » du jour, comme l'administrateur, en haut de la tournée
+  const aPreparer = page.getByRole("region", { name: "À préparer" });
+  await expect(aPreparer).toContainText(/\d+ commandes? ·/);
+  await expect(aPreparer).toContainText("Panier 30 €");
   // Un arrêt encore à livrer (les parcours précédents en ont livré)
   const dernier = arrets.filter({ has: page.getByRole("button", { name: "Livré et payé" }) }).last();
   const nom = (await dernier.getAttribute("aria-label"))!;

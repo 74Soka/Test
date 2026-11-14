@@ -9,6 +9,7 @@ import {
   soldesAvant,
 } from "@/lib/donnees";
 import { RecapEncaissements } from "@/components/recap-encaissements";
+import { APreparer } from "@/components/a-preparer";
 import { resumeLignes, totalCommande, articlesOfferts } from "@/lib/domaine/commandes";
 import {
   ajouterJours,
@@ -147,6 +148,10 @@ export default async function PageTournee({ searchParams }: PageProps<"/tournee"
             ))}
           </div>
         )}
+        <APreparer
+          commandes={commandes}
+          sousTitre={`${majuscule(formaterDate(date))}${secteursDuJour.length > 1 ? " · tous les secteurs" : ""}`}
+        />
         {secteursDuJour.length > 1 && (
           <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1" role="group" aria-label="Secteur">
             {secteursDuJour.map((s) => (

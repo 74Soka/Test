@@ -28,6 +28,10 @@ async function serie(browser: Browser, mode: "light" | "dark", compte: [string, 
     const nom = chemin.replace(/\W+/g, "-").replace(/^-|-$/g, "") || "accueil";
     await page.screenshot({ path: `${DOSSIER}/${nom}-${mode}.png` });
     if (chemin === "/tournee") {
+      const aPreparer = page.getByRole("region", { name: "À préparer" });
+      if (await aPreparer.count()) {
+        await page.screenshot({ path: `${DOSSIER}/tournee-haut-${mode}.png` });
+      }
       const ouvrir = page.getByText(/➕ Compléments/).first();
       if (await ouvrir.count()) {
         await ouvrir.click();
