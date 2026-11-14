@@ -132,12 +132,18 @@ export function ActivationNotifications({
       aria-label={nom}
       className={invitation ? "space-y-3 bg-marque-50 ring-2 ring-marque-600" : "space-y-3"}
     >
-      <TitreSection>{invitation ? "🔔 Activez les notifications pour savoir quand le livreur arrive" : titre}</TitreSection>
-      <p className="text-stone-700">
-        {invitation
-          ? "Le jour de la livraison, un message quand le livreur part, avec votre heure d'arrivée estimée, puis un autre quand vous êtes le prochain. Gratuit, et vous pouvez l'arrêter à tout moment."
-          : description}
-      </p>
+      <TitreSection>{invitation ? "🔔 Activez les notifications pour suivre votre livraison !" : titre}</TitreSection>
+      {invitation ? (
+        <div className="space-y-2 text-stone-700">
+          <p>
+            Le jour de la livraison, recevez un premier message lorsque le livreur prend la route, avec une estimation de
+            son heure d&apos;arrivée. Vous recevrez ensuite un second message lorsque votre tour approche.
+          </p>
+          <p>C&apos;est gratuit et vous pouvez désactiver les notifications à tout moment.</p>
+        </div>
+      ) : (
+        <p className="text-stone-700">{description}</p>
+      )}
       {erreur && <MessageErreur>{erreur}</MessageErreur>}
 
       {!clePublique ? (
