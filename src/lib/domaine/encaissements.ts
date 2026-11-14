@@ -25,6 +25,9 @@ export type CommandeEncaissement = {
   modePaiement: ModePaiement | null;
   /** Solde du client sans cette commande : + dû, − avoir */
   soldeAvantCentimes: number;
+  /** Compléments ajoutés par le livreur à la livraison (compris dans le total) */
+  complementsQuantite?: number;
+  complementsCentimes?: number;
 };
 
 export type Encaissements = {
@@ -38,6 +41,9 @@ export type Encaissements = {
   resteDu: number;
   encaisseEnPlus: number;
   pasEncoreLivre: number;
+  /** Compléments ajoutés par le livreur : nombre d'articles et montant (compris dans les commandes) */
+  complementsQuantite: number;
+  complementsCentimes: number;
 };
 
 export const vide = (): Encaissements => ({
@@ -50,6 +56,8 @@ export const vide = (): Encaissements => ({
   resteDu: 0,
   encaisseEnPlus: 0,
   pasEncoreLivre: 0,
+  complementsQuantite: 0,
+  complementsCentimes: 0,
 });
 
 /** Argent encaissé (toutes formes). */
@@ -63,6 +71,8 @@ function ajouter(e: Encaissements, c: CommandeEncaissement) {
   const t = c.totalCentimes;
   e.commandes++;
   e.montantCommandes += t;
+  e.complementsQuantite += c.complementsQuantite ?? 0;
+  e.complementsCentimes += c.complementsCentimes ?? 0;
   if (c.statut !== "livree") {
     e.pasEncoreLivre += t;
     return;

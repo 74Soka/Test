@@ -46,6 +46,13 @@ function Bloc({ e, titre, couleur }: { e: Encaissements; titre: string; couleur?
           />
         )}
       </dl>
+      {e.complementsQuantite > 0 && (
+        <p className="mt-1 rounded-xl bg-marque-50 px-3 py-2 text-sm font-semibold text-marque-900">
+          ➕ Compléments du livreur : {e.complementsQuantite} article{e.complementsQuantite > 1 ? "s" : ""} ·{" "}
+          {formaterPrix(e.complementsCentimes)}
+          <span className="block font-normal text-stone-600">Compris dans le montant des commandes.</span>
+        </p>
+      )}
       <p className={cx("mt-1 text-sm", juste ? "text-feuille-700" : "font-semibold text-red-700")}>
         {juste ? "✓" : "⚠"} {e.commandes} commande{e.commandes > 1 ? "s" : ""} à préparer :{" "}
         {formaterPrix(e.montantCommandes)}

@@ -191,7 +191,7 @@ export type Article = Awaited<ReturnType<typeof listerArticles>>[number];
 
 const CHAMPS_COMMANDE = `id, client_id, date_livraison, statut, livree_le, notes, source, secteur_id, payee, montant_recu_centimes, mode_paiement,
   client:clients(id, nom, prenom, adresse, complement_adresse, code_postal, commune, telephone, secteur_id, notes_livraison, actif),
-  lignes:lignes_commande(article_id, libelle, categorie, quantite, prix_unitaire_centimes),
+  lignes:lignes_commande(article_id, libelle, categorie, quantite, prix_unitaire_centimes, quantite_complement),
   recompenses:recompenses_utilisees(id, recompense_id, nom, cout_tampons, cadeaux(article_id, libelle, categorie, quantite))` as const;
 
 export async function listerCommandes(du: DateIso, au: DateIso) {
@@ -319,7 +319,7 @@ export async function commandesPourEncaissements(
     mode_paiement: string | null;
     secteur_id: string | null;
     client: { id: string; secteur_id: string };
-    lignes: { quantite: number; prix_unitaire_centimes: number }[];
+    lignes: { quantite: number; prix_unitaire_centimes: number; quantite_complement?: number }[];
   }[],
 ) {
   const actives = commandes.filter((c) => c.statut !== "annulee");
@@ -335,6 +335,11 @@ export async function commandesPourEncaissements(
     montantRecuCentimes: c.montant_recu_centimes,
     modePaiement: c.mode_paiement === "especes" || c.mode_paiement === "cheque" ? c.mode_paiement : null,
     soldeAvantCentimes: soldes.get(c.client.id) ?? 0,
+    complementsQuantite: c.lignes.reduce((n, l) => n + Math.min(l.quantite_complement ?? 0, l.quantite), 0),
+    complementsCentimes: c.lignes.reduce(
+      (t, l) => t + Math.min(l.quantite_complement ?? 0, l.quantite) * l.prix_unitaire_centimes,
+      0,
+    ),
   }));
 }
 

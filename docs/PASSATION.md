@@ -207,6 +207,7 @@ l'application.
   chèques, avoirs déduits, reste dû, pas encore livré, encaissé en plus ; par secteur et tous secteurs. Page
   Livraisons (semaine ou jour, administrateur) et Tournée (le jour, livreur et administrateur). Vérification
   affichée : retombe sur le montant des commandes à préparer.
+  Ligne « ➕ Compléments du livreur : N articles · X € » (par secteur et au total, compris dans les commandes).
 - [x] **Compléments à la livraison** (`20261129000000_complements_livreur.sql`, appliquée) : dans la tournée,
   « ➕ Compléments » sous chaque arrêt à livrer : liste des suppléments du catalogue (prix du catalogue), ajout et
   −/+ ; la commande et le montant à encaisser suivent. Fonction `modifier_complement` (livreur : commandes de ses

@@ -25,22 +25,27 @@ describe("récapitulatif des encaissements", () => {
       c({ payee: false, montantRecuCentimes: null, modePaiement: null }), // livré non payé : 30 € dus
       c({ soldeAvantCentimes: -500, montantRecuCentimes: 2500 }), // avoir de 5 € déduit, 25 € reçus
       c({ soldeAvantCentimes: 1000, montantRecuCentimes: 4000 }), // ancienne dette de 10 € réglée en plus
+      c({ totalCentimes: 4300, montantRecuCentimes: 4300, complementsQuantite: 2, complementsCentimes: 1300, secteurId: "s2" }),
       c({ statut: "a_livrer", payee: null, montantRecuCentimes: null, modePaiement: null, secteurId: "s2" }),
       c({ statut: "annulee" }), // ignorée
     ]);
     expect(total).toEqual({
-      commandes: 7,
-      montantCommandes: 23000,
-      especes: 3000 + 2000 + 2500 + 4000,
+      commandes: 8,
+      montantCommandes: 23000 + 4300,
+      especes: 3000 + 2000 + 2500 + 4000 + 4300,
       cheques: 5000,
       nonPrecise: 0,
       avoirsDeduits: 500,
       resteDu: 1000 + 3000,
       encaisseEnPlus: 1000,
       pasEncoreLivre: 3000,
+      complementsQuantite: 2,
+      complementsCentimes: 1300,
     });
     expect(totalReconcilie(total)).toBe(total.montantCommandes);
     expect(parSecteur.get("s2")?.pasEncoreLivre).toBe(3000);
+    expect(parSecteur.get("s2")?.complementsCentimes).toBe(1300);
+    expect(parSecteur.get("s1")?.complementsQuantite).toBe(0);
     for (const e of parSecteur.values()) expect(totalReconcilie(e)).toBe(e.montantCommandes);
   });
 

@@ -469,6 +469,7 @@ test("livreur : la tournée seulement, avec les arrêts et « Livré et payé »
   await page.reload();
   const recapArgent = page.getByRole("region", { name: "Encaissements", exact: true });
   await expect(recapArgent).toContainText(/Chèques/);
+  await expect(recapArgent).toContainText(/➕ Compléments du livreur : \d+ articles?/);
   await expect(recapArgent).toContainText("✓");
   await expect(recapArgent).not.toContainText("⚠");
   await arret.getByRole("button", { name: /✓ Livré et payé/ }).click();
