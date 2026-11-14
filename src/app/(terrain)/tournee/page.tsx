@@ -151,6 +151,10 @@ export default async function PageTournee({ searchParams }: PageProps<"/tournee"
         <APreparer
           commandes={commandes}
           sousTitre={`${majuscule(formaterDate(date))}${secteursDuJour.length > 1 ? " · tous les secteurs" : ""}`}
+          astuce={[
+            "💡 Astuce du jour : chargez quelques suppléments en plus, ils partent souvent à la livraison.",
+            "🍯 Une confiture de plus dans le camion, c'est un sourire de plus à la livraison !",
+          ]}
         />
         {secteursDuJour.length > 1 && (
           <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1" role="group" aria-label="Secteur">

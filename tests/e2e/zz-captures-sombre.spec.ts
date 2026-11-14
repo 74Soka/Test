@@ -31,6 +31,7 @@ async function serie(browser: Browser, mode: "light" | "dark", compte: [string, 
       const aPreparer = page.getByRole("region", { name: "À préparer" });
       if (await aPreparer.count()) {
         await page.screenshot({ path: `${DOSSIER}/tournee-haut-${mode}.png` });
+        await aPreparer.screenshot({ path: `${DOSSIER}/a-preparer-${mode}.png` });
       }
       const ouvrir = page.getByText(/➕ Compléments/).first();
       if (await ouvrir.count()) {

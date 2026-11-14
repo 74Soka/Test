@@ -13,10 +13,13 @@ type Cadeau = { article_id: string | null; libelle: string; categorie: Categorie
 export function APreparer({
   commandes,
   sousTitre,
+  astuce,
 }: {
   commandes: { statut: Statut; lignes: Ligne[]; recompenses?: { cadeaux: Cadeau[] }[] | null }[];
   /** Ex. « Samedi 14 novembre · tous les secteurs » */
   sousTitre?: string;
+  /** Phrases affichées en bas de l'encadré (tournée du livreur) */
+  astuce?: string[];
 }) {
   const actives = commandes.filter((c) => c.statut !== "annulee");
   if (actives.length === 0) return null;
@@ -48,6 +51,13 @@ export function APreparer({
           ))}
         </tbody>
       </table>
+      {astuce && astuce.length > 0 && (
+        <div className="mt-3 space-y-1 rounded-xl bg-marque-50 px-3 py-2 text-sm font-semibold text-marque-900">
+          {astuce.map((phrase) => (
+            <p key={phrase}>{phrase}</p>
+          ))}
+        </div>
+      )}
     </Carte>
   );
 }
