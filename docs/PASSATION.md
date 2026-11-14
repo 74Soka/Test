@@ -214,8 +214,9 @@ l'application.
   tournées seulement ; commande « à livrer » seulement, sinon PN055). Le livreur ne retire que ce qu'il a ajouté
   (`lignes_commande.quantite_complement`, `20261130000000_complements_ajout_seulement.sql`, appliquée ; sinon
   PN056) : paniers et suppléments commandés intouchables. L'administrateur garde la main.
-- [x] **« À préparer » dans la tournée** (`src/components/a-preparer.tsx`, partagé avec Livraisons) : en haut de
-  la tournée, au-dessus des secteurs, pour le jour affiché (tous les secteurs), livreur et administrateur.
+- [x] **« À préparer » dans la tournée** (`src/components/a-preparer.tsx`, partagé avec Livraisons) : « À préparer ·
+  la semaine » en haut (replié, touchez pour le détail), puis « À préparer · <secteur> » du secteur affiché, au-dessus
+  de sa tournée, avec l'astuce du jour (suppléments en plus). Livreur et administrateur.
 - [ ] **Tests dépendants de l'heure** : le vendredi après la clôture (12 h), deux parcours échouent
   (`espace-client` « page publique… » et `notifications` « …prochain ») car les commandes passent à la semaine
   suivante. À rendre indépendants de l'heure (horloge simulée côté serveur).

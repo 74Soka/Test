@@ -28,9 +28,10 @@ async function serie(browser: Browser, mode: "light" | "dark", compte: [string, 
     const nom = chemin.replace(/\W+/g, "-").replace(/^-|-$/g, "") || "accueil";
     await page.screenshot({ path: `${DOSSIER}/${nom}-${mode}.png` });
     if (chemin === "/tournee") {
-      const aPreparer = page.getByRole("region", { name: "À préparer" });
+      const aPreparer = page.getByRole("region", { name: /^À préparer · (?!la semaine)/ });
       if (await aPreparer.count()) {
-        await page.screenshot({ path: `${DOSSIER}/tournee-haut-${mode}.png` });
+        await page.addStyleTag({ content: "header { position: static !important; } nav { display: none !important; }" });
+        await page.screenshot({ path: `${DOSSIER}/tournee-haut-${mode}.png`, fullPage: true, clip: { x: 0, y: 0, width: 412, height: 1500 } });
         await aPreparer.screenshot({ path: `${DOSSIER}/a-preparer-${mode}.png` });
       }
       const ouvrir = page.getByText(/➕ Compléments/).first();

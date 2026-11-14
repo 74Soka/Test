@@ -4,6 +4,7 @@ import { exigerEquipe } from "@/lib/auth";
 import {
   commandesPourEncaissements,
   listerArticles,
+  listerCommandes,
   listerCommandesDuJour,
   listerSecteurs,
   soldesAvant,
@@ -17,8 +18,10 @@ import {
   estDateIso,
   formaterDate,
   formaterDateCourte,
+  formaterSemaine,
   joursDeLaSemaine,
   jourSemaine,
+  lundiDeLaSemaine,
   majuscule,
 } from "@/lib/domaine/dates";
 import { comparerSecteurs, LIBELLES_CRENEAU, secteurDeLivraison } from "@/lib/domaine/secteurs";
@@ -49,7 +52,12 @@ export default async function PageTournee({ searchParams }: PageProps<"/tournee"
     for (let i = 0; i < 7 && !joursTournee.has(jourSemaine(date)); i++) date = ajouterJours(ajd, i + 1);
   }
 
-  const [commandes, catalogue] = await Promise.all([listerCommandesDuJour(date), listerArticles({ actifsSeulement: true })]);
+  const lundi = lundiDeLaSemaine(date);
+  const [commandes, catalogue, commandesSemaine] = await Promise.all([
+    listerCommandesDuJour(date),
+    listerArticles({ actifsSeulement: true }),
+    listerCommandes(lundi, ajouterJours(lundi, 6)),
+  ]);
   // Suppléments proposés en « compléments » à la livraison (prix du catalogue)
   const supplementsCatalogue = catalogue
     .filter((a) => a.categorie === "supplement")
@@ -149,12 +157,11 @@ export default async function PageTournee({ searchParams }: PageProps<"/tournee"
           </div>
         )}
         <APreparer
-          commandes={commandes}
-          sousTitre={`${majuscule(formaterDate(date))}${secteursDuJour.length > 1 ? " · tous les secteurs" : ""}`}
-          astuce={[
-            "💡 Astuce du jour : chargez quelques suppléments en plus, ils partent souvent à la livraison.",
-            "🍯 Une confiture de plus dans le camion, c'est un sourire de plus à la livraison !",
-          ]}
+          commandes={commandesSemaine}
+          titre="À préparer · la semaine"
+          id="a-preparer-semaine"
+          sousTitre={formaterSemaine(date)}
+          repliable
         />
         {secteursDuJour.length > 1 && (
           <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1" role="group" aria-label="Secteur">
@@ -173,6 +180,19 @@ export default async function PageTournee({ searchParams }: PageProps<"/tournee"
               </Link>
             ))}
           </div>
+        )}
+
+        {secteur && (
+          <APreparer
+            commandes={duSecteur}
+            titre={`À préparer · ${secteur.nom}`}
+            id="a-preparer-secteur"
+            sousTitre={`${majuscule(formaterDate(date))} (${LIBELLES_CRENEAU[secteur.creneau]})`}
+            astuce={[
+              "💡 Astuce du jour : chargez quelques suppléments en plus, ils partent souvent à la livraison.",
+              "🍯 Une confiture de plus dans le camion, c'est un sourire de plus à la livraison !",
+            ]}
+          />
         )}
 
         {!secteur ? (
