@@ -53,7 +53,7 @@ function Bloc({ e, titre, couleur }: { e: Encaissements; titre: string; couleur?
           <span className="block font-normal text-stone-600">Compris dans le montant des commandes.</span>
         </p>
       ) : (
-        <p className="mt-1 rounded-xl bg-stone-100 px-3 py-2 text-sm font-semibold text-stone-600">➕ Aucun complément</p>
+        <p className="mt-1 rounded-xl bg-marque-50 px-3 py-2 text-sm font-semibold text-marque-900">➕ Aucun complément</p>
       )}
       <p className={cx("mt-1 text-sm", juste ? "text-feuille-700" : "font-semibold text-red-700")}>
         {juste ? "✓" : "⚠"} {e.commandes} commande{e.commandes > 1 ? "s" : ""} à préparer :{" "}
