@@ -68,6 +68,35 @@ describe("compléments ajoutés par le livreur", () => {
     expect(await complement(livreur, id, fraises, -3)).toBe(3000);
   });
 
+  it("le livreur ne retire que ce qu'il a ajouté : les suppléments et paniers commandés restent", async () => {
+    const client = await creerClient(base.client, secteur);
+    const id = await comme(admin, (c) =>
+      enregistrerCommande(c, {
+        clientId: client,
+        date: aujourdhui,
+        lignes: [
+          { article_id: p30, quantite: 1 },
+          { article_id: fraises, quantite: 1 },
+        ],
+      }),
+    );
+    // Supplément commandé par le client : intouchable
+    expect(await erreur(complement(livreur, id, fraises, -1))).toBe("PN056");
+    // Le livreur en ajoute 2, peut les retirer, mais pas plus
+    expect(await complement(livreur, id, fraises, 2)).toBe(3000 + 3 * 450);
+    expect(await complement(livreur, id, fraises, -2)).toBe(3450);
+    expect(await erreur(complement(livreur, id, fraises, -1))).toBe("PN056");
+    // Un panier n'est pas un complément
+    expect(await erreur(complement(livreur, id, p30, -1))).toBe("PN004");
+    const { rows } = await base.client.query(
+      "select quantite, quantite_complement from public.lignes_commande where commande_id = $1 and article_id = $2",
+      [id, fraises],
+    );
+    expect(rows).toEqual([{ quantite: 1, quantite_complement: 0 }]);
+    // L'administrateur garde la main
+    expect(await complement(admin, id, fraises, -1)).toBe(3000);
+  });
+
   it("à la livraison, le compte du client reçoit la commande ajustée", async () => {
     const { client, id } = await commande(aujourdhui);
     await complement(livreur, id, fraises, 2);

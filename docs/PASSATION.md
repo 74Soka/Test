@@ -210,7 +210,9 @@ l'application.
 - [x] **Compléments à la livraison** (`20261129000000_complements_livreur.sql`, appliquée) : dans la tournée,
   « ➕ Compléments » sous chaque arrêt à livrer : liste des suppléments du catalogue (prix du catalogue), ajout et
   −/+ ; la commande et le montant à encaisser suivent. Fonction `modifier_complement` (livreur : commandes de ses
-  tournées seulement ; commande « à livrer » seulement, sinon PN055).
+  tournées seulement ; commande « à livrer » seulement, sinon PN055). Le livreur ne retire que ce qu'il a ajouté
+  (`lignes_commande.quantite_complement`, `20261130000000_complements_ajout_seulement.sql`, appliquée ; sinon
+  PN056) : paniers et suppléments commandés intouchables. L'administrateur garde la main.
 - [ ] **Tests dépendants de l'heure** : le vendredi après la clôture (12 h), deux parcours échouent
   (`espace-client` « page publique… » et `notifications` « …prochain ») car les commandes passent à la semaine
   suivante. À rendre indépendants de l'heure (horloge simulée côté serveur).

@@ -56,15 +56,16 @@ export type ArretTournee = {
   /** « Livré et payé » : montant reçu et mode, si le livreur les a saisis */
   montantRecuCentimes: number | null;
   modePaiement: ModePaiement | null;
-  /** Suppléments du catalogue déjà sur la commande */
-  supplements: { articleId: string; libelle: string; quantite: number; prixCentimes: number }[];
+  /** Compléments ajoutés à la livraison (le livreur ne retire que ceux-là) */
+  complements: { articleId: string; libelle: string; quantite: number; prixCentimes: number }[];
 };
 
 export type SupplementCatalogue = { id: string; nom: string; prixCentimes: number };
 
 /**
- * « Compléments » à la livraison : le livreur ajoute ou retire des suppléments
- * du catalogue (prix du catalogue) ; la commande et le montant à encaisser suivent.
+ * « Compléments » à la livraison : le livreur ajoute des suppléments du
+ * catalogue (prix du catalogue) ; la commande et le montant à encaisser
+ * suivent. Il ne peut retirer que ce qu'il a ajouté, jamais ce qui était commandé.
  */
 function Complements({ arret, catalogue }: { arret: ArretTournee; catalogue: SupplementCatalogue[] }) {
   const [choix, setChoix] = useState("");
@@ -82,16 +83,18 @@ function Complements({ arret, catalogue }: { arret: ArretTournee; catalogue: Sup
   return (
     <details className="mt-2 rounded-xl bg-stone-50 ring-1 ring-stone-200">
       <summary className="flex min-h-12 cursor-pointer items-center px-3 font-semibold text-marque-800">
-        ➕ Compléments{arret.supplements.length > 0 ? ` (${arret.supplements.reduce((n, s) => n + s.quantite, 0)})` : ""}
+        ➕ Compléments{arret.complements.length > 0 ? ` (${arret.complements.reduce((n, s) => n + s.quantite, 0)})` : ""}
       </summary>
       <div role="group" aria-label={`Compléments de ${arret.nom}`} className="space-y-3 px-3 pb-3">
-        {arret.supplements.length > 0 && (
-          <ul className="divide-y divide-stone-200">
-            {arret.supplements.map((s) => (
+        {arret.complements.length > 0 && (
+          <ul aria-label="Ajoutés à la livraison" className="divide-y divide-stone-200">
+            {arret.complements.map((s) => (
               <li key={s.articleId} className="flex items-center justify-between gap-2 py-1.5">
                 <span className="min-w-0">
                   <span className="block font-medium">{s.libelle}</span>
-                  <span className="block text-sm text-stone-600">{formaterPrix(s.prixCentimes)} l&apos;unité</span>
+                  <span className="block text-sm text-stone-600">
+                    {formaterPrix(s.prixCentimes)} l&apos;unité · ajouté à la livraison
+                  </span>
                 </span>
                 <Compteur
                   valeur={s.quantite}
@@ -125,6 +128,9 @@ function Complements({ arret, catalogue }: { arret: ArretTournee; catalogue: Sup
             {choisi.nom} : {formaterPrix(choisi.prixCentimes)}, ajouté à la commande et au montant à encaisser.
           </p>
         )}
+        <p className="text-sm text-stone-600">
+          Les paniers et suppléments commandés par le client ne se modifient pas ici.
+        </p>
         {erreur && <MessageErreur>{erreur}</MessageErreur>}
       </div>
     </details>

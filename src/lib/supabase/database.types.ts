@@ -502,6 +502,7 @@ export type Database = {
           libelle: string
           prix_unitaire_centimes: number
           quantite: number
+          quantite_complement: number
         }
         Insert: {
           article_id?: string | null
@@ -511,6 +512,7 @@ export type Database = {
           libelle: string
           prix_unitaire_centimes: number
           quantite: number
+          quantite_complement?: number
         }
         Update: {
           article_id?: string | null
@@ -520,6 +522,7 @@ export type Database = {
           libelle?: string
           prix_unitaire_centimes?: number
           quantite?: number
+          quantite_complement?: number
         }
         Relationships: [
           {

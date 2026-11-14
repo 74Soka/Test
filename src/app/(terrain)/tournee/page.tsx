@@ -101,9 +101,16 @@ export default async function PageTournee({ searchParams }: PageProps<"/tournee"
             livreeLe: c.livree_le,
             payee: c.payee,
             montantRecuCentimes: c.montant_recu_centimes,
-            supplements: c.lignes.flatMap((l) =>
-              l.article_id && l.categorie === "supplement"
-                ? [{ articleId: l.article_id, libelle: l.libelle, quantite: l.quantite, prixCentimes: l.prix_unitaire_centimes }]
+            complements: c.lignes.flatMap((l) =>
+              l.article_id && l.categorie === "supplement" && l.quantite_complement > 0
+                ? [
+                    {
+                      articleId: l.article_id,
+                      libelle: l.libelle,
+                      quantite: Math.min(l.quantite_complement, l.quantite),
+                      prixCentimes: l.prix_unitaire_centimes,
+                    },
+                  ]
                 : [],
             ),
             modePaiement: c.mode_paiement === "cheque" || c.mode_paiement === "especes" ? c.mode_paiement : null,

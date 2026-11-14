@@ -242,7 +242,7 @@ export async function compterCommandesClient(clientId: string): Promise<number> 
 
 const CHAMPS_TOURNEE = `id, date_livraison, statut, livree_le, notes, ordre_tournee, secteur_id, payee, montant_recu_centimes, mode_paiement,
   client:clients(id, nom, prenom, adresse, complement_adresse, code_postal, commune, telephone, secteur_id, notes_livraison, lat, lng),
-  lignes:lignes_commande(article_id, libelle, categorie, quantite, prix_unitaire_centimes),
+  lignes:lignes_commande(article_id, libelle, categorie, quantite, prix_unitaire_centimes, quantite_complement),
   recompenses:recompenses_utilisees(id, nom, cadeaux(article_id, libelle, categorie, quantite))` as const;
 
 /** Commandes (non annulées) d'un jour de livraison, pour les tournées. */
