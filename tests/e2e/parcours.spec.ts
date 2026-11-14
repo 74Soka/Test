@@ -435,6 +435,9 @@ test("livreur : la tournée seulement, avec les arrêts et « Livré et payé »
   const arrets = page.getByRole("region", { name: /^Arrêt \d+ :/ });
   await expect(arrets.first()).toBeVisible();
   await expect(arrets.first().getByText(/À encaisser/)).toBeVisible();
+  // Le livreur peut activer les alertes (client ajouté à sa tournée après le vendredi 20 h)
+  await expect(page.getByRole("region", { name: "Alertes de tournée" })).toContainText("après le vendredi 20 h");
+
   // « À préparer » du secteur affiché, et celui de la semaine (replié)
   const aPreparer = page.getByRole("region", { name: /^À préparer · (?!la semaine)/ });
   await expect(aPreparer).toContainText(/\d+ commandes? ·/);

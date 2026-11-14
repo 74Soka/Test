@@ -40,7 +40,8 @@ async function clientEnLigneAvecCommande() {
   const compte = await creerCompteEnLigne(base.client, `${client}@client.test`);
   await base.client.query("insert into public.comptes_clients (user_id, client_id) values ($1, $2)", [compte, client]);
   const commande = await comme(admin, (c) =>
-    enregistrerCommande(c, { clientId: client, date: "2026-11-14", lignes: [{ article_id: panier, quantite: 1 }] }),
+    // Samedi lointain : pas d'alerte « ajout à la tournée » pour les livreurs
+    enregistrerCommande(c, { clientId: client, date: "2030-11-16", lignes: [{ article_id: panier, quantite: 1 }] }),
   );
   return { client, compte, commande };
 }
@@ -62,7 +63,7 @@ describe("alertes aux administrateurs", () => {
       url: `/commandes/${commande}`,
       endpoint: "https://push.test/admin",
     });
-    expect(lignes[0].corps).toMatch(/samedi 14 novembre · 1 × Article/);
+    expect(lignes[0].corps).toMatch(/samedi 16 novembre · 1 × Article/);
     expect(await aEnvoyer()).toHaveLength(0);
   });
 
@@ -130,5 +131,56 @@ describe("messages libres aux clients", () => {
         c.query("insert into public.messages_clients (titre, corps, lien) values ('x', 'y', 'https://pirate.example')"),
       ),
     ).rejects.toThrow(/check constraint/);
+  });
+});
+
+describe("alerte aux livreurs : client ajouté à la tournée après le vendredi 20 h", () => {
+  it("vendredi 20 h, heure de Paris : avant non, après oui ; pas pour une livraison passée", async () => {
+    const { rows } = await base.client.query(`
+      select prive.tournee_apres_vendredi_soir('2026-11-14', '2026-11-13 19:59 Europe/Paris') as avant,
+             prive.tournee_apres_vendredi_soir('2026-11-14', '2026-11-13 20:00 Europe/Paris') as vendredi_soir,
+             prive.tournee_apres_vendredi_soir('2026-11-15', '2026-11-15 11:00 Europe/Paris') as dimanche_matin,
+             prive.tournee_apres_vendredi_soir('2026-11-14', '2026-11-15 11:00 Europe/Paris') as passee,
+             prive.tournee_apres_vendredi_soir('2026-11-21', '2026-11-15 11:00 Europe/Paris') as semaine_suivante`);
+    expect(rows[0]).toEqual({ avant: false, vendredi_soir: true, dimanche_matin: true, passee: false, semaine_suivante: false });
+  });
+
+  it("nouvelle commande ce week-end après vendredi 20 h : seuls les livreurs sont prévenus, avec le secteur et le contenu", async () => {
+    await aEnvoyer(); // on vide les alertes précédentes
+    const { rows } = await base.client.query(`
+      select to_char(d, 'YYYY-MM-DD') as d, prive.tournee_apres_vendredi_soir(d) as ok
+      from (select (now() at time zone 'Europe/Paris')::date as d) x`);
+    const { d: aujourdhui, ok } = rows[0];
+    const client = await creerClient(base.client, secteur);
+    const commande = await comme(admin, (c) =>
+      enregistrerCommande(c, { clientId: client, date: aujourdhui, lignes: [{ article_id: panier, quantite: 2 }] }),
+    );
+    const lignes = await aEnvoyer();
+    if (ok) {
+      // Après le vendredi 20 h (week-end) : alerte au téléphone du livreur seulement
+      expect(lignes).toHaveLength(1);
+      expect(lignes[0]).toMatchObject({ titre: "➕ Client ajouté à la tournée", endpoint: "https://push.test/livreur" });
+      expect(lignes[0].corps).toMatch(/2 × Article/);
+      expect(lignes[0].url).toMatch(/^\/tournee\?du=\d{4}-\d{2}-\d{2}&secteur=/);
+      // La livraison annulée puis remise par le livreur n'est pas un « ajout »
+      await comme(livreur, (c) => c.query("select public.marquer_livraison($1, true)", [commande]));
+      await comme(livreur, (c) => c.query("select public.marquer_livraison($1, false)", [commande]));
+      expect(await aEnvoyer()).toHaveLength(0);
+    } else {
+      // En semaine avant le vendredi 20 h : rien
+      expect(lignes).toHaveLength(0);
+    }
+  });
+
+  it("commande d'une semaine à venir : pas d'alerte", async () => {
+    await aEnvoyer();
+    const client = await creerClient(base.client, secteur);
+    const { rows } = await base.client.query(
+      "select to_char((now() at time zone 'Europe/Paris')::date + 14, 'YYYY-MM-DD') as d",
+    );
+    await comme(admin, (c) =>
+      enregistrerCommande(c, { clientId: client, date: rows[0].d, lignes: [{ article_id: panier, quantite: 1 }] }),
+    );
+    expect(await aEnvoyer()).toHaveLength(0);
   });
 });

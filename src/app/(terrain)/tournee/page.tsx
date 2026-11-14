@@ -27,9 +27,11 @@ import {
 import { comparerSecteurs, LIBELLES_CRENEAU, secteurDeLivraison } from "@/lib/domaine/secteurs";
 import { nomComplet } from "@/lib/domaine/texte";
 import { EnTetePage, EtatVide, PointCouleur, cx } from "@/components/ui";
-import { preparerNotifications } from "@/lib/notifications";
+import { clePubliqueVapid, preparerNotifications } from "@/lib/notifications";
 import { clientSupabase } from "@/lib/supabase/serveur";
 import { Tournee, type ArretTournee } from "./tournee";
+import { ActivationNotifications } from "@/app/espace/notifications";
+import { abonnerTelephoneEquipe, desabonnerTelephoneEquipe } from "@/app/(app)/reglages/actions-notifications";
 
 export const metadata: Metadata = { title: "Tournée" };
 
@@ -216,6 +218,17 @@ export default async function PageTournee({ searchParams }: PageProps<"/tournee"
             arrets={arrets}
             supplementsCatalogue={supplementsCatalogue}
             demarreeLe={demarreeLe}
+          />
+        )}
+        {utilisateur.role === "livreur" && (
+          <ActivationNotifications
+            clePublique={await clePubliqueVapid()}
+            variante="compte"
+            nom="Alertes de tournée"
+            titre="🔔 Alertes sur ce téléphone"
+            description="Une notification si un client est ajouté à votre tournée du week-end après le vendredi 20 h."
+            enregistrer={abonnerTelephoneEquipe}
+            supprimer={desabonnerTelephoneEquipe}
           />
         )}
         <RecapEncaissements

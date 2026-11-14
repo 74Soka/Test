@@ -217,6 +217,11 @@ l'application.
 - [x] **« À préparer » dans la tournée** (`src/components/a-preparer.tsx`, partagé avec Livraisons) : « À préparer ·
   la semaine » en haut (replié, touchez pour le détail), puis « À préparer · <secteur> » du secteur affiché, au-dessus
   de sa tournée, avec l'astuce du jour (suppléments en plus). Livreur et administrateur.
+- [x] **Alerte aux livreurs** (`20261201000000_alerte_livreurs_ajout.sql`, appliquée) : à partir du vendredi 20 h
+  (Paris), un client ajouté à une tournée du week-end (nouvelle commande, date ou secteur changés, commande annulée
+  remise) envoie « ➕ Client ajouté à la tournée » aux téléphones des livreurs (déclencheur différé sur
+  `commandes`, `prive.alertes_equipe.destinataire`). Le livreur active les alertes en bas de sa Tournée. Au
+  14 novembre 2026 : aucun téléphone de livreur abonné.
 - [ ] **Tests dépendants de l'heure** : le vendredi après la clôture (12 h), deux parcours échouent
   (`espace-client` « page publique… » et `notifications` « …prochain ») car les commandes passent à la semaine
   suivante. À rendre indépendants de l'heure (horloge simulée côté serveur).
