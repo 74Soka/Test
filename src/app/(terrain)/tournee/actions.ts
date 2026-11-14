@@ -133,3 +133,24 @@ export async function marquerLivraison(
   revalidatePath("/", "layout");
   return { ok: true };
 }
+
+/**
+ * Compléments à la livraison : ajoute (écart +) ou retire (écart −) un
+ * supplément du catalogue sur une commande encore à livrer, au prix du catalogue.
+ */
+export async function modifierComplement(commandeId: string, articleId: string, ecart: number): Promise<Resultat> {
+  await exigerEquipe();
+  if (!z.uuid().safeParse(commandeId).success || !z.uuid().safeParse(articleId).success) {
+    return { ok: false, erreur: "Supplément ou commande inconnus." };
+  }
+  if (!Number.isInteger(ecart) || ecart === 0 || Math.abs(ecart) > 99) return { ok: false, erreur: "Quantité invalide." };
+  const supabase = await clientSupabase();
+  const { error } = await supabase.rpc("modifier_complement", {
+    p_commande_id: commandeId,
+    p_article_id: articleId,
+    p_ecart: ecart,
+  });
+  if (error) return { ok: false, erreur: messageErreur(error) };
+  revalidatePath("/", "layout");
+  return { ok: true };
+}

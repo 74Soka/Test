@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
-import { demarrerTournee, enregistrerOrdre, marquerLivraison, optimiserTournee } from "./actions";
+import { demarrerTournee, enregistrerOrdre, marquerLivraison, modifierComplement, optimiserTournee } from "./actions";
+import { Compteur } from "@/components/compteur";
 import { CarteTournee } from "@/components/carte-tournee";
 import { Bouton, Carte, Champ, LienExterneBouton, MessageErreur, MessageInfo, Selection, cx } from "@/components/ui";
 import { centimesVersSaisie, formaterPrix, saisieVersCentimes } from "@/lib/domaine/argent";
@@ -55,7 +56,80 @@ export type ArretTournee = {
   /** « Livré et payé » : montant reçu et mode, si le livreur les a saisis */
   montantRecuCentimes: number | null;
   modePaiement: ModePaiement | null;
+  /** Suppléments du catalogue déjà sur la commande */
+  supplements: { articleId: string; libelle: string; quantite: number; prixCentimes: number }[];
 };
+
+export type SupplementCatalogue = { id: string; nom: string; prixCentimes: number };
+
+/**
+ * « Compléments » à la livraison : le livreur ajoute ou retire des suppléments
+ * du catalogue (prix du catalogue) ; la commande et le montant à encaisser suivent.
+ */
+function Complements({ arret, catalogue }: { arret: ArretTournee; catalogue: SupplementCatalogue[] }) {
+  const [choix, setChoix] = useState("");
+  const [erreur, setErreur] = useState<string | null>(null);
+  const [enCours, demarrer] = useTransition();
+  const modifier = (articleId: string, ecart: number) =>
+    demarrer(async () => {
+      setErreur(null);
+      const r = await modifierComplement(arret.id, articleId, ecart);
+      if (!r.ok) setErreur(r.erreur);
+      else if (ecart > 0) setChoix("");
+    });
+  const choisi = catalogue.find((s) => s.id === choix);
+  if (catalogue.length === 0) return null;
+  return (
+    <details className="mt-2 rounded-xl bg-stone-50 ring-1 ring-stone-200">
+      <summary className="flex min-h-12 cursor-pointer items-center px-3 font-semibold text-marque-800">
+        ➕ Compléments{arret.supplements.length > 0 ? ` (${arret.supplements.reduce((n, s) => n + s.quantite, 0)})` : ""}
+      </summary>
+      <div role="group" aria-label={`Compléments de ${arret.nom}`} className="space-y-3 px-3 pb-3">
+        {arret.supplements.length > 0 && (
+          <ul className="divide-y divide-stone-200">
+            {arret.supplements.map((s) => (
+              <li key={s.articleId} className="flex items-center justify-between gap-2 py-1.5">
+                <span className="min-w-0">
+                  <span className="block font-medium">{s.libelle}</span>
+                  <span className="block text-sm text-stone-600">{formaterPrix(s.prixCentimes)} l&apos;unité</span>
+                </span>
+                <Compteur
+                  valeur={s.quantite}
+                  libelle={s.libelle}
+                  onChange={(v) => !enCours && v !== s.quantite && modifier(s.articleId, v - s.quantite)}
+                />
+              </li>
+            ))}
+          </ul>
+        )}
+        <div className="grid grid-cols-[1fr_auto] items-end gap-2">
+          <Selection
+            label="Ajouter un supplément"
+            name={`complement-${arret.id}`}
+            value={choix}
+            onChange={(e) => setChoix(e.target.value)}
+          >
+            <option value="">Choisir…</option>
+            {catalogue.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.nom} · {formaterPrix(s.prixCentimes)}
+              </option>
+            ))}
+          </Selection>
+          <Bouton disabled={!choisi || enCours} onClick={() => choisi && modifier(choisi.id, 1)}>
+            {enCours ? "…" : "Ajouter"}
+          </Bouton>
+        </div>
+        {choisi && (
+          <p className="text-sm text-stone-600">
+            {choisi.nom} : {formaterPrix(choisi.prixCentimes)}, ajouté à la commande et au montant à encaisser.
+          </p>
+        )}
+        {erreur && <MessageErreur>{erreur}</MessageErreur>}
+      </div>
+    </details>
+  );
+}
 
 type EtatLivraison = {
   livree: boolean;
@@ -106,12 +180,15 @@ export function Tournee({
   date,
   secteur,
   arrets,
+  supplementsCatalogue = [],
   estAdmin,
   demarreeLe,
 }: {
   date: string;
   secteur: { id: string; nom: string; couleur: string; depart: { lat: number; lng: number; adresse: string } };
   arrets: ArretTournee[];
+  /** Suppléments du catalogue, proposés en compléments à la livraison */
+  supplementsCatalogue?: SupplementCatalogue[];
   estAdmin: boolean;
   /** Heure de départ de la tournée (clients prévenus), ou null */
   demarreeLe: string | null;
@@ -547,6 +624,7 @@ export function Tournee({
                         <span className="col-span-2 self-center text-sm text-stone-500">Position inconnue</span>
                       )}
                     </div>
+                    {!etat?.livree && <Complements arret={a} catalogue={supplementsCatalogue} />}
                     {etat?.livree ? (
                       <>
                         <Bouton taille="grand" variante="secondaire" className="mt-2 w-full" onClick={() => basculer(a.id, null)}>

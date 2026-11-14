@@ -1,7 +1,13 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { exigerEquipe } from "@/lib/auth";
-import { commandesPourEncaissements, listerCommandesDuJour, listerSecteurs, soldesAvant } from "@/lib/donnees";
+import {
+  commandesPourEncaissements,
+  listerArticles,
+  listerCommandesDuJour,
+  listerSecteurs,
+  soldesAvant,
+} from "@/lib/donnees";
 import { RecapEncaissements } from "@/components/recap-encaissements";
 import { resumeLignes, totalCommande, articlesOfferts } from "@/lib/domaine/commandes";
 import {
@@ -42,7 +48,11 @@ export default async function PageTournee({ searchParams }: PageProps<"/tournee"
     for (let i = 0; i < 7 && !joursTournee.has(jourSemaine(date)); i++) date = ajouterJours(ajd, i + 1);
   }
 
-  const commandes = await listerCommandesDuJour(date);
+  const [commandes, catalogue] = await Promise.all([listerCommandesDuJour(date), listerArticles({ actifsSeulement: true })]);
+  // Suppléments proposés en « compléments » à la livraison (prix du catalogue)
+  const supplementsCatalogue = catalogue
+    .filter((a) => a.categorie === "supplement")
+    .map((a) => ({ id: a.id, nom: a.nom, prixCentimes: a.prix_centimes }));
   // Clés de notification et adresse du site prêtes dès la première visite de l'équipe
   await preparerNotifications();
   const secteursDuJour = secteurs.filter(
@@ -91,6 +101,11 @@ export default async function PageTournee({ searchParams }: PageProps<"/tournee"
             livreeLe: c.livree_le,
             payee: c.payee,
             montantRecuCentimes: c.montant_recu_centimes,
+            supplements: c.lignes.flatMap((l) =>
+              l.article_id && l.categorie === "supplement"
+                ? [{ articleId: l.article_id, libelle: l.libelle, quantite: l.quantite, prixCentimes: l.prix_unitaire_centimes }]
+                : [],
+            ),
             modePaiement: c.mode_paiement === "cheque" || c.mode_paiement === "especes" ? c.mode_paiement : null,
             duAvantCentimes: dusAvant.get(c.client.id) ?? 0,
           };
@@ -163,6 +178,7 @@ export default async function PageTournee({ searchParams }: PageProps<"/tournee"
               depart: { lat: secteur.depart_lat, lng: secteur.depart_lng, adresse: secteur.depart_adresse },
             }}
             arrets={arrets}
+            supplementsCatalogue={supplementsCatalogue}
             demarreeLe={demarreeLe}
           />
         )}

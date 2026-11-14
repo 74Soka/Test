@@ -1258,6 +1258,10 @@ export type Database = {
         }
         Returns: undefined
       }
+      modifier_complement: {
+        Args: { p_article_id: string; p_commande_id: string; p_ecart: number }
+        Returns: number
+      }
       modifier_mes_coordonnees: {
         Args: { p_notes_livraison: string; p_telephone: string }
         Returns: undefined

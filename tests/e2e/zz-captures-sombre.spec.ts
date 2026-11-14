@@ -28,6 +28,11 @@ async function serie(browser: Browser, mode: "light" | "dark", compte: [string, 
     const nom = chemin.replace(/\W+/g, "-").replace(/^-|-$/g, "") || "accueil";
     await page.screenshot({ path: `${DOSSIER}/${nom}-${mode}.png` });
     if (chemin === "/tournee") {
+      const ouvrir = page.getByText(/➕ Compléments/).first();
+      if (await ouvrir.count()) {
+        await ouvrir.click();
+        await page.getByLabel("Ajouter un supplément").first().selectOption({ index: 1 });
+      }
       const paiement = page.getByRole("group", { name: /^Paiement de / }).first();
       if (await paiement.count()) {
         await page.addStyleTag({ content: "header { position: static !important; } nav { display: none !important; }" });

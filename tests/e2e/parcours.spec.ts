@@ -438,8 +438,21 @@ test("livreur : la tournée seulement, avec les arrêts et « Livré et payé »
   // Un arrêt encore à livrer (les parcours précédents en ont livré)
   const dernier = arrets.filter({ has: page.getByRole("button", { name: "Livré et payé" }) }).last();
   const nom = (await dernier.getAttribute("aria-label"))!;
-  // Montant reçu (proposé : ce qui est à encaisser) et mode de paiement
+  // Compléments : un supplément ajouté à la livraison, au prix du catalogue ; le montant à encaisser suit
   const montant = dernier.getByLabel("Montant reçu (€)");
+  await expect(montant).not.toHaveValue("");
+  const avant = Number((await montant.inputValue()).replace(",", "."));
+  await dernier.getByText(/➕ Compléments/).click();
+  const choixComplement = dernier.getByLabel("Ajouter un supplément");
+  await choixComplement.selectOption({ index: 1 });
+  const prixComplement = Number(((await choixComplement.locator("option:checked").textContent()) ?? "").match(/([\d,]+)\s?€/)![1].replace(",", "."));
+  await dernier.getByRole("button", { name: "Ajouter", exact: true }).click();
+  await expect(dernier.getByText(/➕ Compléments \(\d+\)/)).toBeVisible();
+  await expect
+    .poll(async () => Math.round(Number((await montant.inputValue()).replace(",", ".")) * 100))
+    .toBe(Math.round((avant + prixComplement) * 100));
+
+  // Montant reçu (proposé : ce qui est à encaisser) et mode de paiement
   await expect(montant).not.toHaveValue("");
   const propose = Number((await montant.inputValue()).replace(",", "."));
   await montant.clear();
