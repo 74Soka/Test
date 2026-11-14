@@ -222,6 +222,12 @@ l'application.
   remise) envoie « ➕ Client ajouté à la tournée » aux téléphones des livreurs (déclencheur différé sur
   `commandes`, `prive.alertes_equipe.destinataire`). Le livreur active les alertes en bas de sa Tournée. Au
   14 novembre 2026 : aucun téléphone de livreur abonné.
+- [x] **Ordre préféré des tournées** (`20261202000000_tournees_preferees.sql`, appliquée ; `src/lib/tournees/preference.ts`) :
+  par secteur, l'ordre des clients de la dernière tournée organisée (`tournees_preferees`, mis à jour à chaque ordre
+  enregistré : fusion qui garde la place relative des clients absents). À l'ouverture d'une tournée dont des
+  commandes n'ont pas d'ordre : ordre préféré (ou ordre déjà fixé ce jour-là), nouveaux clients insérés là où ils
+  allongent le moins la route, sans position à la fin ; l'ordre est enregistré. Départ : tournées du 14 et
+  15 novembre 2026 (Secteurs 1, 2, 3).
 - [ ] **Tests dépendants de l'heure** : le vendredi après la clôture (12 h), deux parcours échouent
   (`espace-client` « page publique… » et `notifications` « …prochain ») car les commandes passent à la semaine
   suivante. À rendre indépendants de l'heure (horloge simulée côté serveur).

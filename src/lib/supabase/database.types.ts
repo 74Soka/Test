@@ -1078,6 +1078,32 @@ export type Database = {
           },
         ]
       }
+      tournees_preferees: {
+        Row: {
+          clients: string[]
+          mise_a_jour: string
+          secteur_id: string
+        }
+        Insert: {
+          clients?: string[]
+          mise_a_jour?: string
+          secteur_id: string
+        }
+        Update: {
+          clients?: string[]
+          mise_a_jour?: string
+          secteur_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tournees_preferees_secteur_id_fkey"
+            columns: ["secteur_id"]
+            isOneToOne: true
+            referencedRelation: "secteurs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tournees: {
         Row: {
           date_livraison: string

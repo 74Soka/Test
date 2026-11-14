@@ -30,6 +30,7 @@ import { EnTetePage, EtatVide, PointCouleur, cx } from "@/components/ui";
 import { clePubliqueVapid, preparerNotifications } from "@/lib/notifications";
 import { clientSupabase } from "@/lib/supabase/serveur";
 import { Tournee, type ArretTournee } from "./tournee";
+import { ordonnerSelonPreference } from "@/lib/tournees/preference";
 import { ActivationNotifications } from "@/app/espace/notifications";
 import { abonnerTelephoneEquipe, desabonnerTelephoneEquipe } from "@/app/(app)/reglages/actions-notifications";
 
@@ -84,7 +85,32 @@ export default async function PageTournee({ searchParams }: PageProps<"/tournee"
       ).data?.demarree_le ?? null)
     : null;
 
-  const duSecteur = secteur ? commandes.filter((c) => secteurDeLivraison(c) === secteur.id) : [];
+  let duSecteur = secteur ? commandes.filter((c) => secteurDeLivraison(c) === secteur.id) : [];
+  // Clients pas encore placés dans la tournée : rangés selon les habitudes du
+  // livreur (dernière tournée organisée du secteur), les nouveaux insérés là où
+  // ils allongent le moins la route ; l'ordre est enregistré (notifications comprises)
+  if (secteur && duSecteur.some((c) => c.ordre_tournee === null)) {
+    const supabase = await clientSupabase();
+    const { data: preferee } = await supabase
+      .from("tournees_preferees")
+      .select("clients")
+      .eq("secteur_id", secteur.id)
+      .maybeSingle();
+    const ordre = ordonnerSelonPreference(
+      duSecteur.map((c) => ({
+        id: c.id,
+        clientId: c.client.id,
+        position: c.client.lat !== null && c.client.lng !== null ? { lat: c.client.lat, lng: c.client.lng } : null,
+        ordre: c.ordre_tournee,
+      })),
+      preferee?.clients ?? [],
+      { lat: secteur.depart_lat, lng: secteur.depart_lng },
+    );
+    const { error } = await supabase.rpc("enregistrer_ordre_tournee", { p_commandes: ordre });
+    if (error) console.error("Ordre de la tournée :", error.message);
+    const rang = new Map(ordre.map((id, i) => [id, i]));
+    duSecteur = [...duSecteur].sort((a, b) => rang.get(a.id)! - rang.get(b.id)!);
+  }
   // Argent du jour, tous les secteurs livrés ce jour-là
   const encaissements = await commandesPourEncaissements(commandes);
   const dusAvant = await soldesAvant(
