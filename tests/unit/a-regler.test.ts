@@ -19,3 +19,27 @@ describe("montant à régler avec le solde", () => {
     expect(t).toMatch(/Il restera au client 20\s€ d&#x27;avoir|Il restera au client 20\s€ d'avoir/);
   });
 });
+
+describe("récapitulatif des encaissements : compléments", async () => {
+  const { RecapEncaissements } = await import("@/components/recap-encaissements");
+  const commande = {
+    secteurId: "s1",
+    totalCentimes: 3000,
+    statut: "livree" as const,
+    payee: true,
+    montantRecuCentimes: 3000,
+    modePaiement: "especes" as const,
+    soldeAvantCentimes: 0,
+  };
+  const rendu = (c: typeof commande & { complementsQuantite?: number; complementsCentimes?: number }) =>
+    texte(renderToStaticMarkup(createElement(RecapEncaissements, { commandes: [c], secteurs: [{ id: "s1", nom: "S1", couleur: "#000" }] })));
+
+  it("affiche « Aucun complément » quand le livreur n'a rien ajouté", () => {
+    expect(rendu(commande)).toContain("➕ Aucun complément");
+  });
+  it("sinon, le nombre et le montant", () => {
+    const t = rendu({ ...commande, totalCentimes: 3800, montantRecuCentimes: 3800, complementsQuantite: 1, complementsCentimes: 800 });
+    expect(t).toMatch(/➕ Compléments du livreur : 1 article · 8\s€/);
+    expect(t).not.toContain("Aucun complément");
+  });
+});
