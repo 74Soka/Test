@@ -74,10 +74,12 @@ def simuler(ordres: list[Ordre], mk: Marche, couts: Couts) -> pd.DataFrame:
             continue                                   # trou de données juste après le signal
         i_exp = mk.i(od.expiration)
         i_out = min(mk.i(od.sortie_temps), len(mk.t) - 1)
+        # séance écourtée (jour férié US, trou de données) : la première minute ≥ heure de sortie est
+        # bien plus tard → on sort à la CLÔTURE de la dernière minute disponible avant l'heure de sortie
+        cloture_anticipee = (mk.t[i_out] - od.sortie_temps.tz_convert("UTC").tz_localize(None).value) > 10 * 60e9
         if i0 >= i_out:
             continue
         s = od.sens
-        ask_o = mk.o + m * mk.so; ask_h = None  # calculés à la demande sur les tranches
         # ----- entrée
         if od.type == "marche":
             f = i0
@@ -103,6 +105,8 @@ def simuler(ordres: list[Ordre], mk: Marche, couts: Couts) -> pd.DataFrame:
             debut_gestion = f + 1
         risque = abs(entree - od.sl)
         if (s > 0 and entree <= od.sl) or (s < 0 and entree >= od.sl) or risque <= 0:
+            # ouverture déjà au-delà du stop : le courtier refuserait l'ordre ; tracé, non compté
+            res.append(dict(t_signal=od.t_signal, kz=od.kz, sens=s, statut="rejete_stop_franchi"))
             continue
         tp = od.tp if np.isfinite(od.tp) else entree + s * od.rr * risque
 
@@ -123,16 +127,22 @@ def simuler(ordres: list[Ordre], mk: Marche, couts: Couts) -> pd.DataFrame:
         touche_1r = touche_1r.copy(); touche_1r[:decal] = False
 
         def prix_stop(k, niveau):
+            # gap à l'ouverture → sortie à l'ouverture ; sinon niveau du stop, moins le slippage fixe,
+            # moins 25 % de la pénétration de la minute au-delà du stop (marché rapide, ex. annonce)
             if s > 0:
-                return min(niveau, bid_o[k]) - slip
-            return max(niveau, ask_o[k]) + slip
+                base = min(niveau, bid_o[k])
+                return base - slip - 0.25 * max(0.0, base - bid_l[k])
+            base = max(niveau, ask_o[k])
+            return base + slip + 0.25 * max(0.0, ask_h[k] - base)
 
         def sortie_temps():
-            k = i_out - f
-            if f + k >= len(mk.t):
-                k = len(mk.t) - 1 - f
-            px = (mk.o[f + k] - slip) if s > 0 else (mk.o[f + k] + m * mk.so[f + k] + slip)
-            return f + k, px
+            if cloture_anticipee:
+                k = i_out - 1           # dernière minute de la séance écourtée, sortie à sa clôture
+                px = (mk.c[k] - slip) if s > 0 else (mk.c[k] + m * mk.sc[k] + slip)
+                return max(k, f), px
+            k = i_out
+            px = (mk.o[k] - slip) if s > 0 else (mk.o[k] + m * mk.so[k] + slip)
+            return k, px
 
         a, b = _premier(touche_sl), _premier(touche_tp)
         morceaux = []  # (fraction, prix_sortie, raison, indice)
@@ -140,12 +150,13 @@ def simuler(ordres: list[Ordre], mk: Marche, couts: Couts) -> pd.DataFrame:
             b1 = _premier(touche_1r)
             if b1 >= 0 and (a < 0 or b1 < a):
                 morceaux.append((0.5, entree + s * risque, "partiel_1R", f + b1))
-                # reste : stop au break-even à partir de la minute suivante
+                # reste : stop au break-even, testé dès la minute du +1R (prudent : si cette minute
+                # touche aussi l'entrée, on compte le break-even ; égalité BE/cible → break-even)
                 if s > 0:
                     touche_be = bid_l <= entree
                 else:
                     touche_be = ask_h >= entree
-                touche_be = touche_be.copy(); touche_be[:b1 + 1] = False
+                touche_be = touche_be.copy(); touche_be[:b1] = False
                 tp2 = touche_tp.copy(); tp2[:b1] = False
                 a2, b2 = _premier(touche_be), _premier(tp2)
                 if a2 >= 0 and (b2 < 0 or a2 <= b2):

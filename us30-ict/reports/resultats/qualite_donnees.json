@@ -1,0 +1,22 @@
+{
+ "lignes_bid_brutes":86400,
+ "lignes_ask_brutes":7200,
+ "bougies_remplissage_retirees":20345,
+ "doublons_bid":0,
+ "minutes_sans_ask":59452,
+ "bougies_incoherentes_retirees":0,
+ "spread_negatif":0,
+ "premiere_minute":"2019-01-01 18:00:00-05:00",
+ "derniere_minute":"2024-03-08 16:14:00-05:00",
+ "minutes":66055,
+ "jours_de_seance":51,
+ "trous_>5min_hors_pause":4,
+ "plus_long_trou_hors_pause_min":185.0,
+ "minutes_par_annee":{
+  "2019":59452,
+  "2024":6603
+ },
+ "spread_median_pts":3.986000061,
+ "spread_median_NY_9h30_11h_pts":2.4739999771,
+ "spread_median_Londres_2h_5h_pts":3.986000061
+}

@@ -89,11 +89,13 @@ def construire() -> dict:
 
 
 def completer_spread(df: pd.DataFrame) -> pd.DataFrame:
-    """Minutes sans ASK : spread estimé = médiane observée (même année, même demi-heure UTC).
+    """Minutes sans ASK : spread estimé = médiane observée la même année, à la même demi-heure
+    (heure de NEW YORK, pour suivre la séance malgré les changements d'heure).
 
-    À défaut, médiane de la même demi-heure toutes années confondues. Colonne `ask_estime` = True.
+    À défaut (année sans échantillon), médiane de la même demi-heure toutes années confondues.
+    Colonne `ask_estime` = True. Avec l'échantillon ASK du mercredi, chaque année a ses propres médianes.
     """
-    ts = pd.to_datetime(df["ts"])
+    ts = pd.to_datetime(df["ts"]).dt.tz_localize("UTC").dt.tz_convert(FUSEAU)
     cle_an = ts.dt.year
     cle_h = ts.dt.hour * 2 + ts.dt.minute // 30
     sp = df["ac"] - df["c"]

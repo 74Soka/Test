@@ -45,7 +45,7 @@ DEFAUTS = dict(
     variante="V2", killzones=("londres", "ny_am"), n_swing=2, disp_atr=1.0, corps_min=0.5,
     max_barres_mss=12, rr=2.0, buffer_sl=2.0, stop_min=10.0, stop_max_atr=8.0, fvg_min_atr=0.1,
     entree_fvg="ce", attente_max=12, filtre_news=True, choc_multiple=3.0, liq_egaux=False,
-    biais=None, cible="rr", gestion="aucune", heure_sortie=dt.time(15, 55), sortie_londres=dt.time(11, 0), rr_min_liq=1.5, rr_max_liq=5.0,
+    biais=None, cible="rr", gestion="aucune", heure_sortie=dt.time(15, 55), sortie_londres=dt.time(8, 25), rr_min_liq=1.5, rr_max_liq=5.0,
 )
 
 
@@ -193,7 +193,9 @@ def _scanner_killzone(P, kz, bloc, idx, o, h, l, c, A, dern_sh, dern_sl, dern_ks
         eh, el = _egaux(sh, sl_, h, l, A, i_kz, n)
         hauts.update(eh); bas.update(el)
     fin_kz = idx[bloc[-1]] + pd.Timedelta(minutes=5)
-    hs = P["sortie_londres"] if kz == "londres" else P["heure_sortie"]  # Londres : clôture à 11:00 NY
+    # Londres : clôture à 08:25 NY, avant les chiffres de 08:30 (CPI, NFP…) dont les dates exactes
+    # ne sont pas toutes connues ici ; NY : clôture à 15:55
+    hs = P["sortie_londres"] if kz == "londres" else P["heure_sortie"]
     sortie = idx[i_kz].normalize() + pd.Timedelta(hours=hs.hour, minutes=hs.minute)
     ordres = []
     # état par sens : setup vendeur (sweep d'un haut) et acheteur (sweep d'un bas)

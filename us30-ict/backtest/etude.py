@@ -67,8 +67,12 @@ def couper(tr: pd.DataFrame, coupure) -> tuple[pd.DataFrame, pd.DataFrame]:
     return tr[tr["t_entree"] < coupure], tr[tr["t_entree"] >= coupure]
 
 
+PERIODES: dict = {}  # "total"/"IS"/"OOS" → (début, fin), renseigné dans main()
+
+
 def resume(tr, prefixe=""):
-    m = metriques(tr, RISQUE_PCT) if len(tr) else {"trades": 0}
+    per = PERIODES.get(prefixe.rstrip("_") or "total")
+    m = metriques(tr, RISQUE_PCT, periode=per) if len(tr) else {"trades": 0}
     return {f"{prefixe}{k}": v for k, v in m.items()}
 
 
@@ -165,6 +169,8 @@ def main():
     CTX = Contexte.charger()
     ctx = CTX
     coupure = date_coupure(ctx)
+    d0, d1 = ctx.m1.index[0], ctx.m1.index[-1]
+    PERIODES.update(total=(d0, d1), IS=(d0, coupure), OOS=(coupure, d1))
     info = {"debut": str(ctx.m1.index[0]), "fin": str(ctx.m1.index[-1]), "coupure_is_oos": str(coupure.date()),
             "risque_pct": RISQUE_PCT, "defauts": {k: str(v) for k, v in ict.DEFAUTS.items()}}
     print("Période", info["debut"], "→", info["fin"], "| coupure IS/OOS", info["coupure_is_oos"], flush=True)
@@ -223,7 +229,7 @@ def main():
     fen.to_csv(SORTIE / "walk_forward_fenetres.csv", index=False)
     if len(wf):
         wf.to_parquet(SORTIE / "trades_walk_forward.parquet")
-    info["walk_forward"] = resume(wf) if len(wf) else {}
+    info["walk_forward"] = metriques(wf, RISQUE_PCT, periode=(pd.Timestamp(fen["debut_test"].iloc[0]), d1.tz_localize(None))) if len(wf) else {}
     print("walk-forward :", {k: round(v, 3) if isinstance(v, float) else v for k, v in info["walk_forward"].items()}, flush=True)
 
     # 4) Monte Carlo, prop firm, ventilations, placebo sur la variante retenue (paramètres par défaut)
@@ -249,6 +255,9 @@ def main():
     info["placebo_V1"] = {"esp_V1_R": float(v1["r"].mean()) if len(v1) else None,
                           "placebo_moyenne_R": float(np.nanmean(pla)), "placebo_p95_R": float(np.nanpercentile(pla, 95)),
                           "rang_percentile_V1": float((pla < v1["r"].mean()).mean() * 100) if len(v1) else None}
+    q = Path(__file__).resolve().parents[1] / "data" / "processed" / "rapport_qualite.json"
+    if q.exists():
+        (SORTIE / "qualite_donnees.json").write_text(q.read_text())
     info["duree_s"] = round(time.time() - debut_chrono)
     (SORTIE / "synthese.json").write_text(json.dumps(info, indent=1, ensure_ascii=False, default=float))
     print(json.dumps({k: v for k, v in info.items() if k != "defauts"}, indent=1, ensure_ascii=False, default=float))

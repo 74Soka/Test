@@ -1,0 +1,36 @@
+{
+ "verdict_etiquette": "provisoire",
+ "verdict_classe": "ameliorer",
+ "verdict_phrase": "Texte provisoire (données partielles).",
+ "resume": [
+  "a",
+  "b"
+ ],
+ "donnees": [
+  "x"
+ ],
+ "logique": [
+  "x"
+ ],
+ "lecture_variantes": [
+  "x"
+ ],
+ "lecture_heatmaps": [
+  "x"
+ ],
+ "lecture_robustesse": [
+  "x"
+ ],
+ "lecture_ventilations": [
+  "x"
+ ],
+ "limites": [
+  "x"
+ ],
+ "ameliorations": [
+  "x"
+ ],
+ "paper_trading": [
+  "x"
+ ]
+}

@@ -24,7 +24,7 @@
   "cible": "rr",
   "gestion": "aucune",
   "heure_sortie": "15:55:00",
-  "sortie_londres": "11:00:00",
+  "sortie_londres": "08:25:00",
   "rr_min_liq": "1.5",
   "rr_max_liq": "5.0"
  },
@@ -33,23 +33,23 @@
  "monte_carlo": {},
  "prop_firm": {
   "0.5%": {
-   "pire_journee_%": -0.5330517434959825,
+   "pire_journee_%": -0.5370592673949015,
    "violations_dd_quotidien": 0,
    "dd_total_franchi": false,
    "date_premier_franchissement": null
   },
   "1.0%": {
-   "pire_journee_%": -1.066103486991976,
+   "pire_journee_%": -1.0741185347897697,
    "violations_dd_quotidien": 0,
    "dd_total_franchi": false,
    "date_premier_franchissement": null
   }
  },
  "placebo_V1": {
-  "esp_V1_R": -0.011714429627544284,
-  "placebo_moyenne_R": -0.04742761594130699,
-  "placebo_p95_R": 0.5028624719038715,
-  "rang_percentile_V1": 42.5
+  "esp_V1_R": 0.08024802828107964,
+  "placebo_moyenne_R": -0.04545318047205425,
+  "placebo_p95_R": 0.49384024829616124,
+  "rang_percentile_V1": 60.0
  },
  "duree_s": 3
 }

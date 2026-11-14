@@ -13,18 +13,18 @@ def equity(trades: pd.DataFrame, risque_pct: float = 0.5, capital: float = 100_0
 
 
 def drawdown(eq: pd.Series) -> tuple[float, pd.Timedelta]:
-    """Drawdown max (en %) et plus longue durée sous un plus haut (en temps calendaire)."""
+    """Drawdown max (en %) et plus longue durée sous un plus haut : du dernier plus haut jusqu'au
+    retour à ce plus haut (ou jusqu'à la fin si jamais récupéré), en temps calendaire."""
     pic = eq.cummax()
     dd = (eq / pic - 1).min() * 100
-    sous = eq < pic
-    duree, debut = pd.Timedelta(0), None
-    for t, s in zip(eq.index, sous.to_numpy()):
-        if s and debut is None:
-            debut = t
-        if not s and debut is not None:
-            duree = max(duree, pd.Timestamp(t) - pd.Timestamp(debut)); debut = None
-    if debut is not None:
-        duree = max(duree, pd.Timestamp(eq.index[-1]) - pd.Timestamp(debut))
+    duree, t_pic = pd.Timedelta(0), None
+    v_pic = -np.inf
+    for t, v in zip(eq.index, eq.to_numpy()):
+        if v >= v_pic:
+            if t_pic is not None:
+                duree = max(duree, pd.Timestamp(t) - pd.Timestamp(t_pic))
+            v_pic, t_pic = v, t
+    duree = max(duree, pd.Timestamp(eq.index[-1]) - pd.Timestamp(t_pic))
     return float(dd), duree
 
 
@@ -36,7 +36,9 @@ def serie_perdante(r: np.ndarray) -> int:
     return m
 
 
-def metriques(trades: pd.DataFrame, risque_pct: float = 0.5, capital: float = 100_000.0) -> dict:
+def metriques(trades: pd.DataFrame, risque_pct: float = 0.5, capital: float = 100_000.0,
+              periode: tuple | None = None) -> dict:
+    """`periode` = (début, fin) de l'échantillon de données ; sinon de la 1re entrée à la dernière sortie."""
     t = trades[trades["statut"] == "rempli"] if "statut" in trades else trades
     if len(t) == 0:
         return {"trades": 0}
@@ -47,12 +49,14 @@ def metriques(trades: pd.DataFrame, risque_pct: float = 0.5, capital: float = 10
     # rendements quotidiens (jours de bourse avec ou sans trade) pour Sharpe/Sortino
     jour = pd.Series(risque_pct / 100 * r, index=pd.to_datetime(t["t_sortie"]).dt.date.values)
     quotid = jour.groupby(level=0).sum()
-    tous = pd.bdate_range(min(quotid.index), max(quotid.index)).date
+    p0, p1 = (pd.Timestamp(periode[0]), pd.Timestamp(periode[1])) if periode else (
+        pd.Timestamp(t["t_entree"].iloc[0]), pd.Timestamp(t["t_sortie"].iloc[-1]))
+    tous = pd.bdate_range(p0.date(), p1.date()).date
     quotid = quotid.reindex(tous, fill_value=0.0)
     sharpe = quotid.mean() / quotid.std() * np.sqrt(252) if quotid.std() > 0 else np.nan
     neg = quotid[quotid < 0]
     sortino = quotid.mean() / np.sqrt((neg ** 2).sum() / len(quotid)) * np.sqrt(252) if len(neg) else np.nan
-    annees = max((pd.Timestamp(eq.index[-1]) - pd.Timestamp(eq.index[0])).days / 365.25, 1e-9)
+    annees = max((p1 - p0).days / 365.25, 1 / 365.25)
     return {
         "trades": int(len(r)),
         "trades_par_an": len(r) / annees,
@@ -80,7 +84,8 @@ def regles_prop(trades: pd.DataFrame, risque_pct: float = 0.5, dd_jour_max: floa
     if len(t) == 0:
         return {}
     eq = equity(t, risque_pct, capital)
-    jours = pd.to_datetime(t["t_sortie"]).dt.date.values
+    # journée de trading au sens prop firm : séance qui commence à 18:00 NY (rollover)
+    jours = (pd.to_datetime(t["t_sortie"]) + pd.Timedelta(hours=6)).dt.date.values
     df = pd.DataFrame({"eq": eq.to_numpy(), "jour": jours})
     df["eq_avant"] = df["eq"].shift(1).fillna(capital)
     debut_jour = df.groupby("jour")["eq_avant"].first()
@@ -95,7 +100,8 @@ def regles_prop(trades: pd.DataFrame, risque_pct: float = 0.5, dd_jour_max: floa
 
 def monte_carlo(r: np.ndarray, risque_pct: float = 0.5, n: int = 10_000, seuil_ruine_pct: float = 10.0,
                 graine: int = 7, bootstrap: bool = False) -> dict:
-    """Permutations (ou bootstrap) de l'ordre des trades → distribution du DD max et du résultat."""
+    """Permutation de l'ordre des trades → distribution du DD max (le résultat final, lui, ne change pas) ;
+    bootstrap (tirage avec remise) → distribution du DD ET du résultat final."""
     rng = np.random.default_rng(graine)
     r = np.asarray(r, float)
     k = risque_pct / 100
@@ -111,7 +117,7 @@ def monte_carlo(r: np.ndarray, risque_pct: float = 0.5, n: int = 10_000, seuil_r
         "dd_p99_%": float(np.percentile(dds, 1)),
         f"proba_dd_>{seuil_ruine_pct:g}%": float((dds <= -seuil_ruine_pct).mean() * 100),
         "proba_dd_>20%": float((dds <= -20).mean() * 100),
-        "resultat_median_%": float(np.median(finaux)), "resultat_p5_%": float(np.percentile(finaux, 5)),
-        "proba_perte_%": float((finaux < 0).mean() * 100),
+        **({"resultat_median_%": float(np.median(finaux)), "resultat_p5_%": float(np.percentile(finaux, 5)),
+            "proba_perte_%": float((finaux < 0).mean() * 100)} if bootstrap else {}),
         "_dds": dds, "_finaux": finaux,
     }

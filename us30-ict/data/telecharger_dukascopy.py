@@ -40,7 +40,7 @@ class Cadence:
     """Pause adaptative (AIMD) : Dukascopy applique un quota ; au-delà, il fait attendre ~10 s puis
     coupe. On ralentit fortement dès qu'une réponse est lente ou échoue, on réaccélère doucement sinon."""
 
-    def __init__(self, pause=4.0, mini=3.0, maxi=30.0):
+    def __init__(self, pause=3.0, mini=2.8, maxi=20.0):
         self.pause, self.mini, self.maxi = pause, mini, maxi
         self.verrou = threading.Lock()
 
@@ -52,7 +52,7 @@ class Cadence:
             if duree > 2.0:
                 self.pause = min(self.maxi, self.pause * 1.5)
             else:
-                self.pause = max(self.mini, self.pause - 0.1)
+                self.pause = max(self.mini, self.pause * 0.85)
 
     def echec(self):
         with self.verrou:
