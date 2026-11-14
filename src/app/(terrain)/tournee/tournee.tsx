@@ -225,6 +225,8 @@ export function Tournee({
   const [itineraire, setItineraire] = useState<({ cle: string } & ResultatTrajet) | null>(null);
   // Arrêt qui vient d'être livré : on y propose de partir tout de suite vers le suivant
   const [justeLivre, setJusteLivre] = useState<string | null>(null);
+  // Petit rappel affiché juste après « Démarrer la tournée »
+  const [rappelComplements, setRappelComplements] = useState(false);
 
   // Envoie les appuis en attente ; s'arrête à la première coupure réseau
   const vider = useCallback(async (aEnvoyer: ActionLivraison[]) => {
@@ -418,6 +420,17 @@ export function Tournee({
           <p className="text-sm text-amber-800">Itinéraire par les routes indisponible : {itineraire.raison}</p>
         )}
 
+        {rappelComplements && (
+          <div
+            role="alert"
+            className="flex items-center justify-between gap-3 rounded-2xl bg-marque-50 px-4 py-3 ring-2 ring-marque-600"
+          >
+            <p className="text-lg font-bold text-marque-900">👋 Coucou, as-tu pensé à tes compléments ?</p>
+            <Bouton taille="petit" className="shrink-0 whitespace-nowrap" onClick={() => setRappelComplements(false)}>
+              OK 👍
+            </Bouton>
+          </div>
+        )}
         {depart ? (
           <p role="status" className="text-sm font-medium text-feuille-800">
             🚚 Tournée démarrée à {HEURE.format(new Date(depart.le))}
@@ -438,6 +451,7 @@ export function Tournee({
                     const r = await demarrerTournee(date, secteur.id);
                     if (!r.ok) return setErreur(r.erreur);
                     setDepart({ le: r.demarreeLe, prevenus: r.prevenus, clients: r.clients });
+                    setRappelComplements(true);
                   })
                 }
               >

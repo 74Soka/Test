@@ -487,6 +487,17 @@ test("livreur : la tournée seulement, avec les arrêts et « Livré et payé »
   await arret.getByRole("button", { name: /✓ Livré et payé/ }).click();
   await expect(arret.getByRole("button", { name: "Livré et payé" })).toBeVisible();
 
+  // « Démarrer la tournée » : petit rappel des compléments
+  const demarrer = page.getByRole("button", { name: "🚚 Démarrer la tournée" });
+  if (await demarrer.isVisible()) {
+    await demarrer.click();
+    const rappel = page.getByRole("alert").filter({ hasText: "Coucou, as-tu pensé à tes compléments ?" });
+    await expect(rappel).toBeVisible();
+    if (process.env.CAPTURES_SOMBRE) await rappel.locator("xpath=..").screenshot({ path: `${process.env.CAPTURES_SOMBRE}/rappel-complements.png` });
+    await rappel.getByRole("button", { name: "OK 👍" }).click();
+    await expect(rappel).toHaveCount(0);
+  }
+
   // Aucun autre écran
   await page.goto("/clients");
   await page.waitForURL("**/tournee**");
