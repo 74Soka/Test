@@ -31,10 +31,11 @@ ECHELLE_PRIX = 1000.0
 _DT = np.dtype([("t", ">i4"), ("o", ">i4"), ("c", ">i4"), ("l", ">i4"), ("h", ">i4"), ("v", ">f4")])
 
 
-def _lire_cote(cote: str, debut: str | None = None) -> pd.DataFrame:
+def _lire_cote(cote: str, debut: str | None = None, fin: str | None = None) -> pd.DataFrame:
     morceaux = []
     for f in sorted((BRUT / cote).rglob("*.bi5")):
-        if debut and f.stem < debut:  # nom de fichier = date UTC « AAAA-MM-JJ »
+        # nom de fichier = date UTC « AAAA-MM-JJ » ; `fin` est exclue
+        if (debut and f.stem < debut) or (fin and f.stem >= fin):
             continue
         contenu = f.read_bytes()
         if not contenu:
@@ -53,10 +54,11 @@ def _lire_cote(cote: str, debut: str | None = None) -> pd.DataFrame:
     return pd.concat(morceaux, ignore_index=True)
 
 
-def construire(debut: str | None = None) -> dict:
-    """`debut` (AAAA-MM-JJ) : ignore les fichiers bruts antérieurs (période d'étude figée)."""
-    bid = _lire_cote("BID", debut)
-    ask = _lire_cote("ASK", debut).rename(columns={"o": "ao", "h": "ah", "l": "al", "c": "ac", "v": "av"})
+def construire(debut: str | None = None, fin: str | None = None, suffixe: str = "") -> dict:
+    """`debut` incluse / `fin` exclue (AAAA-MM-JJ, UTC) : période d'étude figée.
+    `suffixe` : écrit us30_m1{suffixe}.parquet… pour garder plusieurs périodes côte à côte."""
+    bid = _lire_cote("BID", debut, fin)
+    ask = _lire_cote("ASK", debut, fin).rename(columns={"o": "ao", "h": "ah", "l": "al", "c": "ac", "v": "av"})
     stats = {"lignes_bid_brutes": len(bid), "lignes_ask_brutes": len(ask)}
 
     # Bougies de remplissage : volume nul ET bougie plate
@@ -83,11 +85,11 @@ def construire(debut: str | None = None) -> dict:
     df = ajouter_seance(df)
 
     TRAITE.mkdir(parents=True, exist_ok=True)
-    df.to_parquet(TRAITE / "us30_m1.parquet")
+    df.to_parquet(TRAITE / f"us30_m1{suffixe}.parquet")
     m5 = reechantillonner(df, "5min")
-    m5.to_parquet(TRAITE / "us30_m5.parquet")
+    m5.to_parquet(TRAITE / f"us30_m5{suffixe}.parquet")
     stats.update(qualite(df))
-    pd.Series(stats).to_json(TRAITE / "rapport_qualite.json", indent=1, force_ascii=False)
+    pd.Series(stats).to_json(TRAITE / f"rapport_qualite{suffixe}.json", indent=1, force_ascii=False)
     return stats
 
 
@@ -154,16 +156,18 @@ def qualite(df: pd.DataFrame) -> dict:
     }
 
 
-def charger(tf: str = "m1") -> pd.DataFrame:
+def charger(tf: str = "m1", suffixe: str = "") -> pd.DataFrame:
     """Charge le Parquet nettoyé (tf = 'm1' ou 'm5')."""
-    return pd.read_parquet(TRAITE / f"us30_{tf}.parquet")
+    return pd.read_parquet(TRAITE / f"us30_{tf}{suffixe}.parquet")
 
 
 if __name__ == "__main__":
     p = argparse.ArgumentParser()
     p.add_argument("--construire", action="store_true")
     p.add_argument("--debut", default=None, help="première date UTC incluse, ex. 2021-11-01")
+    p.add_argument("--fin", default=None, help="date UTC exclue, ex. 2021-11-01")
+    p.add_argument("--suffixe", default="", help="suffixe des fichiers produits, ex. _2019")
     a = p.parse_args()
     if a.construire:
         import json
-        print(json.dumps(construire(a.debut), indent=1, ensure_ascii=False, default=str))
+        print(json.dumps(construire(a.debut, a.fin, a.suffixe), indent=1, ensure_ascii=False, default=str))

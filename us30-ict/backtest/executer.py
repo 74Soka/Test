@@ -24,8 +24,8 @@ class Contexte:
     news: dict
 
     @classmethod
-    def charger(cls, debut: str | None = None, fin: str | None = None) -> "Contexte":
-        m1, m5 = charger("m1"), charger("m5")
+    def charger(cls, debut: str | None = None, fin: str | None = None, suffixe: str = "") -> "Contexte":
+        m1, m5 = charger("m1", suffixe), charger("m5", suffixe)
         if debut or fin:
             m1, m5 = m1.loc[debut:fin], m5.loc[debut:fin]
         return cls(m1, m5, Marche(m1), jours_news(m1))
