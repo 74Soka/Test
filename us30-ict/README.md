@@ -22,7 +22,8 @@ Le rapport final (logique, résultats IS/OOS, robustesse, verdict) est dans `rep
 - Placebo (mêmes entrées, direction au hasard) : V1 au 72ᵉ centile seulement (il faudrait ≥ 95).
 - Grilles de paramètres : les 45 réglages sont négatifs hors échantillon.
 - Monte Carlo : 85 % de probabilité de drawdown > 10 % ; prop firm à 1 % de risque : limite de 10 % franchie le 18/06/2026.
-- V4 : seulement 23 trades et négative sur l'IS → probablement du hasard ; à confronter à 2019-2021 (jamais vu).
+- Test final sur 2019 → oct. 2021 (jamais vu, critères fixés avant, `python -m backtest.test_2019`) : V1 +0,016 R/trade sur 160 trades
+  (t = 0,17, nul), V4 −0,12 R/trade sur 12 trades → le +0,58 R de la V4 était du hasard.
 
 ## Arborescence
 
@@ -54,6 +55,9 @@ pip install pandas numpy pyarrow requests
 python -m data.chargement --construire --debut 2021-11-01  # → data/processed/us30_m1.parquet, us30_m5.parquet
 python -m backtest.etude                    # → reports/resultats/
 python -m reports.rapport                   # → reports/rapport.html
+# test final sur la période jamais vue (janv. 2019 → oct. 2021)
+python -m data.chargement --construire --debut 2019-01-01 --fin 2021-11-01 --suffixe _2019
+python -m backtest.test_2019               # → reports/resultats/test_2019*.{csv,json,npy}
 ```
 
 Utilisation dans du code :

@@ -1,0 +1,13 @@
+{
+ "debut": "2019-01-01 18:00:00-05:00",
+ "fin": "2021-10-31 19:59:00-04:00",
+ "V1_esp_realiste_R": 0.015885476131513764,
+ "V1_echec_confirme": false,
+ "V4_esp_realiste_R": -0.12129940387893297,
+ "V4_esp_double_R": -0.22971740161294332,
+ "V4_trades": 12,
+ "V4_second_regard": false,
+ "placebo_moyenne_R": -0.04505208376048465,
+ "placebo_p95_R": 0.08852580827999489,
+ "V1_rang_percentile_placebo": 78.5
+}
