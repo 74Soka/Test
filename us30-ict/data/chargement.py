@@ -31,9 +31,11 @@ ECHELLE_PRIX = 1000.0
 _DT = np.dtype([("t", ">i4"), ("o", ">i4"), ("c", ">i4"), ("l", ">i4"), ("h", ">i4"), ("v", ">f4")])
 
 
-def _lire_cote(cote: str) -> pd.DataFrame:
+def _lire_cote(cote: str, debut: str | None = None) -> pd.DataFrame:
     morceaux = []
     for f in sorted((BRUT / cote).rglob("*.bi5")):
+        if debut and f.stem < debut:  # nom de fichier = date UTC « AAAA-MM-JJ »
+            continue
         contenu = f.read_bytes()
         if not contenu:
             continue
@@ -51,9 +53,10 @@ def _lire_cote(cote: str) -> pd.DataFrame:
     return pd.concat(morceaux, ignore_index=True)
 
 
-def construire() -> dict:
-    bid = _lire_cote("BID")
-    ask = _lire_cote("ASK").rename(columns={"o": "ao", "h": "ah", "l": "al", "c": "ac", "v": "av"})
+def construire(debut: str | None = None) -> dict:
+    """`debut` (AAAA-MM-JJ) : ignore les fichiers bruts antérieurs (période d'étude figée)."""
+    bid = _lire_cote("BID", debut)
+    ask = _lire_cote("ASK", debut).rename(columns={"o": "ao", "h": "ah", "l": "al", "c": "ac", "v": "av"})
     stats = {"lignes_bid_brutes": len(bid), "lignes_ask_brutes": len(ask)}
 
     # Bougies de remplissage : volume nul ET bougie plate
@@ -159,6 +162,8 @@ def charger(tf: str = "m1") -> pd.DataFrame:
 if __name__ == "__main__":
     p = argparse.ArgumentParser()
     p.add_argument("--construire", action="store_true")
-    if p.parse_args().construire:
+    p.add_argument("--debut", default=None, help="première date UTC incluse, ex. 2021-11-01")
+    a = p.parse_args()
+    if a.construire:
         import json
-        print(json.dumps(construire(), indent=1, ensure_ascii=False, default=str))
+        print(json.dumps(construire(a.debut), indent=1, ensure_ascii=False, default=str))

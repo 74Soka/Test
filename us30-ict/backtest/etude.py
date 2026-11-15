@@ -164,6 +164,8 @@ def main():
     ap.add_argument("--processus", type=int, default=4)
     a = ap.parse_args()
     SORTIE.mkdir(parents=True, exist_ok=True)
+    for vieux in SORTIE.glob("grille_*.csv"):  # une grille non recalculée ne doit pas survivre d'un essai précédent
+        vieux.unlink()
     debut_chrono = time.time()
     global CTX
     CTX = Contexte.charger()

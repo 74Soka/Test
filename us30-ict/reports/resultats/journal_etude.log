@@ -1,0 +1,114 @@
+Période 2021-10-31 20:00:00-04:00 → 2026-11-13 16:14:00-05:00 | coupure IS/OOS 2025-05-11
+   variante     couts  trades  winrate_%  expectancy_R  profit_factor  max_dd_%  IS_trades  IS_expectancy_R  OOS_trades  OOS_expectancy_R
+0        V1      sans     325     41.846         0.013          1.026   -10.409        240            0.079          85            -0.171
+1        V1  realiste     325     40.615        -0.030          0.944   -11.703        240            0.029          85            -0.194
+2        V1    double     325     40.615        -0.089          0.834   -14.749        240           -0.043          85            -0.221
+3        V2      sans      83     38.554        -0.006          0.990    -6.928         53            0.028          30            -0.068
+4        V2  realiste      78     35.897        -0.114          0.827    -9.621         49           -0.093          29            -0.151
+5        V2    double      78     34.615        -0.182          0.737   -10.468         50           -0.147          28            -0.245
+6        V3      sans       7     42.857         0.257          1.429    -1.586          4           -0.277           3             0.970
+7        V3  realiste      10     30.000        -0.177          0.772    -2.858          7           -0.665           3             0.963
+8        V3    double      16     18.750        -0.582          0.390    -5.944         12           -0.922           4             0.437
+9        V4      sans      23     65.217         0.656          2.800    -1.314         12            0.098          11             1.265
+10       V4  realiste      23     65.217         0.576          2.498    -1.594         12           -0.046          11             1.254
+11       V4    double      22     50.000         0.210          1.357    -4.680         12           -0.704          10             1.306
+12    V1+PM  realiste     352     41.477        -0.028          0.946   -11.795        261            0.019          91            -0.162
+13    V2+PM  realiste      88     39.773        -0.076          0.876    -8.458         58           -0.048          30            -0.130
+14    V3+PM  realiste      11     36.364         0.021          1.030    -1.887          8           -0.332           3             0.963
+15    V4+PM  realiste      25     64.000         0.522          2.306    -1.631         14           -0.054          11             1.254
+Variante retenue (sur IS) : V1
+grille disp_rr ok
+grille swing_mss ok
+walk-forward : {'trades': 147, 'trades_par_an': 48.415, 'winrate_%': np.float64(39.456), 'gain_moyen_R': np.float64(1.057), 'perte_moyenne_R': np.float64(-0.856), 'rr_moyen_realise': np.float64(1.234), 'profit_factor': np.float64(0.804), 'expectancy_R': np.float64(-0.101), 'total_R': np.float64(-14.917), 'erreur_type_R': np.float64(0.087), 't_stat': np.float64(-1.164), 'net_profit_%': np.float64(-7.378), 'cagr_%': np.float64(-2.493), 'sharpe': np.float64(-0.65), 'sortino': np.float64(-0.956), 'max_dd_%': -11.121, 'duree_max_dd_jours': 979, 'plus_longue_serie_perdante': 8}
+{
+ "debut": "2021-10-31 20:00:00-04:00",
+ "fin": "2026-11-13 16:14:00-05:00",
+ "coupure_is_oos": "2025-05-11",
+ "risque_pct": 0.5,
+ "variante_retenue_sur_IS": "V1",
+ "walk_forward": {
+  "trades": 147,
+  "trades_par_an": 48.41456266907124,
+  "winrate_%": 39.455782312925166,
+  "gain_moyen_R": 1.0566035656208788,
+  "perte_moyenne_R": -0.8561825741396256,
+  "rr_moyen_realise": 1.234086744503829,
+  "profit_factor": 0.8042363054069896,
+  "expectancy_R": -0.10147783872391633,
+  "total_R": -14.9172422924157,
+  "erreur_type_R": 0.0871586072473959,
+  "t_stat": -1.1642893562522854,
+  "net_profit_%": -7.377673421512288,
+  "cagr_%": -2.4925530010158403,
+  "sharpe": -0.6501675266971587,
+  "sortino": -0.9555116910405851,
+  "max_dd_%": -11.121082417048312,
+  "duree_max_dd_jours": 979,
+  "plus_longue_serie_perdante": 8
+ },
+ "monte_carlo": {
+  "total": {
+   "permutation": {
+    "dd_median_%": -12.519401991875029,
+    "dd_p95_%": -17.564657696251164,
+    "dd_p99_%": -19.866609146808393,
+    "proba_dd_>10%": 84.87,
+    "proba_dd_>20%": 0.8999999999999999
+   },
+   "bootstrap": {
+    "dd_median_%": -12.999400932330975,
+    "dd_p95_%": -23.39859590566852,
+    "dd_p99_%": -27.674207949670645,
+    "proba_dd_>10%": 73.09,
+    "proba_dd_>20%": 12.85,
+    "resultat_median_%": -5.348607457156801,
+    "resultat_p5_%": -20.045722959321722,
+    "proba_perte_%": 70.69
+   }
+  },
+  "OOS": {
+   "permutation": {
+    "dd_median_%": -9.474731782542717,
+    "dd_p95_%": -11.721610922782407,
+    "dd_p99_%": -12.749981148970425,
+    "proba_dd_>10%": 33.97,
+    "proba_dd_>20%": 0.0
+   },
+   "bootstrap": {
+    "dd_median_%": -9.748509866063992,
+    "dd_p95_%": -15.659014995211066,
+    "dd_p99_%": -17.983435147004748,
+    "proba_dd_>10%": 47.370000000000005,
+    "proba_dd_>20%": 0.13,
+    "resultat_median_%": -8.006996612195994,
+    "resultat_p5_%": -14.880284477932852,
+    "proba_perte_%": 95.82000000000001
+   }
+  }
+ },
+ "prop_firm": {
+  "0.5%": {
+   "pire_journee_%": -1.033336392216544,
+   "violations_dd_quotidien": 0,
+   "dd_total_franchi": false,
+   "date_premier_franchissement": null
+  },
+  "1.0%": {
+   "pire_journee_%": -2.0613100110904226,
+   "violations_dd_quotidien": 0,
+   "dd_total_franchi": true,
+   "date_premier_franchissement": "2026-06-18"
+  }
+ },
+ "placebo_V1": {
+  "esp_V1_R": -0.029540491874604977,
+  "placebo_moyenne_R": -0.06388656581166278,
+  "placebo_p95_R": 0.03904948932902892,
+  "rang_percentile_V1": 72.0
+ },
+ "duree_s": 41
+}
+
+real	0m41.207s
+user	2m6.150s
+sys	0m1.572s

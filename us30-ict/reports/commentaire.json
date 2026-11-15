@@ -1,36 +1,82 @@
 {
- "verdict_etiquette": "provisoire",
- "verdict_classe": "ameliorer",
- "verdict_phrase": "Texte provisoire (données partielles).",
+ "verdict_etiquette": "À abandonner (sous cette forme)",
+ "verdict_classe": "abandonner",
+ "verdict_phrase": "Sur 5 ans de données minute, la version ICT retenue ne gagne rien : elle était à peine positive pendant la période d'apprentissage (+0,03 R par trade) et perd nettement sur la période de vérification (−0,19 R par trade). Elle ne fait pas mieux que des entrées prises dans une direction tirée au hasard. Aucune version testée ne montre d'avantage fiable une fois les coûts payés.",
  "resume": [
-  "a",
-  "b"
+  "<b>Période</b> : novembre 2021 → novembre 2026 (1 301 séances, 1,7 million de bougies d'une minute). La période d'apprentissage va jusqu'au 11 mai 2025, la période de vérification couvre les 18 derniers mois.",
+  "<b>Version retenue</b> : la V1 (entrée au marché dès la cassure de structure), choisie uniquement sur la période d'apprentissage. Elle donne 325 trades, 40,6 % de gagnants, un profit factor de 0,94 et −0,03 R par trade sur 5 ans, coûts réalistes inclus.",
+  "<b>Même sans aucun coût</b>, la V1 ne fait que +0,01 R par trade. Le problème n'est donc pas le spread : le signal lui-même n'a pas de pouvoir prédictif mesurable.",
+  "<b>Toutes les vérifications vont dans le même sens</b> : walk-forward −0,10 R par trade (147 trades), test placebo non significatif, toutes les cases des grilles de paramètres négatives sur la période de vérification.",
+  "<b>Seule exception, la V4</b> (la plus complexe) affiche +0,58 R par trade. Mais elle ne repose que sur 23 trades en 5 ans et était négative pendant l'apprentissage : c'est très probablement du hasard. Une période jamais vue (2019-2021) doit servir à trancher.",
+  "<b>Conclusion</b> : ne pas trader cette stratégie avec de l'argent réel, ni en prop firm. À 1 % de risque par trade, la limite de perte totale de 10 % aurait été franchie le 18 juin 2026."
  ],
  "donnees": [
-  "x"
+  "<b>Source</b> : flux public Dukascopy, instrument USA30.IDX/USD (CFD sur le Dow Jones). Bougies d'une minute BID (prix vendeur) et ASK (prix acheteur), téléchargées fichier par fichier sur environ 1 600 jours.",
+  "<b>Nettoyage</b> : retrait de 546 966 bougies « vides » (marché fermé), aucun doublon, aucune bougie incohérente. Tout est en heure de New York, changements d'heure compris. La journée de trading va de 18 h la veille à 17 h. Il reste 38 trous de plus de 5 minutes hors pause quotidienne (jours fériés, incidents), le plus long durant 6 h 31.",
+  "<b>Spread réel</b> : 2,5 points en médiane pendant la session de New York (9 h 30-11 h) et 4 points pendant celle de Londres (2 h-5 h).",
+  "<b>Limite importante</b> : l'ASK n'a été téléchargé que le mercredi (environ 1 jour sur 5) pour respecter les limites du serveur. Pour les autres jours, le spread est estimé à partir de la médiane du même créneau d'une demi-heure de la même année. L'estimation est fidèle en moyenne, mais elle lisse les pics de spread des annonces.",
+  "<b>Ce n'est pas le contrat à terme YM</b> : le CFD a ses propres horaires, sans volume réel (le « volume » est un nombre de ticks). Les résultats sont proches de ce qu'on verrait chez un broker CFD, pas forcément sur le YM.",
+  "<b>Annonces économiques</b> : les dates FOMC officielles (65 dates) sont intégrées. Le NFP est approximé par le premier vendredi du mois. L'IPC (CPI) est détecté par un mouvement anormal à 8 h 30, car le site du BLS refuse les accès automatiques."
  ],
  "logique": [
-  "x"
+  "<b>1. Fenêtres horaires (killzones)</b> : Londres de 2 h à 5 h et New York matin de 8 h 30 à 11 h (heure de New York). La session NY après-midi est testée à part.",
+  "<b>2. Niveaux de liquidité</b> : plus haut et plus bas de la veille (PDH/PDL), de la session asiatique (20 h-minuit) et de la session de Londres. Seuls comptent les niveaux encore jamais touchés au début de la fenêtre.",
+  "<b>3. Balayage (sweep)</b> : le prix dépasse un de ces niveaux pendant la fenêtre, puis revient.",
+  "<b>4. Cassure de structure (MSS) avec déplacement</b> : une bougie de 5 minutes clôture au-delà du dernier point de retournement opposé (fractale confirmée, donc connue sans regarder le futur). Le mouvement doit contenir au moins une grande bougie (corps ≥ 1 × l'ATR et ≥ 50 % de la bougie).",
+  "<b>5. Entrée</b> : V1 au marché à la cassure ; V2 en ordre limite au milieu du FVG (déséquilibre de 3 bougies) ; V3 en ordre limite à 70,5 % du mouvement (OTE), en zone discount pour un achat ou premium pour une vente par rapport à l'ouverture de minuit ; V4 = V3 + biais du jour + cible sur la liquidité opposée + 50 % encaissé à 1R puis stop au point d'entrée.",
+  "<b>6. Stop et cible</b> : stop 2 points au-delà de l'extrême du balayage. Cible à 2R (V1-V3) ou sur la liquidité opposée (V4). Sortie forcée à 15 h 55, ou à 8 h 25 pour Londres afin d'éviter les annonces de 8 h 30.",
+  "<b>7. Règles</b> : 1 trade maximum par fenêtre et par jour. Pas de trade à New York les jours de FOMC, de NFP ou de choc à 8 h 30. Risque fixe de 0,5 % du capital par trade, sans martingale.",
+  "<b>Exécution simulée minute par minute</b> : achats au prix ASK, ventes au BID. Slippage d'1 point, plus 25 % du dépassement quand le stop est franchi. Si le stop et la cible sont touchés dans la même minute, on compte le stop. Pas de prix amélioré sur les ordres limites. Un audit dédié a vérifié qu'aucune décision n'utilise une information future."
  ],
  "lecture_variantes": [
-  "x"
+  "<b>V1 (la plus simple)</b> : 325 trades, −0,03 R par trade. Positive pendant l'apprentissage (+0,03 R), négative sur la vérification (−0,19 R). C'est la seule version avec plus de 200 trades : c'est la seule dont le chiffre est statistiquement lisible.",
+  "<b>V2 (entrée FVG)</b> : 78 trades seulement, sur 210 ordres placés, car le prix revient rarement dans le FVG avant de repartir. −0,11 R par trade, négative sur les deux périodes.",
+  "<b>V3 (entrée OTE 70,5 %)</b> : 10 trades en 5 ans. Le prix ne revient presque jamais aussi profond. Inexploitable faute d'échantillon.",
+  "<b>V4 (complète)</b> : 23 trades, +0,58 R par trade, t-stat 1,8. C'est le seul chiffre positif, mais il est fragile. Il est négatif sur l'apprentissage (−0,05 R sur 12 trades) et tout le gain vient de 11 trades de la vérification. Avec coûts doublés, il tombe à +0,21 R. Et avec 5 réglages successifs testés, trouver un résultat à t = 1,8 par hasard est attendu.",
+  "<b>Ajouter la session NY après-midi</b> ne change rien (V1 + PM : −0,03 R).",
+  "<b>Moins de 200 trades</b> pour V2, V3 et V4 : leurs résultats ne permettent aucune conclusion fiable, positive ou négative."
  ],
  "lecture_heatmaps": [
-  "x"
+  "<b>Lecture</b> : chaque case est l'espérance par trade (en R) pour un réglage. À gauche la période d'apprentissage, à droite la vérification. La case entourée est le réglage par défaut, fixé avant tout test.",
+  "<b>Toutes les cases de vérification sont négatives</b>, dans les deux grilles (45 réglages sur 45). Aucun réglage ne « sauve » la stratégie.",
+  "<b>Le piège du sur-ajustement est visible</b> : le meilleur réglage de l'apprentissage (fractales d'ordre 4, cassure en moins de 6 bougies) donnait +0,32 R par trade. Sur la vérification, il fait −0,01 R. Choisir ce réglage aurait été une erreur.",
+  "La grille sur l'attente des ordres limites et la marge du stop n'a pas été calculée, car la V1 retenue entre au marché."
  ],
  "lecture_robustesse": [
-  "x"
+  "<b>Walk-forward</b> : tous les 6 mois, on choisit le meilleur des 18 réglages sur les 24 mois précédents et on le teste sur les 6 mois suivants. Résultat : 147 trades, −0,10 R par trade, −7,4 %. Les réglages choisis sur le passé ne marchent pas sur le futur.",
+  "<b>Test placebo</b> : on garde exactement les mêmes moments d'entrée que la V1, mais on tire la direction (achat ou vente) au hasard, 200 fois. La V1 réelle fait mieux que 72 % des tirages au hasard. Pour parler d'un vrai signal, il faudrait au moins 95 %. Le « sweep + MSS » ne prédit donc pas la direction mieux qu'une pièce de monnaie.",
+  "<b>Monte Carlo</b> (10 000 séries de trades mélangées) : drawdown médian de 12,5 % et 85 % de probabilité de dépasser 10 % de perte maximale, même à 0,5 % de risque par trade. En tirant les trades au sort avec remise, la probabilité de finir en perte est de 71 %.",
+  "<b>Coûts</b> : sans aucun frais, la V1 est à +0,01 R par trade. Avec les coûts réalistes, −0,03 R. Avec les coûts doublés, −0,09 R. Les frais aggravent un résultat déjà nul, sans en être la cause.",
+  "<b>Prop firm</b> (perte maximale 5 % par jour et 10 % au total) : à 0,5 % de risque, la limite n'est jamais atteinte (pire journée −1,0 %), mais le compte perd de l'argent. À 1 % de risque, la limite de 10 % est franchie le 18 juin 2026 : challenge perdu."
  ],
  "lecture_ventilations": [
-  "x"
+  "<b>Par année</b> : 2023 et 2024 légèrement positives (+0,07 et +0,09 R par trade), 2025 et 2026 nettement négatives (−0,27 et −0,11 R). La stratégie n'a pas d'avantage stable : elle a profité d'un régime de marché qui a disparu.",
+  "<b>Londres et New York</b> font exactement pareil (−0,03 R chacune).",
+  "<b>Par jour de la semaine</b>, le mercredi (+0,18 R) et le lundi (−0,26 R) ressortent. Avec environ 60 trades par jour, l'incertitude est de ±0,3 R : ces écarts sont du bruit, à ne surtout pas utiliser comme filtre.",
+  "<b>Achats</b> à 0,00 R, <b>ventes</b> à −0,06 R, dans un marché haussier sur 5 ans. Aucun écart significatif.",
+  "<b>Sorties</b> : 150 stops, 50 cibles atteintes, 125 sorties à l'heure limite. Le stop médian fait 101 points, ce qui est large : la cible à 2R est rarement atteinte avant la fin de la séance.",
+  "<b>Niveaux balayés</b> : le PDH ressort à +0,18 R, mais sur 27 trades seulement. Ce n'est pas exploitable."
  ],
  "limites": [
-  "x"
+  "Données CFD Dukascopy, pas le contrat à terme YM : spread et horaires différents de ceux d'un compte futures.",
+  "Le spread est réel le mercredi et estimé les autres jours. Les pics de spread des annonces sont donc sous-estimés, ce qui joue plutôt en faveur de la stratégie.",
+  "Les dates d'IPC ne sont qu'approximées, faute d'accès au calendrier officiel du BLS.",
+  "5 ans de données (fin 2021 → fin 2026) : le minimum demandé est atteint, mais un seul grand cycle de marché est couvert. Le téléchargement de 2019-2021 est très ralenti par le serveur (erreurs 429).",
+  "L'ICT laisse beaucoup de place à l'interprétation. Ce test porte sur une traduction précise et objective des règles. Un trader discrétionnaire peut faire autrement, mais il ne peut pas prouver statistiquement qu'il fait mieux.",
+  "Le risque est calculé en R avec un capital composé à 0,5 %. La taille minimale des lots et les frais de financement de nuit ne sont pas modélisés (positions toujours fermées le jour même)."
  ],
  "ameliorations": [
-  "x"
+  "<b>Tester la V4 sur 2019-2021</b>, une période jamais vue et jamais utilisée pour régler quoi que ce soit, avec ses réglages actuels sans aucune modification. Si elle y reste nettement positive, elle mérite un second regard. Sinon, l'idée est close.",
+  "<b>Réduire la taille du stop</b> (sweep sur M1 au lieu de M5, stop sous le FVG plutôt que sous l'extrême). La cible serait plus souvent atteinte avant la fin de séance, mais c'est une nouvelle hypothèse à tester sur des données neuves.",
+  "<b>Changer de question plutôt que de réglage</b> : mesurer directement si un balayage de PDH/PDL ou du haut et du bas d'Asie est suivi d'un retour plus souvent qu'au hasard, sans couche ICT, avant de bâtir une stratégie dessus.",
+  "<b>Données plus fiables</b> : un historique YM avec le vrai carnet (Databento, CME DataMine, payants) et un calendrier économique officiel, pour lever les principales limites.",
+  "<b>Ne pas</b> optimiser les filtres jour, année ou niveau vus dans les ventilations. Ce serait ajuster la stratégie au passé (voir le piège de la grille ci-dessus)."
  ],
  "paper_trading": [
-  "x"
+  "<b>Étape 0 (indispensable)</b> : n'aller plus loin que si une version passe d'abord un test sur des données jamais vues (2019-2021 ou les 6 prochains mois), avec plus de 100 trades et une espérance positive après coûts doublés. Ce n'est pas le cas aujourd'hui.",
+  "<b>Étape 1, paper trading de 3 mois</b> : brancher le même code (detecteurs.py et ict.py) sur un flux en direct, par exemple l'API d'un broker CFD en compte démo ou TradingView avec des alertes webhook. Journaliser chaque signal, le prix théorique et le prix réellement obtenu.",
+  "<b>Étape 2, comparer</b> : écarts de prix (slippage réel contre 1 point simulé), spread réel aux heures des signaux, signaux manqués. Si l'espérance réelle est inférieure de plus de moitié à celle du backtest, arrêter.",
+  "<b>Étape 3, petite taille réelle</b> : via une API broker (Interactive Brokers pour le MYM micro-Dow, ou un broker CFD avec API REST), à 0,25 % de risque par trade, avec un arrêt automatique si le drawdown dépasse le 95e percentile du Monte Carlo.",
+  "<b>Garde-fous techniques</b> : ordres stop envoyés en même temps que l'entrée (ordre « bracket »), coupure automatique en cas de perte de connexion, vérification quotidienne que le code réel produit les mêmes signaux que le backtest sur la journée passée."
  ]
 }

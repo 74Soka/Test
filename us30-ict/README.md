@@ -6,6 +6,24 @@ liquidité, MSS avec displacement, FVG, OTE) sur l'US30, puis les backtester hon
 
 Le rapport final (logique, résultats IS/OOS, robustesse, verdict) est dans `reports/rapport.html`.
 
+## Résultat (novembre 2021 → novembre 2026, coûts réalistes, 0,5 % de risque par trade)
+
+**Verdict : à abandonner sous cette forme.** Aucune variante ne montre d'avantage fiable.
+
+| Variante | Trades | Espérance | Esp. IS (→ 11/05/2025) | Esp. OOS | Profit factor |
+|---|---:|---:|---:|---:|---:|
+| V1 marché (retenue sur l'IS) | 325 | −0,030 R | +0,029 R | −0,194 R | 0,94 |
+| V2 FVG | 78 | −0,114 R | −0,093 R | −0,151 R | 0,83 |
+| V3 OTE | 10 | −0,177 R | −0,665 R | +0,963 R | 0,77 |
+| V4 complète | 23 | +0,576 R | −0,046 R | +1,254 R | 2,50 |
+
+- V1 sans aucun coût : +0,013 R/trade → le signal lui-même est nul, les frais ne font qu'aggraver.
+- Walk-forward (24 mois → 6 mois) : 147 trades, −0,101 R/trade, −7,4 %.
+- Placebo (mêmes entrées, direction au hasard) : V1 au 72ᵉ centile seulement (il faudrait ≥ 95).
+- Grilles de paramètres : les 45 réglages sont négatifs hors échantillon.
+- Monte Carlo : 85 % de probabilité de drawdown > 10 % ; prop firm à 1 % de risque : limite de 10 % franchie le 18/06/2026.
+- V4 : seulement 23 trades et négative sur l'IS → probablement du hasard ; à confronter à 2019-2021 (jamais vu).
+
 ## Arborescence
 
 ```
@@ -33,7 +51,7 @@ scripts/
 cd us30-ict
 pip install pandas numpy pyarrow requests
 ./scripts/telecharger_tout.sh               # plusieurs heures (quota Dukascopy ~1 fichier / 3-4 s)
-python -m data.chargement --construire      # → data/processed/us30_m1.parquet, us30_m5.parquet
+python -m data.chargement --construire --debut 2021-11-01  # → data/processed/us30_m1.parquet, us30_m5.parquet
 python -m backtest.etude                    # → reports/resultats/
 python -m reports.rapport                   # → reports/rapport.html
 ```

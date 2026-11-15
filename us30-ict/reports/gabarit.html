@@ -227,8 +227,12 @@ const ligneVerticale = { id: "coupure", afterDatasetsDraw(c, _a, o) {
 
 function courbeOpts(yLabel, coupure) {
   const o = base();
-  o.scales.x = { type: "linear", grid: { display: false }, border: { color: css("--line") },
-    ticks: { color: css("--muted"), maxRotation: 0, callback: v => dateTxt(v), maxTicksLimit: 7 } };
+  // Une graduation par 1er janvier, libellée par l'année (lisible sur téléphone)
+  o.scales.x = { type: "linear", bounds: "data", grid: { display: false }, border: { color: css("--line") },
+    afterBuildTicks: ax => {
+      const a0 = new Date(ax.min * 864e5).getUTCFullYear() + 1, a1 = new Date(ax.max * 864e5).getUTCFullYear();
+      const t = []; for (let a = a0; a <= a1; a++) t.push({ value: Date.UTC(a, 0, 1) / 864e5 }); ax.ticks = t; },
+    ticks: { color: css("--muted"), maxRotation: 0, callback: v => new Date(v * 864e5).getUTCFullYear() } };
   o.scales.y.title = { display: true, text: yLabel, color: css("--muted") };
   o.plugins.tooltip.callbacks = { title: it => new Date(it[0].parsed.x * 864e5).toISOString().slice(0, 10),
     label: it => `${it.dataset.label} : ${nf(it.parsed.y, 1)}` };

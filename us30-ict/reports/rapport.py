@@ -250,7 +250,7 @@ def main():
 
     prop = info.get("prop_firm", {})
     prop_html = "<dl class='metr'>" + "".join(
-        f"<div><dt>Risque {k} par trade</dt><dd>pire journée {fr(v.get('pire_journee_%'), 2, suf=' %')} · "
+        f"<div><dt>Risque {k.replace('.', ',')} par trade</dt><dd>pire journée {fr(v.get('pire_journee_%'), 2, suf=' %')} · "
         f"{'limite de 10 % franchie le ' + str(v.get('date_premier_franchissement')) if v.get('dd_total_franchi') else 'limite de 10 % jamais franchie'}"
         f" · {v.get('violations_dd_quotidien', 0)} violation(s) de la limite quotidienne de 5 %</dd></div>"
         for k, v in prop.items()) + "</dl>"

@@ -1,7 +1,7 @@
 {
- "debut": "2019-01-01 18:00:00-05:00",
- "fin": "2024-03-08 16:14:00-05:00",
- "coupure_is_oos": "2022-08-18",
+ "debut": "2021-10-31 20:00:00-04:00",
+ "fin": "2026-11-13 16:14:00-05:00",
+ "coupure_is_oos": "2025-05-11",
  "risque_pct": 0.5,
  "defauts": {
   "variante": "V2",
@@ -28,28 +28,86 @@
   "rr_min_liq": "1.5",
   "rr_max_liq": "5.0"
  },
- "variante_retenue_sur_IS": "V3",
- "walk_forward": {},
- "monte_carlo": {},
+ "variante_retenue_sur_IS": "V1",
+ "walk_forward": {
+  "trades": 147,
+  "trades_par_an": 48.41456266907124,
+  "winrate_%": 39.455782312925166,
+  "gain_moyen_R": 1.0566035656208788,
+  "perte_moyenne_R": -0.8561825741396256,
+  "rr_moyen_realise": 1.234086744503829,
+  "profit_factor": 0.8042363054069896,
+  "expectancy_R": -0.10147783872391633,
+  "total_R": -14.9172422924157,
+  "erreur_type_R": 0.0871586072473959,
+  "t_stat": -1.1642893562522854,
+  "net_profit_%": -7.377673421512288,
+  "cagr_%": -2.4925530010158403,
+  "sharpe": -0.6501675266971587,
+  "sortino": -0.9555116910405851,
+  "max_dd_%": -11.121082417048312,
+  "duree_max_dd_jours": 979,
+  "plus_longue_serie_perdante": 8
+ },
+ "monte_carlo": {
+  "total": {
+   "permutation": {
+    "dd_median_%": -12.519401991875029,
+    "dd_p95_%": -17.564657696251164,
+    "dd_p99_%": -19.866609146808393,
+    "proba_dd_>10%": 84.87,
+    "proba_dd_>20%": 0.8999999999999999
+   },
+   "bootstrap": {
+    "dd_median_%": -12.999400932330975,
+    "dd_p95_%": -23.39859590566852,
+    "dd_p99_%": -27.674207949670645,
+    "proba_dd_>10%": 73.09,
+    "proba_dd_>20%": 12.85,
+    "resultat_median_%": -5.348607457156801,
+    "resultat_p5_%": -20.045722959321722,
+    "proba_perte_%": 70.69
+   }
+  },
+  "OOS": {
+   "permutation": {
+    "dd_median_%": -9.474731782542717,
+    "dd_p95_%": -11.721610922782407,
+    "dd_p99_%": -12.749981148970425,
+    "proba_dd_>10%": 33.97,
+    "proba_dd_>20%": 0.0
+   },
+   "bootstrap": {
+    "dd_median_%": -9.748509866063992,
+    "dd_p95_%": -15.659014995211066,
+    "dd_p99_%": -17.983435147004748,
+    "proba_dd_>10%": 47.370000000000005,
+    "proba_dd_>20%": 0.13,
+    "resultat_median_%": -8.006996612195994,
+    "resultat_p5_%": -14.880284477932852,
+    "proba_perte_%": 95.82000000000001
+   }
+  }
+ },
  "prop_firm": {
   "0.5%": {
-   "pire_journee_%": -0.5370592673949015,
+   "pire_journee_%": -1.033336392216544,
    "violations_dd_quotidien": 0,
    "dd_total_franchi": false,
    "date_premier_franchissement": null
   },
   "1.0%": {
-   "pire_journee_%": -1.0741185347897697,
+   "pire_journee_%": -2.0613100110904226,
    "violations_dd_quotidien": 0,
-   "dd_total_franchi": false,
-   "date_premier_franchissement": null
+   "dd_total_franchi": true,
+   "date_premier_franchissement": "2026-06-18"
   }
  },
  "placebo_V1": {
-  "esp_V1_R": 0.08024802828107964,
-  "placebo_moyenne_R": -0.04545318047205425,
-  "placebo_p95_R": 0.49384024829616124,
-  "rang_percentile_V1": 60.0
+  "esp_V1_R": -0.029540491874604977,
+  "placebo_moyenne_R": -0.06388656581166278,
+  "placebo_p95_R": 0.03904948932902892,
+  "rang_percentile_V1": 72.0
  },
- "duree_s": 3
+ "duree_s": 41
 }
