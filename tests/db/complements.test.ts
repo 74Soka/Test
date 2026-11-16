@@ -82,6 +82,12 @@ describe("supplément panier (20 € ou 30 €) ajouté par le livreur", () => {
     const solde = await base.client.query("select solde_centimes from public.soldes_clients where client_id = $1", [client]);
     expect(solde.rows[0].solde_centimes).toBe(8000);
     expect(await erreur(supplementPanier(livreur, id, 2000, 1))).toBe("PN055");
+    // Une graine par supplément panier (le panier 30 € de la commande n'en rapporte pas ici : 0 graine au catalogue de test)
+    const graines = await base.client.query(
+      "select coalesce(sum(quantite), 0)::int as n from public.tampons where commande_id = $1 and motif = 'commande'",
+      [id],
+    );
+    expect(graines.rows[0].n).toBe(2);
   });
 });
 

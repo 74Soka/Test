@@ -231,6 +231,7 @@ l'application.
 - [x] **Supplément panier** en complément (`20261203000000_supplement_panier_livreur.sql`, appliquée) : dans
   « ➕ Compléments », « 🧺 Supplément panier · 20 € / 30 € » (ligne hors catalogue, invisible des clients au
   catalogue ; même règle : le livreur ne retire que ce qu'il a ajouté). Fonction `modifier_supplement_panier`.
+  Une graine par supplément panier livré (`20261204000000_graine_supplement_panier.sql`, appliquée).
 - [ ] **Tests dépendants de l'heure** : le vendredi après la clôture (12 h), deux parcours échouent
   (`espace-client` « page publique… » et `notifications` « …prochain ») car les commandes passent à la semaine
   suivante. À rendre indépendants de l'heure (horloge simulée côté serveur).

@@ -51,7 +51,7 @@ export default async function PageFidelite() {
             fidelite.solde > 0 && <p className="font-semibold text-peche-700">🎁 Vous pouvez utiliser une récompense à votre prochaine commande !</p>
           )}
           <p className="text-sm text-stone-600">
-            Une graine par Panier 30 €, deux par Panier 50 €, à chaque livraison. Les récompenses s&apos;utilisent au moment
+            Une graine par Panier 30 €, deux par Panier 50 €, et une par panier pris en plus auprès du livreur, à chaque livraison. Les récompenses s&apos;utilisent au moment
             de commander.
           </p>
         </Carte>
