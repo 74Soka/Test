@@ -2,7 +2,14 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
-import { demarrerTournee, enregistrerOrdre, marquerLivraison, modifierComplement, optimiserTournee } from "./actions";
+import {
+  demarrerTournee,
+  enregistrerOrdre,
+  marquerLivraison,
+  modifierComplement,
+  modifierSupplementPanier,
+  optimiserTournee,
+} from "./actions";
 import { Compteur } from "@/components/compteur";
 import { CarteTournee } from "@/components/carte-tournee";
 import { Bouton, Carte, Champ, LienExterneBouton, MessageErreur, MessageInfo, Selection, cx } from "@/components/ui";
@@ -57,10 +64,15 @@ export type ArretTournee = {
   montantRecuCentimes: number | null;
   modePaiement: ModePaiement | null;
   /** Compléments ajoutés à la livraison (le livreur ne retire que ceux-là) */
-  complements: { articleId: string; libelle: string; quantite: number; prixCentimes: number }[];
+  /** articleId vide : supplément panier (20 € ou 30 €, hors catalogue) */
+  complements: { articleId: string | null; libelle: string; quantite: number; prixCentimes: number }[];
 };
 
 export type SupplementCatalogue = { id: string; nom: string; prixCentimes: number };
+
+/** Supplément panier vendu à la livraison (hors catalogue) : 20 € ou 30 € */
+const SUPPLEMENTS_PANIER = [2000, 3000] as const;
+const CHOIX_PANIER = "panier:";
 
 /**
  * « Compléments » à la livraison : le livreur ajoute des suppléments du
@@ -71,15 +83,21 @@ function Complements({ arret, catalogue }: { arret: ArretTournee; catalogue: Sup
   const [choix, setChoix] = useState("");
   const [erreur, setErreur] = useState<string | null>(null);
   const [enCours, demarrer] = useTransition();
-  const modifier = (articleId: string, ecart: number) =>
+  // articleId vide : supplément panier, identifié par son prix
+  const modifier = (articleId: string | null, ecart: number, prixCentimes?: number) =>
     demarrer(async () => {
       setErreur(null);
-      const r = await modifierComplement(arret.id, articleId, ecart);
+      const r = articleId
+        ? await modifierComplement(arret.id, articleId, ecart)
+        : await modifierSupplementPanier(arret.id, prixCentimes ?? 0, ecart);
       if (!r.ok) setErreur(r.erreur);
       else if (ecart > 0) setChoix("");
     });
-  const choisi = catalogue.find((s) => s.id === choix);
-  if (catalogue.length === 0) return null;
+  const prixPanier = choix.startsWith(CHOIX_PANIER) ? Number(choix.slice(CHOIX_PANIER.length)) : null;
+  const choisi =
+    prixPanier !== null
+      ? { id: null, nom: `Supplément panier ${prixPanier / 100} €`, prixCentimes: prixPanier }
+      : catalogue.find((s) => s.id === choix);
   return (
     <details className="mt-2 rounded-xl bg-stone-50 ring-1 ring-stone-200">
       <summary className="flex min-h-12 cursor-pointer items-center px-3 font-semibold text-marque-800">
@@ -89,7 +107,7 @@ function Complements({ arret, catalogue }: { arret: ArretTournee; catalogue: Sup
         {arret.complements.length > 0 && (
           <ul aria-label="Ajoutés à la livraison" className="divide-y divide-stone-200">
             {arret.complements.map((s) => (
-              <li key={s.articleId} className="flex items-center justify-between gap-2 py-1.5">
+              <li key={s.articleId ?? s.libelle} className="flex items-center justify-between gap-2 py-1.5">
                 <span className="min-w-0">
                   <span className="block font-medium">{s.libelle}</span>
                   <span className="block text-sm text-stone-600">
@@ -99,7 +117,7 @@ function Complements({ arret, catalogue }: { arret: ArretTournee; catalogue: Sup
                 <Compteur
                   valeur={s.quantite}
                   libelle={s.libelle}
-                  onChange={(v) => !enCours && v !== s.quantite && modifier(s.articleId, v - s.quantite)}
+                  onChange={(v) => !enCours && v !== s.quantite && modifier(s.articleId, v - s.quantite, s.prixCentimes)}
                 />
               </li>
             ))}
@@ -113,13 +131,18 @@ function Complements({ arret, catalogue }: { arret: ArretTournee; catalogue: Sup
             onChange={(e) => setChoix(e.target.value)}
           >
             <option value="">Choisir…</option>
+            {SUPPLEMENTS_PANIER.map((prix) => (
+              <option key={prix} value={`${CHOIX_PANIER}${prix}`}>
+                🧺 Supplément panier · {formaterPrix(prix)}
+              </option>
+            ))}
             {catalogue.map((s) => (
               <option key={s.id} value={s.id}>
                 {s.nom} · {formaterPrix(s.prixCentimes)}
               </option>
             ))}
           </Selection>
-          <Bouton disabled={!choisi || enCours} onClick={() => choisi && modifier(choisi.id, 1)}>
+          <Bouton disabled={!choisi || enCours} onClick={() => choisi && modifier(choisi.id, 1, choisi.prixCentimes)}>
             {enCours ? "…" : "Ajouter"}
           </Bouton>
         </div>

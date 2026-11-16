@@ -55,6 +55,36 @@ async function erreur(p: Promise<unknown>) {
   return "aucune erreur";
 }
 
+const supplementPanier = (qui: string, commandeId: string, prix: number, ecart: number) =>
+  comme(qui, async (c) =>
+    (await c.query("select public.modifier_supplement_panier($1, $2, $3) as t", [commandeId, prix, ecart])).rows[0].t as number,
+  );
+
+describe("supplément panier (20 € ou 30 €) ajouté par le livreur", () => {
+  it("ajoute au bon prix, se retire, compte comme complément et dans le compte du client", async () => {
+    const { client, id } = await commande(aujourdhui);
+    expect(await supplementPanier(livreur, id, 2000, 1)).toBe(5000);
+    expect(await supplementPanier(livreur, id, 3000, 2)).toBe(11000);
+    expect(await supplementPanier(livreur, id, 3000, -1)).toBe(8000);
+    const { rows } = await base.client.query(
+      `select libelle, quantite, prix_unitaire_centimes, quantite_complement, article_id
+       from public.lignes_commande where commande_id = $1 and article_id is null order by libelle`,
+      [id],
+    );
+    expect(rows).toEqual([
+      { libelle: "Supplément panier 20 €", quantite: 1, prix_unitaire_centimes: 2000, quantite_complement: 1, article_id: null },
+      { libelle: "Supplément panier 30 €", quantite: 1, prix_unitaire_centimes: 3000, quantite_complement: 1, article_id: null },
+    ]);
+    // Pas plus que ce qu'il a ajouté ; autre prix refusé
+    expect(await erreur(supplementPanier(livreur, id, 2000, -2))).toBe("PN056");
+    expect(await erreur(supplementPanier(livreur, id, 2500, 1))).toBe("PN010");
+    await comme(livreur, (c) => c.query("select public.marquer_livraison($1, true, null, false)", [id]));
+    const solde = await base.client.query("select solde_centimes from public.soldes_clients where client_id = $1", [client]);
+    expect(solde.rows[0].solde_centimes).toBe(8000);
+    expect(await erreur(supplementPanier(livreur, id, 2000, 1))).toBe("PN055");
+  });
+});
+
 describe("compléments ajoutés par le livreur", () => {
   it("ajoute au prix du catalogue, ajuste la quantité, retire ; le total suit", async () => {
     const { id } = await commande(aujourdhui);

@@ -37,13 +37,13 @@ async function serie(browser: Browser, mode: "light" | "dark", compte: [string, 
       const ouvrir = page.getByText(/➕ Compléments/).first();
       if (await ouvrir.count()) {
         await ouvrir.click();
-        await page.getByLabel("Ajouter un supplément").first().selectOption({ index: 1 });
+        await page.getByRole("combobox", { name: "Ajouter un supplément" }).first().selectOption({ index: 1 });
         // Un complément ajouté (une seule fois : en mode sombre, il est déjà là)
         if (mode === "light") {
           await page.getByRole("button", { name: "Ajouter", exact: true }).first().click();
           await page.getByText(/➕ Compléments \(\d+\)/).first().waitFor();
         }
-        await page.getByLabel("Ajouter un supplément").first().selectOption({ index: 2 });
+        await page.getByRole("combobox", { name: "Ajouter un supplément" }).first().selectOption({ index: 2 });
       }
       const paiement = page.getByRole("group", { name: /^Paiement de / }).first();
       if (await paiement.count()) {

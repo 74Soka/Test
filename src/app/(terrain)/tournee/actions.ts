@@ -154,3 +154,20 @@ export async function modifierComplement(commandeId: string, articleId: string, 
   revalidatePath("/", "layout");
   return { ok: true };
 }
+
+/** Supplément panier vendu à la livraison : 20 € ou 30 € (écart + ajoute, − retire ce qui a été ajouté). */
+export async function modifierSupplementPanier(commandeId: string, prixCentimes: number, ecart: number): Promise<Resultat> {
+  await exigerEquipe();
+  if (!z.uuid().safeParse(commandeId).success) return { ok: false, erreur: "Commande inconnue." };
+  if (prixCentimes !== 2000 && prixCentimes !== 3000) return { ok: false, erreur: "Supplément panier : 20 € ou 30 €." };
+  if (!Number.isInteger(ecart) || ecart === 0 || Math.abs(ecart) > 99) return { ok: false, erreur: "Quantité invalide." };
+  const supabase = await clientSupabase();
+  const { error } = await supabase.rpc("modifier_supplement_panier", {
+    p_commande_id: commandeId,
+    p_prix_centimes: prixCentimes,
+    p_ecart: ecart,
+  });
+  if (error) return { ok: false, erreur: messageErreur(error) };
+  revalidatePath("/", "layout");
+  return { ok: true };
+}

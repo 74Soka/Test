@@ -228,6 +228,9 @@ l'application.
   commandes n'ont pas d'ordre : ordre préféré (ou ordre déjà fixé ce jour-là), nouveaux clients insérés là où ils
   allongent le moins la route, sans position à la fin ; l'ordre est enregistré. Départ : tournées du 14 et
   15 novembre 2026 (Secteurs 1, 2, 3).
+- [x] **Supplément panier** en complément (`20261203000000_supplement_panier_livreur.sql`, appliquée) : dans
+  « ➕ Compléments », « 🧺 Supplément panier · 20 € / 30 € » (ligne hors catalogue, invisible des clients au
+  catalogue ; même règle : le livreur ne retire que ce qu'il a ajouté). Fonction `modifier_supplement_panier`.
 - [ ] **Tests dépendants de l'heure** : le vendredi après la clôture (12 h), deux parcours échouent
   (`espace-client` « page publique… » et `notifications` « …prochain ») car les commandes passent à la semaine
   suivante. À rendre indépendants de l'heure (horloge simulée côté serveur).

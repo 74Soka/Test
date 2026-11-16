@@ -455,7 +455,7 @@ test("livreur : la tournée seulement, avec les arrêts et « Livré et payé »
   await expect(montant).not.toHaveValue("");
   const avant = Number((await montant.inputValue()).replace(",", "."));
   await dernier.getByText(/➕ Compléments/).click();
-  const choixComplement = dernier.getByLabel("Ajouter un supplément");
+  const choixComplement = dernier.getByRole("combobox", { name: "Ajouter un supplément" });
   await choixComplement.selectOption({ index: 1 });
   const prixComplement = Number(((await choixComplement.locator("option:checked").textContent()) ?? "").match(/([\d,]+)\s?€/)![1].replace(",", "."));
   await dernier.getByRole("button", { name: "Ajouter", exact: true }).click();
