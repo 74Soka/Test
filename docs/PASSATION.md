@@ -232,6 +232,12 @@ l'application.
   « ➕ Compléments », « 🧺 Supplément panier · 20 € / 30 € » (ligne hors catalogue, invisible des clients au
   catalogue ; même règle : le livreur ne retire que ce qu'il a ajouté). Fonction `modifier_supplement_panier`.
   Une graine par supplément panier livré (`20261204000000_graine_supplement_panier.sql`, appliquée).
+- [x] **Annonce des paniers programmée à 12 h 30** (`20261205000000_annonce_programmee.sql`, appliquée) : toute
+  composition enregistrée (réglages ou SQL) pour la semaine en cours ou à venir programme l'annonce au prochain
+  12 h 30 (Paris), une fois par semaine (`annonces_programmees`) ; tâche `annonces-paniers` (`30 * * * *`) →
+  `/api/annonces` (jeton) → clients abonnés actifs. Changer l'heure ou retirer : modifier/supprimer la ligne de
+  `annonces_programmees`. Les réglages n'envoient plus tout de suite : ils affichent l'heure programmée.
+  Semaine du 16 novembre 2026 : programmée le mercredi 18 à 12 h 30.
 - [ ] **Tests dépendants de l'heure** : le vendredi après la clôture (12 h), deux parcours échouent
   (`espace-client` « page publique… » et `notifications` « …prochain ») car les commandes passent à la semaine
   suivante. À rendre indépendants de l'heure (horloge simulée côté serveur).

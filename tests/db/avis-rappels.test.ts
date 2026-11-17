@@ -130,6 +130,44 @@ describe("annonce de la composition", () => {
   });
 });
 
+describe("annonce programmée à 12 h 30", () => {
+  it("12 h 30 à Paris : le jour même avant, le lendemain après", async () => {
+    const [r] = await sql<Record<string, string>>(`
+      select to_char(prive.prochain_12h30('2026-11-17 15:00 Europe/Paris') at time zone 'Europe/Paris', 'Dy DD HH24:MI') as mardi_apres_midi,
+             to_char(prive.prochain_12h30('2026-11-18 09:00 Europe/Paris') at time zone 'Europe/Paris', 'Dy DD HH24:MI') as mercredi_matin,
+             to_char(prive.prochain_12h30('2026-11-18 12:30 Europe/Paris') at time zone 'Europe/Paris', 'Dy DD HH24:MI') as mercredi_12h30,
+             to_char(prive.prochain_12h30('2026-07-01 08:00 Europe/Paris') at time zone 'Europe/Paris', 'Dy DD HH24:MI') as ete`);
+    expect(r).toEqual({ mardi_apres_midi: "Wed 18 12:30", mercredi_matin: "Wed 18 12:30", mercredi_12h30: "Thu 19 12:30", ete: "Wed 01 12:30" });
+  });
+
+  it("la composition enregistrée programme l'annonce ; envoyée une fois, à l'heure, aux clients actifs", async () => {
+    const { id } = await client("programmee@exemple.fr");
+    const [{ lundi }] = await sql<{ lundi: string }>(
+      "select to_char(date_trunc('week', now() at time zone 'Europe/Paris')::date + 14, 'YYYY-MM-DD') as lundi",
+    );
+    await sql("insert into public.compositions (semaine, article_id, contenu) values ($1, $2, '1 kg de potimarron')", [lundi, p30]);
+    const [prog] = await sql<{ ok: boolean }>(
+      "select prevue_le = prive.prochain_12h30(now()) or prevue_le > now() as ok from public.annonces_programmees where semaine = $1",
+      [lundi],
+    );
+    expect(prog.ok).toBe(true);
+    // Pas encore l'heure : rien ; jeton exigé
+    const envoyer = (j: string) => anonyme(async (c) => (await c.query("select * from public.annonces_a_envoyer($1)", [j])).rows);
+    expect(await erreur(envoyer("faux"))).toBe("42501");
+    expect(await envoyer(jeton)).toHaveLength(0);
+    // 12 h 30 : les téléphones des clients actifs, avec le contenu du panier
+    await sql("update public.annonces_programmees set prevue_le = now() - interval '1 minute' where semaine = $1", [lundi]);
+    const lignes = await envoyer(jeton);
+    expect(lignes.length).toBeGreaterThan(0);
+    expect(lignes[0]).toMatchObject({ contenu: "1 kg de potimarron" });
+    expect(await envoyer(jeton)).toHaveLength(0);
+    // Une composition modifiée ne reprogramme pas une annonce déjà envoyée
+    await sql("update public.compositions set contenu = '2 kg de potimarron' where semaine = $1", [lundi]);
+    expect(await sql("select 1 from public.annonces_programmees where semaine = $1", [lundi])).toHaveLength(0);
+    expect(id).toBeTruthy();
+  });
+});
+
 describe("rappels automatiques", () => {
   const rappels = (j: string, moment = "midi") =>
     anonyme(async (c) => (await c.query("select client_id, date_livraison::text as date from public.rappels_a_envoyer($1, $2)", [j, moment])).rows);

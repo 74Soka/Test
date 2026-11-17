@@ -10,6 +10,14 @@ const DATE_HEURE = new Intl.DateTimeFormat("fr-FR", {
   hour: "2-digit",
   minute: "2-digit",
 });
+const JOUR_HEURE = new Intl.DateTimeFormat("fr-FR", {
+  timeZone: "Europe/Paris",
+  weekday: "long",
+  day: "numeric",
+  month: "long",
+  hour: "2-digit",
+  minute: "2-digit",
+});
 
 export function FormulaireComposition({
   semaine,
@@ -17,6 +25,7 @@ export function FormulaireComposition({
   initial,
   precedente,
   annonceEnvoyee,
+  annonceProgrammee = null,
   annoncable,
 }: {
   semaine: string;
@@ -25,6 +34,8 @@ export function FormulaireComposition({
   precedente: Record<string, string>;
   /** Clients déjà prévenus cette semaine-là (date), ou null */
   annonceEnvoyee: string | null;
+  /** Annonce programmée (12 h 30 suivant l'enregistrement), ou null */
+  annonceProgrammee?: string | null;
   /** Semaine en cours ou à venir */
   annoncable: boolean;
 }) {
@@ -32,8 +43,6 @@ export function FormulaireComposition({
     Object.fromEntries(paniers.map((p) => [p.id, initial[p.id] ?? ""])),
   );
   const [resultat, setResultat] = useState<ResultatComposition | null>(null);
-  const [prevenir, setPrevenir] = useState(!annonceEnvoyee && annoncable);
-  const [annoncee, setAnnoncee] = useState(annonceEnvoyee);
   const [enCours, demarrer] = useTransition();
   const aReprendre = paniers.some((p) => precedente[p.id]);
 
@@ -43,17 +52,7 @@ export function FormulaireComposition({
       onSubmit={(e) => {
         e.preventDefault();
         demarrer(async () => {
-          const r = await enregistrerComposition({
-            semaine,
-            contenus,
-            prevenir: prevenir && !annoncee,
-            panierPrincipal: paniers[0]?.id ?? null,
-          });
-          setResultat(r);
-          if (r.ok && r.prevenus !== undefined && r.prevenus !== null) {
-            setAnnoncee(new Date().toISOString());
-            setPrevenir(false);
-          }
+          setResultat(await enregistrerComposition({ semaine, contenus }));
         });
       }}
     >
@@ -88,18 +87,17 @@ export function FormulaireComposition({
         </Carte>
       ))}
       {annoncable &&
-        (annoncee ? (
-          <p className="text-sm text-stone-600">📣 Clients prévenus {DATE_HEURE.format(new Date(annoncee))}.</p>
+        (annonceEnvoyee ? (
+          <p className="text-sm text-stone-600">📣 Clients prévenus {DATE_HEURE.format(new Date(annonceEnvoyee))}.</p>
+        ) : annonceProgrammee ? (
+          <p role="status" className="rounded-xl bg-marque-50 px-3 py-2 text-sm font-semibold text-marque-900">
+            📣 Annonce aux clients programmée {JOUR_HEURE.format(new Date(annonceProgrammee))}.
+          </p>
         ) : (
-          <label className="flex min-h-12 cursor-pointer items-center gap-3">
-            <input
-              type="checkbox"
-              checked={prevenir}
-              onChange={(e) => setPrevenir(e.target.checked)}
-              className="size-6 accent-marque-700"
-            />
-            <span className="font-medium">📣 Prévenir les clients par notification (une fois par semaine)</span>
-          </label>
+          <p className="text-sm text-stone-600">
+            📣 Les clients seront prévenus par notification à 12 h 30 après l&apos;enregistrement (le jour même avant
+            12 h 30, sinon le lendemain), une fois par semaine.
+          </p>
         ))}
       <Bouton type="submit" taille="grand" className="w-full" disabled={enCours}>
         {enCours ? "Enregistrement…" : "Enregistrer la composition"}
@@ -107,9 +105,6 @@ export function FormulaireComposition({
       {resultat?.ok && (
         <p role="status" className="text-center font-medium text-feuille-700">
           ✓ Composition enregistrée
-          {resultat.prevenus !== undefined &&
-            resultat.prevenus !== null &&
-            ` · ${resultat.prevenus} téléphone${resultat.prevenus > 1 ? "s" : ""} prévenu${resultat.prevenus > 1 ? "s" : ""}`}
         </p>
       )}
     </form>

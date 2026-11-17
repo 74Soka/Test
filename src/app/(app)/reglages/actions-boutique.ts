@@ -3,8 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { exigerAdmin } from "@/lib/auth";
-import { aujourdhui, estDateIso, jourSemaine, lundiDeLaSemaine } from "@/lib/domaine/dates";
-import { annoncerComposition } from "@/lib/notifications";
+import { estDateIso, jourSemaine } from "@/lib/domaine/dates";
 import { erreursParChamp, messageErreur, type Resultat } from "@/lib/erreurs";
 import { clientSupabase } from "@/lib/supabase/serveur";
 
@@ -36,13 +35,9 @@ export async function enregistrerCommandesEnLigne(donnees: DonneesCommandesEnLig
 const schemaComposition = z.object({
   semaine: z.string().refine((d) => estDateIso(d) && jourSemaine(d) === 1, "Semaine invalide."),
   contenus: z.record(z.uuid(), z.string().max(2000, "2 000 caractères au plus.")),
-  /** Prévenir les clients par notification (une fois par semaine) */
-  prevenir: z.boolean().default(false),
-  /** Panier dont le contenu illustre la notification */
-  panierPrincipal: z.uuid().nullable().default(null),
 });
 
-export type ResultatComposition = Resultat & { prevenus?: number | null };
+export type ResultatComposition = Resultat;
 
 /** Composition des paniers d'une semaine : un texte par panier (vide = retiré). */
 export async function enregistrerComposition(donnees: z.input<typeof schemaComposition>): Promise<ResultatComposition> {
@@ -68,17 +63,9 @@ export async function enregistrerComposition(donnees: z.input<typeof schemaCompo
     if (error) return { ok: false, erreur: messageErreur(error) };
   }
 
-  // Annonce aux clients : semaine en cours ou à venir, composition remplie
-  let prevenus: number | null = null;
-  if (saisie.data.prevenir && remplis.length && semaine >= lundiDeLaSemaine(aujourdhui())) {
-    const principal = remplis.find((r) => r.article_id === saisie.data.panierPrincipal) ?? remplis[0];
-    prevenus = await annoncerComposition(semaine, principal.contenu).catch((e: unknown) => {
-      console.error("Annonce de la composition :", e);
-      return null;
-    });
-  }
+  // L'annonce aux clients est programmée par la base au prochain 12 h 30
   revalidatePath("/", "layout");
-  return { ok: true, prevenus };
+  return { ok: true };
 }
 
 const schemaRecette = z.object({

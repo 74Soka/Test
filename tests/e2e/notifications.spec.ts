@@ -230,17 +230,38 @@ test("rappels du jeudi, annonce des paniers, merci après la livraison et avis d
   expect(await pushsRecus(request, "lea")).toHaveLength(3);
   await deconnexion(page);
 
-  // Annonce de la composition de la semaine prochaine : tous les abonnés, une fois
+  // Annonce de la composition de la semaine prochaine : tous les abonnés, une fois.
+  // D'abord, les annonces déjà programmées par les parcours précédents partent
+  const annoncer = (j: string) => request.post("/api/annonces", { headers: { "x-jeton": j } });
+  await request.post(`${FAUX}/test/annonces-dues`);
+  await annoncer(jeton);
+  const avantChloe = (await pushsRecus(request, "chloe")).length;
+  const avantLea = (await pushsRecus(request, "lea")).length;
   await connexion(page, "admin@demo.fr", "demo-demo-demo");
   await page.waitForURL("**/livraisons**");
-  await page.goto("/reglages/composition");
-  await page.getByRole("link", { name: "Semaine suivante ›" }).click();
-  await page.getByLabel("Panier 30 €").fill("1 kg de potimarron\nBlettes\n4 pommes");
-  await expect(page.getByLabel(/Prévenir les clients par notification/)).toBeChecked();
-  await page.getByRole("button", { name: "Enregistrer la composition" }).click();
-  await expect(page.getByText(/✓ Composition enregistrée · 2 téléphones prévenus/)).toBeVisible();
-  await expect.poll(async () => (await pushsRecus(request, "chloe")).length).toBe(2);
-  expect(await pushsRecus(request, "lea")).toHaveLength(4);
+  // Une semaine encore vide : dans 5 semaines
+  const ajdParis = new Date().toLocaleDateString("en-CA", { timeZone: "Europe/Paris" });
+  const d = new Date(`${ajdParis}T12:00:00Z`);
+  d.setUTCDate(d.getUTCDate() - ((d.getUTCDay() + 6) % 7) + 35);
+  await page.goto(`/reglages/composition?semaine=${d.toISOString().slice(0, 10)}`);
+  // Saisie refaite tant que la page n'est pas prête (un appui trop tôt ne fait rien)
+  await expect(async () => {
+    await page.getByLabel("Panier 30 €").fill("1 kg de potimarron\nBlettes\n4 pommes");
+    await page.getByRole("button", { name: "Enregistrer la composition" }).click();
+    await expect(page.getByText("✓ Composition enregistrée")).toBeVisible({ timeout: 3000 });
+  }).toPass({ timeout: 30_000 });
+  // Programmée au prochain 12 h 30 : rien n'est encore parti
+  await page.reload();
+  await expect(page.getByText(/📣 Annonce aux clients programmée .* 12:30/)).toBeVisible();
+  expect((await annoncer("faux-".repeat(10))).status()).toBe(403);
+  expect(await (await annoncer(jeton)).json()).toMatchObject({ annonces: 0 });
+  expect(await pushsRecus(request, "chloe")).toHaveLength(avantChloe);
+  // 12 h 30 : le planificateur appelle le site ; une seule fois
+  await request.post(`${FAUX}/test/annonces-dues`);
+  expect(await (await annoncer(jeton)).json()).toMatchObject({ annonces: 1, envoyes: 2 });
+  await expect.poll(async () => (await pushsRecus(request, "chloe")).length).toBe(avantChloe + 1);
+  expect(await pushsRecus(request, "lea")).toHaveLength(avantLea + 1);
+  expect(await (await annoncer(jeton)).json()).toMatchObject({ annonces: 0 });
   await page.reload();
   await expect(page.getByText(/📣 Clients prévenus/)).toBeVisible();
 
@@ -253,7 +274,7 @@ test("rappels du jeudi, annonce des paniers, merci après la livraison et avis d
   const lea = page.getByRole("region", { name: /^Arrêt \d+ : Léa Robert$/ });
   await lea.getByRole("button", { name: "Livré", exact: true }).click();
   await expect(lea.getByRole("button", { name: /✓ Livré/ })).toBeVisible();
-  await expect.poll(async () => (await pushsRecus(request, "lea")).length).toBe(5);
+  await expect.poll(async () => (await pushsRecus(request, "lea")).length).toBe(avantLea + 2);
   await deconnexion(page);
 
   // Elle donne son avis depuis son accueil

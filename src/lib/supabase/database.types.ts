@@ -48,6 +48,24 @@ export type Database = {
         }
         Relationships: []
       }
+      annonces_programmees: {
+        Row: {
+          prevue_le: string
+          programmee_le: string
+          semaine: string
+        }
+        Insert: {
+          prevue_le: string
+          programmee_le?: string
+          semaine: string
+        }
+        Update: {
+          prevue_le?: string
+          programmee_le?: string
+          semaine?: string
+        }
+        Relationships: []
+      }
       annonces_composition: {
         Row: {
           envoyee_le: string
@@ -1208,6 +1226,18 @@ export type Database = {
       }
     }
     Functions: {
+      annonces_a_envoyer: {
+        Args: { p_jeton: string }
+        Returns: {
+          auth: string
+          cloture_heure: string
+          cloture_jour: number
+          contenu: string
+          endpoint: string
+          p256dh: string
+          semaine: string
+        }[]
+      }
       alertes_a_envoyer: {
         Args: { p_jeton: string }
         Returns: {

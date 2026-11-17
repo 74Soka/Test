@@ -20,12 +20,14 @@ export default async function PageComposition({ searchParams }: PageProps<"/regl
     typeof demandee === "string" && estDateIso(demandee) ? lundiDeLaSemaine(demandee) : parDefaut;
 
   const supabase = await clientSupabase();
-  const [articles, { data: lignes }, { data: precedentes }, { data: annonce }, { data: recette }] = await Promise.all([
+  const [articles, { data: lignes }, { data: precedentes }, { data: annonce }, { data: recette }, { data: programmee }] =
+    await Promise.all([
     listerArticles({ actifsSeulement: true }),
     supabase.from("compositions").select("article_id, contenu").eq("semaine", semaine),
     supabase.from("compositions").select("article_id, contenu").eq("semaine", ajouterJours(semaine, -7)),
     supabase.from("annonces_composition").select("envoyee_le").eq("semaine", semaine).maybeSingle(),
     supabase.from("recettes").select("titre, infos, ingredients, etapes, astuce").eq("semaine", semaine).maybeSingle(),
+    supabase.from("annonces_programmees").select("prevue_le").eq("semaine", semaine).maybeSingle(),
   ]);
   const paniers = articles.filter((a) => a.categorie === "panier");
   const versDico = (l: { article_id: string; contenu: string }[] | null) =>
@@ -59,6 +61,7 @@ export default async function PageComposition({ searchParams }: PageProps<"/regl
         initial={versDico(lignes)}
         precedente={versDico(precedentes)}
         annonceEnvoyee={annonce?.envoyee_le ?? null}
+        annonceProgrammee={programmee?.prevue_le ?? null}
         annoncable={semaine >= lundiDeLaSemaine(ajd)}
       />
       <div className="mt-8">

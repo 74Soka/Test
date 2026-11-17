@@ -7,7 +7,8 @@ import type { Database } from "@/lib/supabase/database.types";
 import { origineDuSite } from "@/lib/site";
 import { clesDeNetlify } from "./cles-env";
 import { creerEnvoyeurPush, type ClesVapid } from "./envoi";
-import { messageRappel } from "./messages";
+import { messageAnnonce, messageRappel } from "./messages";
+import { NOMS_JOURS } from "@/lib/domaine/dates";
 
 /**
  * Rappels du jeudi, envoyés sans compte connecté : le planificateur de
@@ -93,4 +94,39 @@ export async function envoyerAlertesEquipe(jeton: string): Promise<{ alertes: nu
     }),
   );
   return { alertes: new Set(lignes.map((l) => l.alerte_id)).size, envoyes: resultats.filter((r) => r === "envoye").length };
+}
+
+/**
+ * Annonce des paniers programmée (12 h 30) : appelée par le planificateur de
+ * Supabase avec le jeton ; chaque annonce n'est envoyée qu'une fois.
+ */
+export async function envoyerAnnonces(jeton: string): Promise<{ annonces: number; envoyes: number }> {
+  const { url, cle } = configSupabase();
+  const supabase = createClient<Database>(url, cle, { auth: { persistSession: false, autoRefreshToken: false } });
+
+  const { data: lignes, error } = await supabase.rpc("annonces_a_envoyer", { p_jeton: jeton });
+  if (error) {
+    if (error.code === "42501") throw new JetonRefuse();
+    throw new Error(error.message);
+  }
+  if (!lignes?.length) return { annonces: 0, envoyes: 0 };
+
+  const origine = await origineDuSite();
+  const envoyeur = creerEnvoyeurPush({
+    cles: await clesDuRobot(supabase, jeton),
+    sujet: origine.startsWith("https://") ? origine : "mailto:contact@example.org",
+  });
+
+  const resultats = await Promise.all(
+    lignes.map(async (l) => {
+      const [h, m] = (l.cloture_heure ?? "12:00").split(":");
+      const cloture = l.cloture_jour
+        ? `${NOMS_JOURS[l.cloture_jour - 1]} ${Number(h)} h${m === "00" ? "" : ` ${m}`}`
+        : null;
+      const r = await envoyeur.envoyer(l, messageAnnonce(l.contenu, cloture));
+      if (r === "expire") await supabase.rpc("supprimer_abonnement_robot", { p_jeton: jeton, p_endpoint: l.endpoint });
+      return r;
+    }),
+  );
+  return { annonces: new Set(lignes.map((l) => l.semaine)).size, envoyes: resultats.filter((r) => r === "envoye").length };
 }

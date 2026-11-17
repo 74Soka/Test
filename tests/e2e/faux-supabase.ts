@@ -477,6 +477,11 @@ async function demarrer() {
       }
       if (url.pathname === "/test/emails") return repondre(res, 200, EMAILS);
       if (url.pathname === "/test/pushs") return repondre(res, 200, PUSHS);
+      // Essais : « il est 12 h 30 », les annonces programmées deviennent dues
+      if (url.pathname === "/test/annonces-dues") {
+        await pool.query("update public.annonces_programmees set prevue_le = now() - interval '1 minute'");
+        return repondre(res, 200, { ok: true });
+      }
       if (url.pathname === "/test/jeton-robot") {
         return repondre(res, 200, (await pool.query("select jeton from prive.parametres_robot")).rows[0]);
       }
