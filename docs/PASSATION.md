@@ -243,6 +243,12 @@ l'application.
   Le formulaire a maintenant aussi une action serveur classique (`envoyerInscriptionSansScript`) : l'adresse tapée
   est retrouvée par le serveur ; une erreur revient en haut de la page (`?erreur=`). Parcours de test : programme
   du site bloqué.
+- [x] **E-mails ponctuels aux clients** (`20261206000000_emails_ponctuels.sql`, appliquée) : pour écrire à un
+  client depuis l'adresse du site (Brevo, clé restée sur Netlify), déposer une ligne :
+  `insert into prive.emails_a_envoyer (destinataire, sujet, texte) values (…)`. La base appelle aussitôt
+  `/api/emails` (jeton du robot) ; résultat dans `envoye_le` / `erreur`. Renvoyer un lien de confirmation
+  d'inscription : `POST /auth/v1/resend` (clé publique, `type: signup`). Utilisé le 20 novembre 2026 pour les
+  3 inscriptions bloquées.
 - [ ] **Tests dépendants de l'heure** : le vendredi après la clôture (12 h), deux parcours échouent
   (`espace-client` « page publique… » et `notifications` « …prochain ») car les commandes passent à la semaine
   suivante. À rendre indépendants de l'heure (horloge simulée côté serveur).
