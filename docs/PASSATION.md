@@ -238,6 +238,11 @@ l'application.
   `/api/annonces` (jeton) → clients abonnés actifs. Changer l'heure ou retirer : modifier/supprimer la ligne de
   `annonces_programmees`. Les réglages n'envoient plus tout de suite : ils affichent l'heure programmée.
   Semaine du 16 novembre 2026 : programmée le mercredi 18 à 12 h 30.
+- [x] **Inscription « Bienvenue » sans script** (20 novembre 2026) : sur certains téléphones (ancien navigateur),
+  le programme du site ne démarre pas ; l'envoi rechargeait la page vide et rien n'arrivait (2 comptes bloqués).
+  Le formulaire a maintenant aussi une action serveur classique (`envoyerInscriptionSansScript`) : l'adresse tapée
+  est retrouvée par le serveur ; une erreur revient en haut de la page (`?erreur=`). Parcours de test : programme
+  du site bloqué.
 - [ ] **Tests dépendants de l'heure** : le vendredi après la clôture (12 h), deux parcours échouent
   (`espace-client` « page publique… » et `notifications` « …prochain ») car les commandes passent à la semaine
   suivante. À rendre indépendants de l'heure (horloge simulée côté serveur).

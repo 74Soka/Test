@@ -17,6 +17,8 @@ type Props<T> = {
   valeurInitiale?: string;
   /** Proposé dans la liste quand rien n'est trouvé ou que le service ne répond pas */
   secours?: { libelle: string; onClick: () => void };
+  /** Nom du champ : le texte tapé part avec le formulaire (téléphones où le script ne tourne pas) */
+  name?: string;
 };
 
 /**
@@ -34,6 +36,7 @@ export function RechercheAdresse<T extends AdresseTrouvee | CommuneTrouvee>({
   viderApresChoix,
   valeurInitiale = "",
   secours,
+  name,
 }: Props<T>) {
   const id = useId();
   const [texte, setTexte] = useState(valeurInitiale);
@@ -101,6 +104,7 @@ export function RechercheAdresse<T extends AdresseTrouvee | CommuneTrouvee>({
       </label>
       <input
         id={id}
+        name={name}
         type="search"
         role="combobox"
         aria-expanded={afficherListe}

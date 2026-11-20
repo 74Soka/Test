@@ -2,7 +2,12 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useState, useTransition } from "react";
-import { envoyerMonInscription, verifierCodeParrainage, type DemandeInscription } from "../actions";
+import {
+  envoyerInscriptionSansScript,
+  envoyerMonInscription,
+  verifierCodeParrainage,
+  type DemandeInscription,
+} from "../actions";
 import { codeComplet, normaliserCode } from "@/lib/domaine/parrainage";
 import { RechercheAdresse } from "@/components/recherche-adresse";
 import { Bouton, Carte, Champ, MessageErreur, Selection, ZoneTexte } from "@/components/ui";
@@ -60,6 +65,8 @@ export function FormulaireBienvenue({
     <form
       className="space-y-4"
       noValidate
+      // Sans script (téléphone ancien, page pas encore prête) : envoi classique, traité par le serveur
+      action={envoyerInscriptionSansScript}
       onSubmit={(e) => {
         e.preventDefault();
         const codeEnvoye = normaliserCode(d.parrain);
@@ -134,6 +141,7 @@ export function FormulaireBienvenue({
         ) : (
           <RechercheAdresse<AdresseTrouvee>
             type="adresse"
+            name="adresseTexte"
             label="Votre adresse"
             placeholder="Ex. : 12 rue des Lilas, Hyères"
             valeurInitiale={adresse ? `${adresse.ligne} ${adresse.codePostal} ${adresse.commune}` : ""}

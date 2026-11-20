@@ -158,6 +158,9 @@ test("un nouveau client s'inscrit, l'équipe valide, il commande (œufs de fille
   await expect
     .poll(async () => (await emails(request)).some((e) => e.subject === "Nouvelle inscription à valider : Noé Nouveau"))
     .toBe(true);
+  // Une seule fois (le formulaire classique de secours ne part pas en plus)
+  await page.waitForTimeout(1000);
+  expect((await emails(request)).filter((e) => e.subject === "Nouvelle inscription à valider : Noé Nouveau")).toHaveLength(1);
 
   // Pas de commande avant la validation
   await page.goto("/espace/commander");
@@ -364,4 +367,44 @@ test("recette de la semaine : saisie avec le panier de la semaine dernière, pui
   await page.addStyleTag({ content: "header { position: static !important; } nav { display: none !important; }" });
   await capture(page.getByRole("region", { name: "Dans les paniers" }), "5a-espace-client-paniers");
   await capture(page.getByRole("region", { name: "Recette de la semaine" }), "5b-espace-client-recette");
+});
+
+test("téléphone où le script ne tourne pas : l'inscription part quand même, adresse retrouvée par le serveur", async ({
+  browser,
+  request,
+}) => {
+  // Comme sur un téléphone ancien : la page s'affiche, mais le programme du site ne démarre pas
+  const contexte = await browser.newContext({ ...test.info().project.use });
+  const page = await contexte.newPage();
+  const zoe = { prenom: "Zoé", nom: "Sansscript", email: "zoe.sansscript@exemple.fr", motDePasse: "legumes-frais-83" };
+
+  // Création du compte, confirmation de l'e-mail, connexion : formulaires classiques
+  await page.goto("/inscription");
+  await page.getByLabel("Prénom").fill(zoe.prenom);
+  await page.getByLabel("Nom", { exact: true }).fill(zoe.nom);
+  await page.getByLabel("Adresse e-mail").fill(zoe.email);
+  await page.getByLabel("Mot de passe").fill(zoe.motDePasse);
+  await page.getByRole("button", { name: "Créer mon compte" }).click();
+  await expect(page.getByText("Vérifiez vos e-mails")).toBeVisible();
+  await request.post(`${FAUX}/test/confirmer`, { data: { email: zoe.email } });
+  await page.goto("/connexion");
+  await page.getByLabel("Adresse e-mail").fill(zoe.email);
+  await page.getByLabel("Mot de passe").fill(zoe.motDePasse);
+  await page.getByRole("button", { name: "Se connecter" }).click();
+  await page.waitForURL("**/espace/bienvenue");
+  await page.route("**/_next/static/chunks/**", (r) => r.abort());
+  await page.reload();
+  await expect(page.getByLabel("Téléphone")).toBeVisible();
+
+  // Avant : l'envoi rechargeait la page vide. Maintenant il part, sans choix dans la liste
+  await page.getByLabel("Téléphone").fill("06 12 34 56 99");
+  await page.getByLabel("Votre adresse").fill("12 Rue Démo Hyères");
+  await page.getByRole("button", { name: "Envoyer mon inscription" }).click();
+  await page.waitForURL("**/espace");
+  await expect(page.getByText("Inscription reçue, merci !")).toBeVisible();
+  await expect
+    .poll(async () => (await emails(request)).some((e) => e.subject === "Nouvelle inscription à valider : Zoé Sansscript"))
+    .toBe(true);
+
+  await contexte.close();
 });

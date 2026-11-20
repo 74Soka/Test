@@ -20,6 +20,7 @@ import { TELEPHONE_COMMANDES } from "@/lib/paniers-publics";
 import { messageErreur, type Resultat } from "@/lib/erreurs";
 import { lireCommandeClient, lireMonSolde } from "@/lib/espace-client";
 import { origineDuSite } from "@/lib/site";
+import { geocodeur } from "@/lib/geocodage";
 import { clientSupabase } from "@/lib/supabase/serveur";
 
 const ligne = z.object({ article_id: z.uuid(), quantite: z.number().int().min(0).max(99) });
@@ -241,6 +242,55 @@ export async function envoyerMonInscription(demande: DemandeInscription): Promis
   });
   revalidatePath("/espace", "layout");
   return { ok: true };
+}
+
+/**
+ * Le même envoi, depuis un formulaire classique : quand le script du site ne
+ * tourne pas sur le téléphone (ancien navigateur, page pas encore prête),
+ * le formulaire part quand même. L'adresse tapée (sans choix dans la liste)
+ * est retrouvée par le serveur ; sinon les champs « à la main » sont repris.
+ */
+export async function envoyerInscriptionSansScript(formulaire: FormData): Promise<void> {
+  const texte = (cle: string) => {
+    const v = formulaire.get(cle);
+    return typeof v === "string" ? v.trim() : "";
+  };
+  let adresse: DemandeInscription["adresse"] | undefined;
+  if (texte("ligne") && texte("codePostal")) {
+    adresse = { ligne: texte("ligne"), codePostal: texte("codePostal"), commune: texte("commune"), codeInsee: null, lat: null, lng: null };
+  } else if (texte("adresseTexte").length >= 5) {
+    try {
+      const [trouvee] = await geocodeur.rechercherAdresses(texte("adresseTexte").slice(0, 200), { limite: 1 });
+      if (trouvee && trouvee.precision !== "commune") {
+        adresse = {
+          ligne: trouvee.ligne,
+          codePostal: trouvee.codePostal,
+          commune: trouvee.commune,
+          codeInsee: trouvee.codeInsee,
+          lat: trouvee.lat,
+          lng: trouvee.lng,
+        };
+      }
+    } catch (e) {
+      console.error("Adresse (envoi sans script) :", e);
+    }
+  }
+  const choixConnu = texte("connuParChoix");
+  const r = await envoyerMonInscription({
+    prenom: texte("prenom"),
+    nom: texte("nom"),
+    telephone: texte("telephone"),
+    adresse: adresse as DemandeInscription["adresse"],
+    complement: texte("complement"),
+    notesLivraison: texte("notesLivraison"),
+    parrain: texte("parrain"),
+    connuPar: choixConnu === "Autre" ? texte("connuPar") : choixConnu,
+  });
+  if (!r.ok) {
+    const detail = r.champs ? Object.values(r.champs)[0] : null;
+    redirect(`/espace/bienvenue?erreur=${encodeURIComponent(detail ? `${r.erreur} ${detail}` : r.erreur)}`);
+  }
+  redirect("/espace");
 }
 
 /** RGPD : suppression du compte et de toutes les données du client. */
