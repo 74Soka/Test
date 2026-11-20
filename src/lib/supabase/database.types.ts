@@ -1250,6 +1250,19 @@ export type Database = {
           url: string
         }[]
       }
+      emails_a_envoyer: {
+        Args: { p_jeton: string }
+        Returns: {
+          destinataire: string
+          id: number
+          sujet: string
+          texte: string
+        }[]
+      }
+      email_envoye: {
+        Args: { p_erreur?: string; p_id: number; p_jeton: string }
+        Returns: undefined
+      }
       abonnements_clients_actifs: {
         Args: never
         Returns: { auth: string; client_id: string; endpoint: string; p256dh: string }[]

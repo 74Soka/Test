@@ -6,6 +6,7 @@ import { configSupabase } from "@/lib/env";
 import type { Database } from "@/lib/supabase/database.types";
 import { origineDuSite } from "@/lib/site";
 import { clesDeNetlify } from "./cles-env";
+import { creerEnvoyeurBrevo } from "@/lib/emails/brevo";
 import { creerEnvoyeurPush, type ClesVapid } from "./envoi";
 import { messageAnnonce, messageRappel } from "./messages";
 import { NOMS_JOURS } from "@/lib/domaine/dates";
@@ -129,4 +130,50 @@ export async function envoyerAnnonces(jeton: string): Promise<{ annonces: number
     }),
   );
   return { annonces: new Set(lignes.map((l) => l.semaine)).size, envoyes: resultats.filter((r) => r === "envoye").length };
+}
+
+/**
+ * E-mails ponctuels déposés dans la base (prive.emails_a_envoyer), envoyés par
+ * Brevo depuis l'adresse du site. Chaque e-mail n'est remis qu'une fois ; le
+ * résultat (envoyé ou erreur) est noté dans la base.
+ */
+export async function envoyerEmailsPonctuels(jeton: string): Promise<{ emails: number; envoyes: number }> {
+  const { url, cle } = configSupabase();
+  const supabase = createClient<Database>(url, cle, { auth: { persistSession: false, autoRefreshToken: false } });
+
+  const { data: lignes, error } = await supabase.rpc("emails_a_envoyer", { p_jeton: jeton });
+  if (error) {
+    if (error.code === "42501") throw new JetonRefuse();
+    throw new Error(error.message);
+  }
+  if (!lignes?.length) return { emails: 0, envoyes: 0 };
+
+  const cleBrevo = process.env.BREVO_API_KEY;
+  const expediteur = process.env.EMAIL_EXPEDITEUR;
+  const envoyeur =
+    cleBrevo && expediteur
+      ? creerEnvoyeurBrevo({
+          cle: cleBrevo,
+          expediteur: { email: expediteur, nom: process.env.EMAIL_NOM_EXPEDITEUR || "Frais et Français" },
+          baseUrl: process.env.BREVO_URL || undefined,
+        })
+      : null;
+
+  let envoyes = 0;
+  for (const l of lignes) {
+    let erreur: string | undefined;
+    if (!envoyeur) {
+      erreur = "Envoi d'e-mails non réglé (BREVO_API_KEY, EMAIL_EXPEDITEUR).";
+    } else {
+      try {
+        await envoyeur.envoyer({ a: [l.destinataire], sujet: l.sujet, texte: l.texte, repondreA: expediteur });
+        envoyes++;
+      } catch (e) {
+        erreur = e instanceof Error ? e.message : String(e);
+        console.error("E-mail ponctuel :", e);
+      }
+    }
+    await supabase.rpc("email_envoye", { p_jeton: jeton, p_id: l.id, ...(erreur ? { p_erreur: erreur } : {}) });
+  }
+  return { emails: lignes.length, envoyes };
 }
