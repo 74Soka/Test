@@ -2,6 +2,7 @@
 
 import { useActionState } from "react";
 import { seConnecter, type EtatConnexion } from "./actions";
+import { ChampMotDePasse } from "@/components/champ-mot-de-passe";
 import { Bouton, Champ, MessageErreur } from "@/components/ui";
 
 export function FormulaireConnexion({ suite }: { suite?: string }) {
@@ -21,7 +22,7 @@ export function FormulaireConnexion({ suite }: { suite?: string }) {
         defaultValue={etat.email}
         key={etat.email ?? ""}
       />
-      <Champ label="Mot de passe" name="motDePasse" type="password" autoComplete="current-password" required />
+      <ChampMotDePasse label="Mot de passe" name="motDePasse" autoComplete="current-password" required />
       <Bouton type="submit" taille="grand" className="w-full" disabled={enCours}>
         {enCours ? "Connexion…" : "Se connecter"}
       </Bouton>

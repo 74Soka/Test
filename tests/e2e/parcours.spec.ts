@@ -17,7 +17,7 @@ const MOT_DE_PASSE = "demo-demo-demo";
 async function seConnecter(page: Page) {
   await page.goto("/connexion");
   await page.getByLabel("Adresse e-mail").fill("admin@demo.fr");
-  await page.getByLabel("Mot de passe").fill(MOT_DE_PASSE);
+  await page.getByLabel("Mot de passe", { exact: true }).fill(MOT_DE_PASSE);
   await page.getByRole("button", { name: "Se connecter" }).click();
   await page.waitForURL("**/livraisons**");
 }
@@ -39,12 +39,24 @@ test("une page protégée renvoie vers la connexion, qui refuse un mauvais mot d
   await page.goto("/clients");
   await expect(page).toHaveURL(/\/connexion\?suite=%2Fclients/);
   await page.getByLabel("Adresse e-mail").fill("admin@demo.fr");
-  await page.getByLabel("Mot de passe").fill("mauvais");
+  await page.getByLabel("Mot de passe", { exact: true }).fill("mauvais");
   await page.getByRole("button", { name: "Se connecter" }).click();
   await expect(page.getByText("E-mail ou mot de passe incorrect.")).toBeVisible();
-  await page.getByLabel("Mot de passe").fill(MOT_DE_PASSE);
+  await page.getByLabel("Mot de passe", { exact: true }).fill(MOT_DE_PASSE);
   await page.getByRole("button", { name: "Se connecter" }).click();
   await expect(page).toHaveURL(/\/clients$/);
+});
+
+test("le petit œil affiche puis cache le mot de passe tapé", async ({ page }) => {
+  await page.goto("/inscription");
+  const champ = page.getByLabel("Mot de passe", { exact: true });
+  await champ.fill("mon-secret-2026");
+  await expect(champ).toHaveAttribute("type", "password");
+  await page.getByRole("button", { name: "Afficher le mot de passe" }).click();
+  await expect(champ).toHaveAttribute("type", "text");
+  await expect(champ).toHaveValue("mon-secret-2026");
+  await page.getByRole("button", { name: "Masquer le mot de passe" }).click();
+  await expect(champ).toHaveAttribute("type", "password");
 });
 
 test("recherche de clients sans accents et filtre par secteur", async ({ page }) => {
@@ -426,7 +438,7 @@ test("catalogue : supplément hors saison retiré de la saisie, ajout d'un suppl
 test("livreur : la tournée seulement, avec les arrêts et « Livré et payé »", async ({ page }) => {
   await page.goto("/connexion");
   await page.getByLabel("Adresse e-mail").fill("livreur@demo.fr");
-  await page.getByLabel("Mot de passe").fill(MOT_DE_PASSE);
+  await page.getByLabel("Mot de passe", { exact: true }).fill(MOT_DE_PASSE);
   await page.getByRole("button", { name: "Se connecter" }).click();
   await page.waitForURL("**/tournee**");
   await expect(page.getByText("Frais et Français · livreur")).toBeVisible();

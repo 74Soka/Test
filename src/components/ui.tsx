@@ -98,18 +98,37 @@ function Etiquette({
   );
 }
 
-export function Champ({ label, erreur, aide, id, name, className, ...props }: ComponentProps<"input"> & Etiquetage) {
+export function Champ({
+  label,
+  erreur,
+  aide,
+  id,
+  name,
+  className,
+  suffixe,
+  ...props
+}: ComponentProps<"input"> & Etiquetage & { /** Bouton posé à droite, dans le champ */ suffixe?: ReactNode }) {
   const ident = id ?? `champ-${name}`;
+  const champ = (
+    <input
+      id={ident}
+      name={name}
+      aria-invalid={erreur ? true : undefined}
+      aria-describedby={erreur ? `${ident}-erreur` : undefined}
+      className={cx(classesChamp, suffixe ? "pr-14" : undefined, className)}
+      {...props}
+    />
+  );
   return (
     <Etiquette id={ident} label={label} erreur={erreur} aide={aide}>
-      <input
-        id={ident}
-        name={name}
-        aria-invalid={erreur ? true : undefined}
-        aria-describedby={erreur ? `${ident}-erreur` : undefined}
-        className={cx(classesChamp, className)}
-        {...props}
-      />
+      {suffixe ? (
+        <div className="relative">
+          {champ}
+          {suffixe}
+        </div>
+      ) : (
+        champ
+      )}
     </Etiquette>
   );
 }

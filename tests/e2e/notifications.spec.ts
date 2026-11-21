@@ -58,7 +58,7 @@ async function simulerTelephone(page: Page, nom: string) {
 async function connexion(page: Page, email: string, motDePasse: string) {
   await page.goto("/connexion");
   await page.getByLabel("Adresse e-mail").fill(email);
-  await page.getByLabel("Mot de passe").fill(motDePasse);
+  await page.getByLabel("Mot de passe", { exact: true }).fill(motDePasse);
   await page.getByRole("button", { name: "Se connecter" }).click();
 }
 
@@ -98,7 +98,7 @@ test("le client active les notifications, puis est prévenu au départ de la tou
   await page.getByLabel("Prénom").fill("Léa");
   await page.getByLabel("Nom", { exact: true }).fill("Robert");
   await page.getByLabel("Adresse e-mail").fill(LEA.email);
-  await page.getByLabel("Mot de passe").fill(LEA.motDePasse);
+  await page.getByLabel("Mot de passe", { exact: true }).fill(LEA.motDePasse);
   await page.getByRole("button", { name: "Créer mon compte" }).click();
   await expect(page.getByText("Vérifiez vos e-mails")).toBeVisible();
   await request.post(`${FAUX}/test/confirmer`, { data: { email: LEA.email } });
@@ -202,7 +202,7 @@ test("rappels du jeudi, annonce des paniers, merci après la livraison et avis d
   await page.getByLabel("Prénom").fill("Chloé");
   await page.getByLabel("Nom", { exact: true }).fill("Petit");
   await page.getByLabel("Adresse e-mail").fill("chloe.petit@example.org");
-  await page.getByLabel("Mot de passe").fill("paniers-chloe-2026");
+  await page.getByLabel("Mot de passe", { exact: true }).fill("paniers-chloe-2026");
   await page.getByRole("button", { name: "Créer mon compte" }).click();
   await expect(page.getByText("Vérifiez vos e-mails")).toBeVisible();
   await request.post(`${FAUX}/test/confirmer`, { data: { email: "chloe.petit@example.org" } });

@@ -25,7 +25,7 @@ test.beforeEach(async ({ page }) => {
 async function connexion(page: Page, email: string, motDePasse: string) {
   await page.goto("/connexion");
   await page.getByLabel("Adresse e-mail").fill(email);
-  await page.getByLabel("Mot de passe").fill(motDePasse);
+  await page.getByLabel("Mot de passe", { exact: true }).fill(motDePasse);
   await page.getByRole("button", { name: "Se connecter" }).click();
 }
 
@@ -50,7 +50,7 @@ async function creerCompte(
   await page.getByLabel("Prénom").fill(c.prenom);
   await page.getByLabel("Nom", { exact: true }).fill(c.nom);
   await page.getByLabel("Adresse e-mail").fill(c.email);
-  await page.getByLabel("Mot de passe").fill(c.motDePasse);
+  await page.getByLabel("Mot de passe", { exact: true }).fill(c.motDePasse);
   await page.getByRole("button", { name: "Créer mon compte" }).click();
   await expect(page.getByText("Vérifiez vos e-mails")).toBeVisible();
 
@@ -383,13 +383,13 @@ test("téléphone où le script ne tourne pas : l'inscription part quand même, 
   await page.getByLabel("Prénom").fill(zoe.prenom);
   await page.getByLabel("Nom", { exact: true }).fill(zoe.nom);
   await page.getByLabel("Adresse e-mail").fill(zoe.email);
-  await page.getByLabel("Mot de passe").fill(zoe.motDePasse);
+  await page.getByLabel("Mot de passe", { exact: true }).fill(zoe.motDePasse);
   await page.getByRole("button", { name: "Créer mon compte" }).click();
   await expect(page.getByText("Vérifiez vos e-mails")).toBeVisible();
   await request.post(`${FAUX}/test/confirmer`, { data: { email: zoe.email } });
   await page.goto("/connexion");
   await page.getByLabel("Adresse e-mail").fill(zoe.email);
-  await page.getByLabel("Mot de passe").fill(zoe.motDePasse);
+  await page.getByLabel("Mot de passe", { exact: true }).fill(zoe.motDePasse);
   await page.getByRole("button", { name: "Se connecter" }).click();
   await page.waitForURL("**/espace/bienvenue");
   await page.route("**/_next/static/chunks/**", (r) => r.abort());

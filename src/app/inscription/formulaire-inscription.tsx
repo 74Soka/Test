@@ -2,6 +2,7 @@
 
 import { useActionState } from "react";
 import { creerCompteClient, type EtatInscription } from "@/app/connexion/actions";
+import { ChampMotDePasse } from "@/components/champ-mot-de-passe";
 import { Bouton, Champ, MessageErreur } from "@/components/ui";
 
 export function FormulaireInscription() {
@@ -41,11 +42,10 @@ export function FormulaireInscription() {
         erreur={etat.champs?.email}
         aide="Si vous êtes déjà client, utilisez l'adresse que vous nous avez donnée : votre compte sera relié tout seul."
       />
-      <Champ
+      <ChampMotDePasse
         label="Mot de passe"
         name="motDePasse"
-        type="password"
-        autoComplete="new-password"
+                autoComplete="new-password"
         required
         minLength={8}
         erreur={etat.champs?.motDePasse}

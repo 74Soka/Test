@@ -6,7 +6,7 @@ test.skip(!DOSSIER, "captures seulement à la demande");
 async function connecter(page: Page, email: string, mdp: string) {
   await page.goto("/connexion");
   await page.getByLabel("Adresse e-mail").fill(email);
-  await page.getByLabel("Mot de passe").fill(mdp);
+  await page.getByLabel("Mot de passe", { exact: true }).fill(mdp);
   await page.getByRole("button", { name: "Se connecter" }).click();
   await page.waitForURL((u) => !u.pathname.startsWith("/connexion"));
 }
