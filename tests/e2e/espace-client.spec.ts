@@ -195,6 +195,10 @@ test("un nouveau client s'inscrit, l'équipe valide, il commande (œufs de fille
       ),
     )
     .toBe(true);
+  // Dans la liste des clients, la fiche de Noé porte le ✅ « relié à une inscription »
+  await page.goto("/clients");
+  await expect(page.getByRole("link", { name: /Noé Nouveau/ }).getByRole("img", { name: "relié à une inscription" })).toBeVisible();
+  await capture(page.getByRole("link", { name: /Noé Nouveau/ }), "2b-liste-clients-relie");
   await deconnexionEquipe(page);
 
   // Le client commande : ses œufs de filleul s'ajoutent tout seuls

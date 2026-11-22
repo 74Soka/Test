@@ -1,5 +1,6 @@
 "use client";
 
+import { PastilleRelie } from "@/components/pastille-relie";
 import { PastilleDu } from "@/components/bandeau-du";
 import Link from "next/link";
 import { useMemo, useState } from "react";
@@ -24,12 +25,16 @@ export function ListeClients({
   clients,
   secteurs,
   soldes = {},
+  relies = [],
 }: {
   clients: ClientLigne[];
   secteurs: SecteurLigne[];
   /** Ce que chaque client doit (+) ou son avoir (−), en centimes */
   soldes?: Record<string, number>;
+  /** Fiches reliées à une inscription (compte client en ligne) */
+  relies?: string[];
 }) {
+  const fichesReliees = useMemo(() => new Set(relies), [relies]);
   const [recherche, setRecherche] = useState("");
   const [secteur, setSecteur] = useState<string | null>(null);
   const [inactifs, setInactifs] = useState(false);
@@ -97,6 +102,7 @@ export function ListeClients({
                   <span className="min-w-0 flex-1">
                     <span className={cx("block truncate font-semibold", !c.actif && "text-stone-400")}>
                       {nomComplet(c)}
+                      {fichesReliees.has(c.id) && <PastilleRelie />}
                       {!c.actif && " (inactif)"}
                     </span>
                     <span className="block truncate text-sm text-stone-600">

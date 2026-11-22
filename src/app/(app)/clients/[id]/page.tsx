@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { PastilleRelie } from "@/components/pastille-relie";
 import Link from "next/link";
 import { exigerAdmin } from "@/lib/auth";
 import {
@@ -66,7 +67,12 @@ export default async function PageClient({ params }: PageProps<"/clients/[id]">)
   return (
     <>
       <EnTetePage
-        titre={nomComplet(client)}
+        titre={
+          <>
+            {nomComplet(client)}
+            {compteEnLigne && <PastilleRelie />}
+          </>
+        }
         sousTitre={secteur ? `${secteur.nom} · ${libelleTournee(secteur)}` : undefined}
         retour="/clients"
         action={

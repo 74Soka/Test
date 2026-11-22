@@ -12,7 +12,7 @@ export const metadata: Metadata = { title: "Clients" };
 export default async function PageClients({ searchParams }: PageProps<"/clients">) {
   await exigerAdmin();
   const supabase = await clientSupabase();
-  const [clients, secteurs, { supprime }, { count: inscriptions }, { count: retours }, { count: sansRepere }, soldes] = await Promise.all([
+  const [clients, secteurs, { supprime }, { count: inscriptions }, { count: retours }, { count: sansRepere }, soldes, comptes] = await Promise.all([
     listerClients(),
     listerSecteurs(),
     searchParams,
@@ -20,6 +20,7 @@ export default async function PageClients({ searchParams }: PageProps<"/clients"
     supabase.from("avis_livraison").select("commande_id", { count: "exact", head: true }).is("traite_le", null),
     supabase.from("clients").select("id", { count: "exact", head: true }).is("lat", null),
     listerSoldes(),
+    supabase.from("comptes_clients").select("client_id"),
   ]);
 
   return (
@@ -61,7 +62,7 @@ export default async function PageClients({ searchParams }: PageProps<"/clients"
           Aucun client pour l&apos;instant.
         </EtatVide>
       ) : (
-        <ListeClients clients={clients} secteurs={secteurs} soldes={soldes} />
+        <ListeClients clients={clients} secteurs={secteurs} soldes={soldes} relies={(comptes.data ?? []).map((c) => c.client_id)} />
       )}
     </>
   );
