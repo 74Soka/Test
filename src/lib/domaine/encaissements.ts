@@ -23,6 +23,9 @@ export type CommandeEncaissement = {
   payee: boolean | null;
   montantRecuCentimes: number | null;
   modePaiement: ModePaiement | null;
+  /** Reçu en chèque / en espèces (deux lignes) ; absents pour les livraisons notées avant */
+  chequeCentimes?: number | null;
+  especesCentimes?: number | null;
   /** Solde du client sans cette commande : + dû, − avoir */
   soldeAvantCentimes: number;
   /** Compléments ajoutés par le livreur à la livraison (compris dans le total) */
@@ -85,6 +88,10 @@ function ajouter(e: Encaissements, c: CommandeEncaissement) {
     if (c.montantRecuCentimes === null) {
       recu = Math.max(0, t + s);
       e.nonPrecise += recu;
+    } else if (c.chequeCentimes != null || c.especesCentimes != null) {
+      recu = c.montantRecuCentimes;
+      e.cheques += c.chequeCentimes ?? 0;
+      e.especes += c.especesCentimes ?? 0;
     } else {
       recu = c.montantRecuCentimes;
       if (c.modePaiement === "cheque") e.cheques += recu;

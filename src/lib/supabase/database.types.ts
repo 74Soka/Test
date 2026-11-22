@@ -307,6 +307,8 @@ export type Database = {
           livree_le: string | null
           mode_paiement: string | null
           montant_recu_centimes: number | null
+          recu_cheque_centimes: number | null
+          recu_especes_centimes: number | null
           notes: string | null
           secteur_id: string | null
           semaine: string | null
@@ -324,6 +326,8 @@ export type Database = {
           livree_le?: string | null
           mode_paiement?: string | null
           montant_recu_centimes?: number | null
+          recu_cheque_centimes?: number | null
+          recu_especes_centimes?: number | null
           notes?: string | null
           secteur_id?: string | null
           semaine?: string | null
@@ -341,6 +345,8 @@ export type Database = {
           livree_le?: string | null
           mode_paiement?: string | null
           montant_recu_centimes?: number | null
+          recu_cheque_centimes?: number | null
+          recu_especes_centimes?: number | null
           notes?: string | null
           secteur_id?: string | null
           semaine?: string | null
@@ -1326,6 +1332,17 @@ export type Database = {
           p_livree_le?: string
           p_mode_paiement?: string
           p_montant_recu_centimes?: number
+          p_payee?: boolean
+        }
+        Returns: undefined
+      }
+      marquer_livraison_paiements: {
+        Args: {
+          p_cheque_centimes?: number
+          p_commande_id: string
+          p_especes_centimes?: number
+          p_livree: boolean
+          p_livree_le?: string
           p_payee?: boolean
         }
         Returns: undefined

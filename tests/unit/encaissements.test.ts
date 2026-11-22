@@ -59,4 +59,18 @@ describe("récapitulatif des encaissements", () => {
     expect(total.avoirsDeduits).toBe(3000);
     expect(totalReconcilie(total)).toBe(total.montantCommandes);
   });
+
+  it("chèque + espèces sur la même livraison : chaque montant dans sa colonne", () => {
+    const { total } = recapEncaissements([
+      // 35 € (panier + compléments) : chèque de 30 € préparé d'avance, 5 € de compléments en espèces
+      c({ totalCentimes: 3500, montantRecuCentimes: 3500, modePaiement: null, chequeCentimes: 3000, especesCentimes: 500 }),
+      // Seulement le chèque : 5 € restent dus
+      c({ totalCentimes: 3500, montantRecuCentimes: 3000, modePaiement: "cheque", chequeCentimes: 3000, especesCentimes: 0 }),
+    ]);
+    expect(total.cheques).toBe(6000);
+    expect(total.especes).toBe(500);
+    expect(total.nonPrecise).toBe(0);
+    expect(total.resteDu).toBe(500);
+    expect(totalReconcilie(total)).toBe(total.montantCommandes);
+  });
 });

@@ -103,25 +103,37 @@ export async function marquerLivraison(
   livree: boolean,
   horodatage?: string,
   payee = true,
-  /** « Livré et payé » : montant reçu (centimes) et mode ; absents = tout ce qui est dû est réglé */
-  paiement?: { montantCentimes: number; mode: "especes" | "cheque" | null },
+  /**
+   * « Livré et payé » : reçu en chèque et en espèces (centimes) ; absent = tout ce qui est dû est réglé.
+   * L'ancienne forme (un montant, un mode) reste acceptée pour les appuis gardés dans le téléphone.
+   */
+  paiement?: { chequeCentimes: number; especesCentimes: number } | { montantCentimes: number; mode: "especes" | "cheque" | null },
 ): Promise<Resultat> {
   await exigerEquipe();
   if (!z.uuid().safeParse(commandeId).success) return { ok: false, erreur: "Commande inconnue." };
+  const centimes = z.number().int().min(0).max(1_000_000);
   const saisie = z
-    .object({ montantCentimes: z.number().int().min(0).max(1_000_000), mode: z.enum(["especes", "cheque"]).nullable() })
+    .union([
+      z.object({ chequeCentimes: centimes, especesCentimes: centimes }),
+      z
+        .object({ montantCentimes: centimes, mode: z.enum(["especes", "cheque"]).nullable() })
+        .transform((p) => ({
+          chequeCentimes: p.mode === "cheque" ? p.montantCentimes : 0,
+          especesCentimes: p.mode === "cheque" ? 0 : p.montantCentimes,
+        })),
+    ])
     .optional()
     .safeParse(paiement);
   if (!saisie.success) return { ok: false, erreur: "Montant reçu invalide." };
   const heure = horodatage && !Number.isNaN(Date.parse(horodatage)) ? new Date(horodatage).toISOString() : undefined;
   const supabase = await clientSupabase();
-  const { error } = await supabase.rpc("marquer_livraison", {
+  const { error } = await supabase.rpc("marquer_livraison_paiements", {
     p_commande_id: commandeId,
     p_livree: livree,
     p_livree_le: heure,
     p_payee: payee,
-    p_montant_recu_centimes: livree && payee ? saisie.data?.montantCentimes : undefined,
-    p_mode_paiement: livree && payee ? (saisie.data?.mode ?? undefined) : undefined,
+    p_cheque_centimes: livree && payee ? saisie.data?.chequeCentimes : undefined,
+    p_especes_centimes: livree && payee ? saisie.data?.especesCentimes : undefined,
   });
   if (error) return { ok: false, erreur: messageErreur(error) };
 

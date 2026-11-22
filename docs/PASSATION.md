@@ -255,6 +255,11 @@ l'application.
   L'espace client garde son affichage discret. Mot de passe : petit œil Afficher/Masquer (`champ-mot-de-passe.tsx`).
 - [x] **✅ fiche reliée à une inscription** (`pastille-relie.tsx`) : à côté du nom dans la liste des clients et en
   haut de la fiche, quand la fiche a un compte client en ligne (`comptes_clients`).
+- [x] **Encaissement en deux lignes** (`20261207000000_paiement_deux_modes.sql`, appliquée) : « Livré et payé » avec
+  « En chèque (€) » et « En espèces (€) » (espèces = le reste après le chèque tant qu'on n'y touche pas).
+  `commandes.recu_cheque_centimes` / `recu_especes_centimes`, `mode_paiement` = `mixte` si les deux ; un mouvement
+  « paiement » par mode sur le compte. Fonction `marquer_livraison_paiements` ; l'ancienne `marquer_livraison`
+  (montant + mode) passe par elle. Le récapitulatif des encaissements range chaque montant dans sa colonne.
 - [ ] **Tests dépendants de l'heure** : du vendredi après la clôture (12 h) au lundi, deux ou trois parcours échouent (aussi « les administrateurs sont prévenus… d'une commande en ligne » le dimanche)
   (`espace-client` « page publique… » et `notifications` « …prochain ») car les commandes passent à la semaine
   suivante. À rendre indépendants de l'heure (horloge simulée côté serveur).

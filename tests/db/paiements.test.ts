@@ -79,6 +79,87 @@ describe("montant reçu à la livraison (espèces ou chèque)", () => {
   });
 });
 
+const livrerEnDeux = (id: string, cheque: number | null, especes: number | null, qui = livreur) =>
+  comme(qui, (c) =>
+    c.query("select public.marquer_livraison_paiements($1, true, null, true, $2, $3)", [id, cheque, especes]),
+  );
+
+describe("encaissement en deux lignes (chèque + espèces)", () => {
+  it("chèque du panier et compléments en espèces : deux paiements notés, compte à jour", async () => {
+    const client = await creerClient(base.client, secteur);
+    // 30 € de panier, + 5 € de compléments payés en espèces, le chèque de 30 € était prêt
+    const supplement = await creerArticle(base.client, { categorie: "supplement", prix: 500 });
+    const a = await comme(admin, (c) =>
+      enregistrerCommande(c, {
+        clientId: client,
+        date: "2026-11-14",
+        lignes: [
+          { article_id: p30, quantite: 1 },
+          { article_id: supplement, quantite: 1 },
+        ],
+      }),
+    );
+    await livrerEnDeux(a, 3000, 500);
+    expect(await solde(client)).toBe(0);
+    const co = await base.client.query(
+      "select montant_recu_centimes, mode_paiement, recu_cheque_centimes, recu_especes_centimes from public.commandes where id = $1",
+      [a],
+    );
+    expect(co.rows[0]).toEqual({
+      montant_recu_centimes: 3500,
+      mode_paiement: "mixte",
+      recu_cheque_centimes: 3000,
+      recu_especes_centimes: 500,
+    });
+    const { rows } = await base.client.query(
+      "select montant_centimes, mode_paiement from public.mouvements_compte where commande_id = $1 and motif = 'paiement' order by mode_paiement",
+      [a],
+    );
+    expect(rows).toEqual([
+      { montant_centimes: -3000, mode_paiement: "cheque" },
+      { montant_centimes: -500, mode_paiement: "especes" },
+    ]);
+
+    // Nouvel appui : seulement le chèque → 5 € restent dus ; mode « cheque »
+    await livrerEnDeux(a, 3000, 0);
+    expect(await solde(client)).toBe(500);
+    const seul = await base.client.query("select mode_paiement from public.commandes where id = $1", [a]);
+    expect(seul.rows[0].mode_paiement).toBe("cheque");
+
+    // Annulé : plus rien
+    await annuler(a);
+    const vide = await base.client.query(
+      "select montant_recu_centimes, mode_paiement, recu_cheque_centimes, recu_especes_centimes from public.commandes where id = $1",
+      [a],
+    );
+    expect(vide.rows[0]).toEqual({
+      montant_recu_centimes: null,
+      mode_paiement: null,
+      recu_cheque_centimes: null,
+      recu_especes_centimes: null,
+    });
+    expect(await solde(client)).toBe(0);
+  });
+
+  it("l'ancienne forme (un montant, un mode) remplit la bonne ligne ; montants vérifiés ; équipe seulement", async () => {
+    const client = await creerClient(base.client, secteur);
+    const a = await commande(client, "2026-11-14");
+    await livrerAvecMontant(a, 3000, "cheque");
+    const co = await base.client.query(
+      "select recu_cheque_centimes, recu_especes_centimes, mode_paiement from public.commandes where id = $1",
+      [a],
+    );
+    expect(co.rows[0]).toEqual({ recu_cheque_centimes: 3000, recu_especes_centimes: 0, mode_paiement: "cheque" });
+    await expect(livrerEnDeux(a, -100, 0)).rejects.toMatchObject({ code: "PN054" });
+    await expect(livrerEnDeux(a, 600000, 600000)).rejects.toMatchObject({ code: "PN054" });
+    // Aucun montant : le client règle tout ce qu'il doit
+    await livrerEnDeux(a, null, null);
+    expect(await solde(client)).toBe(0);
+    const compte = await creerCompteEnLigne(base.client, "deux-lignes@exemple.fr");
+    await expect(livrerEnDeux(a, 3000, 0, compte)).rejects.toMatchObject({ code: "42501" });
+  });
+});
+
 describe("paiement à la livraison", () => {
   it("livré non payé : le panier s'ajoute au compte ; payé la fois suivante : tout est réglé", async () => {
     const client = await creerClient(base.client, secteur);

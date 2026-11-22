@@ -463,7 +463,7 @@ test("livreur : la tournée seulement, avec les arrêts et « Livré et payé »
   const dernier = arrets.filter({ has: page.getByRole("button", { name: "Livré et payé" }) }).last();
   const nom = (await dernier.getAttribute("aria-label"))!;
   // Compléments : un supplément ajouté à la livraison, au prix du catalogue ; le montant à encaisser suit
-  const montant = dernier.getByLabel("Montant reçu (€)");
+  const montant = dernier.getByLabel("En espèces (€)");
   await expect(montant).not.toHaveValue("");
   const avant = Number((await montant.inputValue()).replace(",", "."));
   await dernier.getByText(/➕ Compléments/).click();
@@ -476,23 +476,27 @@ test("livreur : la tournée seulement, avec les arrêts et « Livré et payé »
     .poll(async () => Math.round(Number((await montant.inputValue()).replace(",", ".")) * 100))
     .toBe(Math.round((avant + prixComplement) * 100));
 
-  // Montant reçu (proposé : ce qui est à encaisser) et mode de paiement
-  await expect(montant).not.toHaveValue("");
-  const propose = Number((await montant.inputValue()).replace(",", "."));
-  await montant.clear();
-  await montant.fill("1");
-  await expect(montant).toHaveValue("1");
-  await dernier.getByLabel("Paiement", { exact: true }).selectOption("cheque");
+  // Encaissement en deux lignes : le chèque préparé d'avance (montant d'avant les compléments),
+  // les espèces prennent le reste tout seuls (les compléments)
+  const euros = (n: number) => String(n).replace(".", ",");
+  const cheque = dernier.getByLabel("En chèque (€)");
+  await cheque.fill(euros(avant));
+  await expect.poll(async () => Number((await montant.inputValue()).replace(",", "."))).toBe(prixComplement);
+  await expect(dernier.getByText("Montant exact.")).toBeVisible();
+  // Espèces effacées : le reste sera dû
+  await montant.fill("0");
   await expect(dernier.getByText(/resteront dus \(ajoutés au compte du client\)/)).toBeVisible();
+  await montant.fill(euros(prixComplement));
+  await expect(dernier.getByText(/Total reçu/)).toBeVisible();
   await dernier.getByRole("button", { name: "Livré et payé" }).click();
   const arret = page.getByRole("region", { name: nom });
   await expect(arret.getByRole("button", { name: /✓ Livré et payé/ })).toBeVisible();
-  await expect(arret.getByText(/Reçu : 1\s€ par chèque/)).toBeVisible();
-  if (propose > 1) await expect(arret.getByText(/restent dus/)).toBeVisible();
+  await expect(arret.getByText(/Reçu : [\d,]+\s€ par chèque \+ [\d,]+\s€ en espèces/)).toBeVisible();
   // Récapitulatif de l'argent du jour : le chèque y est, et tout retombe sur les commandes
   await page.reload();
   const recapArgent = page.getByRole("region", { name: "Encaissements", exact: true });
   await expect(recapArgent).toContainText(/Chèques/);
+  await expect(recapArgent).toContainText(/Espèces/);
   await expect(recapArgent).toContainText(/➕ Compléments du livreur : \d+ articles?/);
   await expect(recapArgent).toContainText("✓");
   await expect(recapArgent).not.toContainText("⚠");

@@ -152,6 +152,8 @@ export default async function PageTournee({ searchParams }: PageProps<"/tournee"
                 : [],
             ),
             modePaiement: c.mode_paiement === "cheque" || c.mode_paiement === "especes" ? c.mode_paiement : null,
+            recuChequeCentimes: c.recu_cheque_centimes,
+            recuEspecesCentimes: c.recu_especes_centimes,
             duAvantCentimes: dusAvant.get(c.client.id) ?? 0,
           };
         })

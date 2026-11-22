@@ -10,7 +10,10 @@ export type ActionLivraison = {
   livree: boolean;
   /** Payé à la livraison (absent dans les appuis enregistrés avant : payé) */
   payee?: boolean;
-  /** « Livré et payé » : montant reçu et mode (absents : le client règle tout ce qu'il doit) */
+  /** « Livré et payé » : reçu en chèque et en espèces (absents : le client règle tout ce qu'il doit) */
+  chequeCentimes?: number;
+  especesCentimes?: number;
+  /** Ancienne forme (appuis enregistrés avant les deux lignes) : montant reçu et mode */
   montantCentimes?: number;
   mode?: ModePaiement;
   /** Heure de l'appui (ISO), conservée comme heure de livraison */
@@ -60,6 +63,8 @@ export function lireFile(stockage: Pick<Storage, "getItem"> | undefined): Action
             typeof a?.horodatage === "string" &&
             (a.payee === undefined || typeof a.payee === "boolean") &&
             (a.montantCentimes === undefined || (Number.isInteger(a.montantCentimes) && a.montantCentimes >= 0)) &&
+            (a.chequeCentimes === undefined || (Number.isInteger(a.chequeCentimes) && a.chequeCentimes >= 0)) &&
+            (a.especesCentimes === undefined || (Number.isInteger(a.especesCentimes) && a.especesCentimes >= 0)) &&
             (a.mode === undefined || a.mode === "especes" || a.mode === "cheque"),
         )
       : [];

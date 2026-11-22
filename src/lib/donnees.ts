@@ -189,7 +189,7 @@ export async function listerArticles(options: { actifsSeulement?: boolean } = {}
 }
 export type Article = Awaited<ReturnType<typeof listerArticles>>[number];
 
-const CHAMPS_COMMANDE = `id, client_id, date_livraison, statut, livree_le, notes, source, secteur_id, payee, montant_recu_centimes, mode_paiement,
+const CHAMPS_COMMANDE = `id, client_id, date_livraison, statut, livree_le, notes, source, secteur_id, payee, montant_recu_centimes, mode_paiement, recu_cheque_centimes, recu_especes_centimes,
   client:clients(id, nom, prenom, adresse, complement_adresse, code_postal, commune, telephone, secteur_id, notes_livraison, actif),
   lignes:lignes_commande(article_id, libelle, categorie, quantite, prix_unitaire_centimes, quantite_complement),
   recompenses:recompenses_utilisees(id, recompense_id, nom, cout_tampons, cadeaux(article_id, libelle, categorie, quantite))` as const;
@@ -240,7 +240,7 @@ export async function compterCommandesClient(clientId: string): Promise<number> 
   return count ?? 0;
 }
 
-const CHAMPS_TOURNEE = `id, date_livraison, statut, livree_le, notes, ordre_tournee, secteur_id, payee, montant_recu_centimes, mode_paiement,
+const CHAMPS_TOURNEE = `id, date_livraison, statut, livree_le, notes, ordre_tournee, secteur_id, payee, montant_recu_centimes, mode_paiement, recu_cheque_centimes, recu_especes_centimes,
   client:clients(id, nom, prenom, adresse, complement_adresse, code_postal, commune, telephone, secteur_id, notes_livraison, lat, lng),
   lignes:lignes_commande(article_id, libelle, categorie, quantite, prix_unitaire_centimes, quantite_complement),
   recompenses:recompenses_utilisees(id, nom, cadeaux(article_id, libelle, categorie, quantite))` as const;
@@ -317,6 +317,8 @@ export async function commandesPourEncaissements(
     payee: boolean | null;
     montant_recu_centimes: number | null;
     mode_paiement: string | null;
+    recu_cheque_centimes?: number | null;
+    recu_especes_centimes?: number | null;
     secteur_id: string | null;
     client: { id: string; secteur_id: string };
     lignes: { quantite: number; prix_unitaire_centimes: number; quantite_complement?: number }[];
@@ -334,6 +336,8 @@ export async function commandesPourEncaissements(
     payee: c.payee,
     montantRecuCentimes: c.montant_recu_centimes,
     modePaiement: c.mode_paiement === "especes" || c.mode_paiement === "cheque" ? c.mode_paiement : null,
+    chequeCentimes: c.recu_cheque_centimes ?? null,
+    especesCentimes: c.recu_especes_centimes ?? null,
     soldeAvantCentimes: soldes.get(c.client.id) ?? 0,
     complementsQuantite: c.lignes.reduce((n, l) => n + Math.min(l.quantite_complement ?? 0, l.quantite), 0),
     complementsCentimes: c.lignes.reduce(
