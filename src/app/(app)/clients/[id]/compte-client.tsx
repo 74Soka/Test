@@ -1,5 +1,6 @@
 "use client";
 
+import { BandeauDu } from "@/components/bandeau-du";
 import { useState, useTransition } from "react";
 import { enregistrerMouvement, supprimerMouvement } from "../actions-compte";
 import { Bouton, Carte, Champ, MessageErreur, Selection, TitreSection } from "@/components/ui";
@@ -33,14 +34,13 @@ export function CompteClient({ clientId, solde, mouvements }: { clientId: string
   return (
     <Carte aria-label="Compte du client" className="space-y-3">
       <TitreSection>Compte</TitreSection>
-      <p
-        className={
-          solde > 0 ? "text-2xl font-bold text-amber-800" : solde < 0 ? "text-2xl font-bold text-feuille-700" : "text-2xl font-bold"
-        }
-      >
-        {solde > 0 ? `${formaterPrix(solde)} dus` : solde < 0 ? `Avoir de ${formaterPrix(-solde)}` : "À jour"}
-      </p>
-      {solde > 0 && <p className="-mt-2 text-sm text-stone-600">À encaisser avec la prochaine livraison.</p>}
+      {solde > 0 ? (
+        <BandeauDu montant={solde} grand detail="À encaisser avec la prochaine livraison." />
+      ) : (
+        <p className={solde < 0 ? "text-2xl font-bold text-feuille-700" : "text-2xl font-bold"}>
+          {solde < 0 ? `Avoir de ${formaterPrix(-solde)}` : "À jour"}
+        </p>
+      )}
 
       {mouvements.length > 0 && (
         <ul className="divide-y divide-stone-100 text-sm">

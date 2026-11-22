@@ -249,7 +249,11 @@ l'application.
   `/api/emails` (jeton du robot) ; résultat dans `envoye_le` / `erreur`. Renvoyer un lien de confirmation
   d'inscription : `POST /auth/v1/resend` (clé publique, `type: signup`). Utilisé le 20 novembre 2026 pour les
   3 inscriptions bloquées.
-- [ ] **Tests dépendants de l'heure** : le vendredi après la clôture (12 h), deux parcours échouent
+- [x] **Barre rouge « Doit »** (`src/components/bandeau-du.tsx`) : pour l'équipe seulement, quand un client doit
+  quelque chose : barre rouge sur l'arrêt de tournée (« Doit déjà »), après une livraison non payée (« Reste dû »),
+  sur la fiche client (compte) et dans le formulaire de commande ; pastille « Doit … » dans la liste des clients.
+  L'espace client garde son affichage discret. Mot de passe : petit œil Afficher/Masquer (`champ-mot-de-passe.tsx`).
+- [ ] **Tests dépendants de l'heure** : du vendredi après la clôture (12 h) au lundi, deux ou trois parcours échouent (aussi « les administrateurs sont prévenus… d'une commande en ligne » le dimanche)
   (`espace-client` « page publique… » et `notifications` « …prochain ») car les commandes passent à la semaine
   suivante. À rendre indépendants de l'heure (horloge simulée côté serveur).
 - [x] **Commandes de l'équipe jusqu'au dimanche 12 h** : la base ne bloque pas l'équipe (seuls les clients

@@ -168,7 +168,7 @@ test("statut : livrée sans paiement (le compte du client le garde), puis remise
   // Le compte de Zoé : le montant de la commande est dû
   await ouvrirFiche(page, "essai", /Zoé Essai/);
   const compte = page.getByRole("region", { name: "Compte du client" });
-  await expect(compte).toContainText(/\d+\s€ dus/);
+  await expect(compte).toContainText(/⚠️ Doit\s*[\d,]+\s€/);
   await page.addStyleTag({ content: "header { position: static !important; } nav { display: none !important; }" });
   await capture(compte, "9-fiche-client-compte");
   // Paiement reçu à part, puis annulé (erreur de saisie)

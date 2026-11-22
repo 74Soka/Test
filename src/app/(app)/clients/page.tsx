@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { exigerAdmin } from "@/lib/auth";
 import { clientSupabase } from "@/lib/supabase/serveur";
-import { listerClients, listerSecteurs } from "@/lib/donnees";
+import { listerClients, listerSecteurs, listerSoldes } from "@/lib/donnees";
 import { EnTetePage, EtatVide, LienBouton, MessageInfo } from "@/components/ui";
 import { ListeClients } from "./liste-clients";
 import { PlacerReperes } from "./placer-reperes";
@@ -12,13 +12,14 @@ export const metadata: Metadata = { title: "Clients" };
 export default async function PageClients({ searchParams }: PageProps<"/clients">) {
   await exigerAdmin();
   const supabase = await clientSupabase();
-  const [clients, secteurs, { supprime }, { count: inscriptions }, { count: retours }, { count: sansRepere }] = await Promise.all([
+  const [clients, secteurs, { supprime }, { count: inscriptions }, { count: retours }, { count: sansRepere }, soldes] = await Promise.all([
     listerClients(),
     listerSecteurs(),
     searchParams,
     supabase.from("inscriptions").select("user_id", { count: "exact", head: true }).eq("statut", "en_attente"),
     supabase.from("avis_livraison").select("commande_id", { count: "exact", head: true }).is("traite_le", null),
     supabase.from("clients").select("id", { count: "exact", head: true }).is("lat", null),
+    listerSoldes(),
   ]);
 
   return (
@@ -60,7 +61,7 @@ export default async function PageClients({ searchParams }: PageProps<"/clients"
           Aucun client pour l&apos;instant.
         </EtatVide>
       ) : (
-        <ListeClients clients={clients} secteurs={secteurs} />
+        <ListeClients clients={clients} secteurs={secteurs} soldes={soldes} />
       )}
     </>
   );

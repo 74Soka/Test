@@ -1,5 +1,6 @@
 "use client";
 
+import { PastilleDu } from "@/components/bandeau-du";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { correspond, nomComplet } from "@/lib/domaine/texte";
@@ -19,7 +20,16 @@ type ClientLigne = {
 
 type SecteurLigne = { id: string; nom: string; couleur: string };
 
-export function ListeClients({ clients, secteurs }: { clients: ClientLigne[]; secteurs: SecteurLigne[] }) {
+export function ListeClients({
+  clients,
+  secteurs,
+  soldes = {},
+}: {
+  clients: ClientLigne[];
+  secteurs: SecteurLigne[];
+  /** Ce que chaque client doit (+) ou son avoir (−), en centimes */
+  soldes?: Record<string, number>;
+}) {
   const [recherche, setRecherche] = useState("");
   const [secteur, setSecteur] = useState<string | null>(null);
   const [inactifs, setInactifs] = useState(false);
@@ -93,6 +103,7 @@ export function ListeClients({ clients, secteurs }: { clients: ClientLigne[]; se
                       {c.adresse}, {c.commune}
                     </span>
                   </span>
+                  {(soldes[c.id] ?? 0) > 0 && <PastilleDu montant={soldes[c.id]} />}
                   <span aria-hidden className="text-2xl text-stone-300">
                     ›
                   </span>

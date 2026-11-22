@@ -1,5 +1,6 @@
 "use client";
 
+import { BandeauDu } from "@/components/bandeau-du";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import {
@@ -180,6 +181,19 @@ const HEURE = new Intl.DateTimeFormat("fr-FR", { timeZone: "Europe/Paris", hour:
 function AEncaisser({ total, duAvant }: { total: number; duAvant: number }) {
   if (duAvant === 0) return <p className="mt-1 text-sm text-stone-600">À encaisser : {formaterPrix(total)}</p>;
   const aPayer = Math.max(0, total + duAvant);
+  if (duAvant > 0)
+    return (
+      <div className="mt-2 space-y-1">
+        <BandeauDu libelle="Doit déjà (livraisons précédentes)" montant={duAvant} />
+        <p className="text-sm">
+          <span className="font-bold">À encaisser : {formaterPrix(aPayer)}</span>
+          <span className="text-stone-600">
+            {" "}
+            ({formaterPrix(total)} + {formaterPrix(duAvant)} dus)
+          </span>
+        </p>
+      </div>
+    );
   return (
     <p className="mt-1 text-sm">
       <span className="font-semibold text-amber-900">À encaisser : {formaterPrix(aPayer)}</span>
@@ -195,7 +209,7 @@ function EcartPaiement({ du, recu, apres = false }: { du: number; recu: number; 
   if (recu === du) return apres ? null : <span className="text-stone-600">Montant exact.</span>;
   const ecart = Math.abs(recu - du);
   return (
-    <span className={cx("font-medium", recu < du ? "text-amber-800" : "text-feuille-700", apres && "block")}>
+    <span className={cx(recu < du ? "font-bold text-red-700" : "font-medium text-feuille-700", apres && "block")}>
       {recu < du
         ? `${formaterPrix(ecart)} ${apres ? "restent dus" : "resteront dus"} (ajoutés au compte du client).`
         : `${formaterPrix(ecart)} d'avoir pour le client (déduits de sa prochaine livraison).`}
@@ -733,9 +747,12 @@ export function Tournee({
                       })()
                     )}
                     {etat?.livree && etat.payee === false && (
-                      <p className="mt-1 text-sm font-medium text-amber-800">
-                        {formaterPrix(a.duAvantCentimes + a.totalCentimes)} à encaisser à la prochaine livraison.
-                      </p>
+                      <BandeauDu
+                        className="mt-2"
+                        libelle="Reste dû"
+                        montant={a.duAvantCentimes + a.totalCentimes}
+                        detail="Pas payé : à encaisser à la prochaine livraison."
+                      />
                     )}
                     {etat?.livree && a.id === justeLivre && prochain && (
                       <div role="group" aria-label="Arrêt suivant" className="mt-2 rounded-xl bg-marque-50 p-3 ring-1 ring-marque-600/30">

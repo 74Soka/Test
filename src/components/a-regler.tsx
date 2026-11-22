@@ -1,5 +1,6 @@
 import { formaterPrix } from "@/lib/domaine/argent";
 import { aReglerALaLivraison } from "@/lib/domaine/commandes";
+import { BandeauDu } from "./bandeau-du";
 import { cx } from "./ui";
 
 /**
@@ -30,7 +31,9 @@ export function DetailARegler({
             <span className="text-stone-600">{libelleTotal}</span>
             <span className="tabular-nums">{formaterPrix(total)}</span>
           </p>
-          {solde > 0 ? (
+          {solde > 0 && pour === "equipe" ? (
+            <BandeauDu libelle="Le client doit déjà" montant={solde} />
+          ) : solde > 0 ? (
             <p className={cx(ligne, "text-amber-800")}>
               <span>{pour === "client" ? "Reste dû (livraisons précédentes)" : "Le client doit déjà"}</span>
               <span className="font-semibold tabular-nums">+ {formaterPrix(solde)}</span>
