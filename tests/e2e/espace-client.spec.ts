@@ -290,6 +290,23 @@ test("page publique des paniers, sans compte : composition, suppléments, livrai
   if (process.env.CAPTURE_PANIERS) await page.screenshot({ path: process.env.CAPTURE_PANIERS, fullPage: true });
 });
 
+test("page publique du parrainage, sans compte : cadeaux, graines et récompenses lues dans les réglages", async ({ page }) => {
+  await page.goto("/paniers");
+  await page.getByRole("link", { name: /Parrainage et graines : tout savoir/ }).click();
+  await expect(page).toHaveURL(/\/parrainage$/);
+  await expect(page.getByRole("heading", { name: "Parrainage et fidélité", level: 1 })).toBeVisible();
+  const parrainage = page.getByRole("region", { name: "Le parrainage" });
+  await expect(parrainage).toContainText("6 œufs BIO");
+  await expect(parrainage).toContainText("Confiture offerte + 1 graine");
+  const graines = page.getByRole("region", { name: "Les graines de fidélité" });
+  await expect(graines).toContainText(/\+1\s*graine par Panier 30\s€ livré/);
+  await expect(graines).toContainText(/\+2\s*graines par Panier 50\s€ livré/);
+  await expect(page.getByText("Supplément offert", { exact: true })).toBeVisible();
+  await expect(page.getByText(/Clients VIP \(5 filleuls\)/)).toBeVisible();
+  await expect(page.getByRole("link", { name: "Créer mon compte" })).toHaveAttribute("href", "/inscription");
+  if (process.env.CAPTURE_PARRAINAGE) await page.screenshot({ path: process.env.CAPTURE_PARRAINAGE, fullPage: true });
+});
+
 test("recette de la semaine : saisie avec le panier de la semaine dernière, puis affichée sur la page publique", async ({
   page,
   browser,

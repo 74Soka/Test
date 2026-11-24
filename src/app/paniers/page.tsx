@@ -177,6 +177,9 @@ export default async function PagePaniers() {
           Votre filleul nous donne votre nom en passant sa première commande. Votre confiture est offerte dès que son
           panier est livré. Offre réservée aux nouveaux clients, sans limite de filleuls.
         </p>
+        <Link href="/parrainage" className={`${classesBouton} self-start bg-marque-800 text-base text-white`}>
+          🌱 Parrainage et graines : tout savoir ›
+        </Link>
       </section>
 
       <footer className="flex flex-col items-center gap-4 text-center text-stone-600">

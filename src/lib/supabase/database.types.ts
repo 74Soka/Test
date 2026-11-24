@@ -1336,6 +1336,7 @@ export type Database = {
         }
         Returns: undefined
       }
+      fidelite_publique: { Args: never; Returns: Json }
       marquer_livraison_paiements: {
         Args: {
           p_cheque_centimes?: number

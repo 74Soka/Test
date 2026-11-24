@@ -260,6 +260,10 @@ l'application.
   `commandes.recu_cheque_centimes` / `recu_especes_centimes`, `mode_paiement` = `mixte` si les deux ; un mouvement
   « paiement » par mode sur le compte. Fonction `marquer_livraison_paiements` ; l'ancienne `marquer_livraison`
   (montant + mode) passe par elle. Le récapitulatif des encaissements range chaque montant dans sa colonne.
+- [x] **Page publique /parrainage** (`20261208000000_fidelite_publique.sql`, appliquée) : programme de parrainage et
+  graines, sans compte, lien court pour les SMS. Règles lues dans les réglages (`fidelite_publique()`, informations
+  publiques seulement) ; lien depuis /paniers. Cadeaux de parrainage avancés au 23 novembre 2026 (demande du
+  propriétaire) : `parametres_fidelite.parrainage_cadeaux_debut`.
 - [ ] **Tests dépendants de l'heure** : du vendredi après la clôture (12 h) au lundi, deux ou trois parcours échouent (aussi « les administrateurs sont prévenus… d'une commande en ligne » le dimanche)
   (`espace-client` « page publique… » et `notifications` « …prochain ») car les commandes passent à la semaine
   suivante. À rendre indépendants de l'heure (horloge simulée côté serveur).
