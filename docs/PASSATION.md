@@ -264,6 +264,10 @@ l'application.
   graines, sans compte, lien court pour les SMS. Règles lues dans les réglages (`fidelite_publique()`, informations
   publiques seulement) ; lien depuis /paniers. Cadeaux de parrainage avancés au 23 novembre 2026 (demande du
   propriétaire) : `parametres_fidelite.parrainage_cadeaux_debut`.
+- [x] **Le jour suit le secteur du client** (`20261209000000_commandes_suivent_secteur.sql`, appliquée) : changer le
+  secteur d'une fiche déplace ses commandes à livrer (d'aujourd'hui ou plus tard, secteur habituel) au jour du nouveau
+  secteur, même semaine, jamais dans le passé ; une livraison « autre secteur cette fois » garde son jour (et redevient
+  habituelle si c'est le nouveau secteur). Changer seulement la date d'une commande reste libre. Message dans la fiche.
 - [ ] **Tests dépendants de l'heure** : du vendredi après la clôture (12 h) au lundi, deux ou trois parcours échouent (aussi « les administrateurs sont prévenus… d'une commande en ligne » le dimanche)
   (`espace-client` « page publique… » et `notifications` « …prochain ») car les commandes passent à la semaine
   suivante. À rendre indépendants de l'heure (horloge simulée côté serveur).

@@ -337,6 +337,11 @@ export function FormulaireClient({
               </label>
             ))}
           </div>
+          {id && secteurChoisi && donnees.secteurId !== initial.secteurId && (
+            <p role="status" className="mt-2 text-sm font-medium text-sky-800">
+              Ses livraisons à venir passeront au {libelleTournee(secteurChoisi).toLowerCase()} (même semaine).
+            </p>
+          )}
         </fieldset>
       </Carte>
 
